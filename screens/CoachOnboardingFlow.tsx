@@ -49,7 +49,7 @@ const LOADING_TIPS = [
   "Final quality checks before opening your workspace.",
 ] as const;
 
-export default function CoachOnboardingFlow({ navigation, route }: Props) {
+export default function CoachOnboardingFlow({ navigation }: Props) {
   const {
     currentStep,
     draft,
@@ -212,8 +212,7 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
     }
 
     navigation.navigate("Authed", {
-      screen: "Coaches",
-      params: { specialization: route.params?.specialization ?? "workout" },
+      screen: "Today",
     });
   };
 
