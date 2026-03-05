@@ -1,5 +1,31 @@
 # Product Policy Change Log
 
+## 2026-03-05 - Coach onboarding body profile + dual-track results review
+
+### Added
+
+- Coach onboarding body-profile capture policy:
+  - include explicit sex selection values `male`, `female`, `other`.
+- Post-onboarding results review policy:
+  - show both `Training` and `Nutrition` track outcomes before dashboard/workspace navigation.
+
+### Changed
+
+- Coach onboarding defaults policy:
+  - default weight set to `170 lb`,
+  - default height set to `5'5"`,
+  - untouched defaults are treated as valid onboarding inputs.
+- Plan-start presentation policy:
+  - one unified coach avatar is shown (no split workout/nutrition avatars).
+
+### Removed
+
+- Onboarding behavior that required manual picker movement to avoid height/weight validation errors.
+
+### Notes
+
+- Plan generation scope remains user-selected (`workout`, `nutrition`, `both`); results review still displays both tracks with generated/not-generated states.
+
 ## 2026-03-04 - Gym validation stale-request auto-expiry
 
 ### Added

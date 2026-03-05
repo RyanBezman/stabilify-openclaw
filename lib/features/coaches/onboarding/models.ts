@@ -1,4 +1,5 @@
 import type { CoachGender, CoachPersonality } from "../types";
+import { feetInchesToCm, lbToKg } from "../../../utils/bodyMetrics";
 
 export type CoachOnboardingGoal = "lose" | "maintain" | "gain";
 export type CoachExperienceLevel = "beginner" | "intermediate" | "advanced";
@@ -45,6 +46,7 @@ export type CoachOnboardingStepId =
   | "equipment"
   | "nutrition"
   | "constraints"
+  | "sex"
   | "weight"
   | "height"
   | "persona"
@@ -58,6 +60,7 @@ export const COACH_ONBOARDING_STEPS: CoachOnboardingStepId[] = [
   "equipment",
   "nutrition",
   "constraints",
+  "sex",
   "weight",
   "height",
   "persona",
@@ -69,7 +72,7 @@ export function createInitialCoachOnboardingDraft(): CoachOnboardingDraft {
   return {
     goal: { primary: "maintain", targetRatePctPerWeek: null, targetDate: null },
     experienceLevel: "beginner",
-    body: { weightKg: null, heightCm: null, age: null, sex: null },
+    body: { weightKg: lbToKg(170), heightCm: feetInchesToCm(5, 5), age: null, sex: null },
     training: {
       daysPerWeek: 4,
       sessionMinutes: 45,

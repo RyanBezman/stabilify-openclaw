@@ -50,11 +50,16 @@ export function mapDraftToWorkoutIntake(draft: CoachOnboardingDraft): WorkoutInt
 }
 
 export function mapDraftToNutritionIntake(draft: CoachOnboardingDraft): NutritionIntake {
+  const sex =
+    draft.body.sex === "female" || draft.body.sex === "other"
+      ? draft.body.sex
+      : "male";
+
   return {
     heightCm: draft.body.heightCm ?? 175,
     weightKg: draft.body.weightKg ?? 80,
     ageYears: draft.body.age ?? 30,
-    sex: draft.body.sex === "female" ? "female" : "male",
+    sex,
     goal: draft.goal.primary,
   };
 }

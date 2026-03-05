@@ -1,5 +1,10 @@
 import type { NavigatorScreenParams } from "@react-navigation/native";
-import type { ActiveCoach, CoachSpecialization } from "../features/coaches";
+import type {
+  ActiveCoach,
+  CoachGender,
+  CoachPersonality,
+  CoachSpecialization,
+} from "../features/coaches";
 import type { PostRow } from "../data/types";
 
 export type AuthedTabParamList = {
@@ -49,6 +54,11 @@ export type RootStackParamList = {
         specialization?: CoachSpecialization;
       }
     | undefined;
+  CoachOnboardingResults: {
+    planStart: "workout" | "nutrition" | "both";
+    coachGender: CoachGender;
+    coachPersonality: CoachPersonality;
+  };
   CoachChat:
     | {
         coach?: ActiveCoach;

@@ -43,8 +43,11 @@ Expected:
 2. Complete onboarding and submit `Build my plan`.
 Expected:
 - Submission shows loading state (`Generating your plans...`).
-- User is routed to `CoachWorkspace` plan tab after success.
-- Workout + nutrition tracks have generated plans/drafts.
+- Onboarding includes an explicit `Sex` step with options `Male`, `Female`, `Other`.
+- Height/weight defaults (`5'5"`, `170 lb`) can be accepted without triggering validation errors.
+- Plan-start step shows one unified coach avatar (no split workout/nutrition avatars).
+- User is routed to `CoachOnboardingResults` after success.
+- Results screen shows both `Training` and `Nutrition` cards with generated/not-generated status and per-track CTAs.
 
 3. Open `Coaches` tab.
 Expected:

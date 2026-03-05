@@ -21,8 +21,19 @@ export {
   upsertCoachUserProfileJson,
 } from "./services/api";
 
-export { submitCoachOnboardingWorkflow, useCoachOnboarding } from "./onboarding";
-export type { CoachOnboardingDraft, CoachOnboardingStepId } from "./onboarding";
+export {
+  buildOnboardingResultTracks,
+  submitCoachOnboardingWorkflow,
+  useCoachOnboarding,
+  wasTrackGenerated,
+} from "./onboarding";
+export type {
+  CoachOnboardingDraft,
+  CoachOnboardingPlanStart,
+  CoachOnboardingResultTrack,
+  CoachOnboardingStepId,
+  CoachOnboardingTrack,
+} from "./onboarding";
 export { invokeCoachChat, isTierRestrictedCoachError, mapCoachMessages } from "./services/chatClient";
 export { synthesizeCoachSpeech, transcribeCoachAudio } from "./services/voiceClient";
 export {
@@ -32,6 +43,7 @@ export {
   trackPlanDecisionMadeEvent,
 } from "./services/funnelTracking";
 export { loadCoachState, saveCoachState } from "./services/storage";
+export { hydrateCoachDashboard } from "./services/dashboard";
 
 export type {
   ActiveCoach,

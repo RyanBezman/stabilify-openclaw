@@ -221,6 +221,11 @@ export default function NutritionIntakeCard({
               selected={intake.sex === "female"}
               onPress={() => onChange({ sex: "female" })}
             />
+            <OptionPill
+              label="Other"
+              selected={intake.sex === "other"}
+              onPress={() => onChange({ sex: "other" })}
+            />
           </View>
         </View>
 

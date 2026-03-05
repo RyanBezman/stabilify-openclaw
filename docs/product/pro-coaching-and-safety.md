@@ -15,7 +15,8 @@ Define Pro-tier coaching boundaries, quality defaults, and safety behavior.
 - Keep one user-selected persona as the unified user-facing coach voice.
 - Keep specialist workout/nutrition logic behind that single voice.
 - Persona launch scope keeps all six personas.
-- Pro coach onboarding is required before first workspace run; onboarding captures goal, schedule, constraints, and one unified persona for both workout and nutrition tracks.
+- Pro coach onboarding is required before first workspace run; onboarding captures goal, schedule, constraints, body profile (including sex: `male | female | other`), and one unified persona for both workout and nutrition tracks.
+- After onboarding plan generation, show a dual-track results review surface (Training + Nutrition) before routing users onward.
 - Coach cadence:
   - weekly check-ins are required,
   - light proactive prompts are allowed.
@@ -51,3 +52,4 @@ If `safety_blocked = true`, no plan-adjustment payload is applied.
 - Medical-risk input must return hard-stop safety response.
 - No plan diff should be applied while safety-blocked.
 - Weekly plan updates must remain pending until user acceptance.
+- Onboarding results review must show both tracks and clearly indicate generated vs not-generated states when user chose a single-track start.

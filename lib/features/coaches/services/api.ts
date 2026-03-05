@@ -257,7 +257,10 @@ function hasRequiredCoachProfileFields(profile: Record<string, unknown> | null):
   const hasDays = typeof schedule?.trainingDaysPerWeek === "number";
   const hasMinutes = typeof schedule?.sessionMinutes === "number";
   const hasWeight = typeof profile.weightKg === "number";
-  return hasGoal && hasExperience && hasDays && hasMinutes && hasWeight;
+  const hasHeight = typeof profile.heightCm === "number";
+  const hasSex =
+    profile.sex === "male" || profile.sex === "female" || profile.sex === "other";
+  return hasGoal && hasExperience && hasDays && hasMinutes && hasWeight && hasHeight && hasSex;
 }
 
 export async function fetchCoachOnboardingStatus(

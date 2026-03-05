@@ -18,7 +18,7 @@ export namespace CoachArtifacts {
     heightCm: number;
     weightKg: number;
     age: number;
-    sex: "male" | "female";
+    sex: "male" | "female" | "other";
     equipmentAccess: "full_gym" | "home_basic" | "dumbbells" | "bodyweight";
     dietaryPreferences: string[];
     dietaryRestrictions: string[];

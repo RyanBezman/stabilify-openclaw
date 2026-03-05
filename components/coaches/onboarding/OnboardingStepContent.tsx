@@ -10,6 +10,7 @@ import StepPlanStart from "./steps/StepPlanStart";
 import StepSchedule from "./steps/StepSchedule";
 import StepHeight from "./steps/StepHeight";
 import StepWeight from "./steps/StepWeight";
+import StepSex from "./steps/StepSex";
 
 type Props = {
   currentStep: CoachOnboardingStepId;
@@ -25,6 +26,7 @@ export default function OnboardingStepContent({ currentStep, draft, summaryChips
   if (currentStep === "equipment") return <StepEquipment draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "nutrition") return <StepNutrition draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "constraints") return <StepConstraints draft={draft} patchDraft={patchDraft} />;
+  if (currentStep === "sex") return <StepSex draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "weight") return <StepWeight draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "height") return <StepHeight draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "persona") return <StepPersona draft={draft} patchDraft={patchDraft} />;
@@ -35,7 +37,9 @@ export default function OnboardingStepContent({ currentStep, draft, summaryChips
       summaryChips={summaryChips}
       goal={draft.goal.primary}
       experience={draft.experienceLevel}
+      heightCm={draft.body.heightCm}
       weightKg={draft.body.weightKg}
+      sex={draft.body.sex}
       trainingLine={`${draft.training.daysPerWeek} days • ${draft.training.sessionMinutes} min • ${draft.training.equipmentAccess.replace("_", " ")}`}
       coachLine={`${draft.persona.gender} • ${draft.persona.personality} personality`}
       planStart={draft.planStart}

@@ -16,6 +16,10 @@ import {
   loadLatestPlanByType,
   promoteDraftPlanVersion,
 } from "./repositories/planVersions.ts";
+import {
+  computeNutritionTargets,
+  goalFromProfileGoalType,
+} from "./nutritionTargets.ts";
 
 type SupabaseUserClient = ReturnType<typeof createClient>;
 
@@ -41,7 +45,7 @@ type NutritionIntake = {
   heightCm: number;
   weightKg: number;
   ageYears: number;
-  sex: "male" | "female";
+  sex: "male" | "female" | "other";
   goal?: NutritionGoal;
 };
 
@@ -797,7 +801,7 @@ function validateNutritionIntake(input: unknown): input is NutritionIntake {
   const validHeight = Number.isFinite(intake.heightCm) && intake.heightCm >= 120 && intake.heightCm <= 230;
   const validWeight = Number.isFinite(intake.weightKg) && intake.weightKg >= 35 && intake.weightKg <= 250;
   const validAge = Number.isFinite(intake.ageYears) && intake.ageYears >= 16 && intake.ageYears <= 85;
-  const validSex = intake.sex === "male" || intake.sex === "female";
+  const validSex = intake.sex === "male" || intake.sex === "female" || intake.sex === "other";
   const validGoal = intake.goal === undefined || ["lose", "maintain", "gain"].includes(intake.goal);
 
   return Boolean(validHeight && validWeight && validAge && validSex && validGoal);
@@ -899,76 +903,6 @@ function isValidCoachPersonality(value: unknown): value is CoachPersonality {
     value === "hype" ||
     value === "analyst"
   );
-}
-
-type NutritionTargets = {
-  goal: NutritionGoal;
-  dailyCaloriesTarget: number;
-  macros: {
-    proteinG: number;
-    carbsG: number;
-    fatsG: number;
-  };
-  activityMultiplier: number;
-};
-
-function activityMultiplierFromWorkoutDays(daysPerWeek: number | null) {
-  if (!daysPerWeek || !Number.isFinite(daysPerWeek)) return 1.375;
-  if (daysPerWeek <= 2) return 1.2;
-  if (daysPerWeek <= 4) return 1.375;
-  if (daysPerWeek <= 5) return 1.55;
-  return 1.725;
-}
-
-function goalFromProfileGoalType(goalType: string | null | undefined): NutritionGoal {
-  if (goalType === "lose" || goalType === "gain") return goalType;
-  return "maintain";
-}
-
-function computeNutritionTargets(args: {
-  intake: NutritionIntake;
-  fallbackGoalType: string | null | undefined;
-  workoutDaysPerWeek: number | null;
-}): NutritionTargets {
-  const { intake, fallbackGoalType, workoutDaysPerWeek } = args;
-  const goal = intake.goal ?? goalFromProfileGoalType(fallbackGoalType);
-  const activityMultiplier = activityMultiplierFromWorkoutDays(workoutDaysPerWeek);
-
-  const bmr =
-    intake.sex === "male"
-      ? 10 * intake.weightKg + 6.25 * intake.heightCm - 5 * intake.ageYears + 5
-      : 10 * intake.weightKg + 6.25 * intake.heightCm - 5 * intake.ageYears - 161;
-
-  const tdee = bmr * activityMultiplier;
-  const goalAdjustment = goal === "lose" ? -400 : goal === "gain" ? 300 : 0;
-
-  let calories = Math.round((tdee + goalAdjustment) / 10) * 10;
-  const calorieFloor = intake.sex === "male" ? 1500 : 1200;
-  calories = Math.max(calorieFloor, calories);
-
-  const proteinFactor = goal === "lose" ? 2.0 : 1.8;
-  const fatFactor = goal === "gain" ? 1.0 : goal === "maintain" ? 0.9 : 0.8;
-
-  let proteinG = Math.round(intake.weightKg * proteinFactor);
-  let fatsG = Math.round(intake.weightKg * fatFactor);
-  let carbsG = Math.round((calories - proteinG * 4 - fatsG * 9) / 4);
-
-  if (carbsG < 60) {
-    carbsG = 60;
-    const remainingFatCalories = calories - proteinG * 4 - carbsG * 4;
-    fatsG = Math.max(35, Math.round(remainingFatCalories / 9));
-  }
-
-  return {
-    goal,
-    dailyCaloriesTarget: calories,
-    macros: {
-      proteinG,
-      carbsG: Math.max(0, carbsG),
-      fatsG: Math.max(0, fatsG),
-    },
-    activityMultiplier,
-  };
 }
 
 function normalizeMealTargets(

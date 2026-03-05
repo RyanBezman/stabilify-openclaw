@@ -2,12 +2,23 @@ import { Text, View } from "react-native";
 import Card from "../../ui/Card";
 
 const LB_PER_KG = 2.2046226218;
+const CM_PER_IN = 2.54;
+
+function heightDisplay(heightCm: number | null) {
+  if (heightCm === null) return "not set";
+  const totalInches = Math.round(heightCm / CM_PER_IN);
+  const feet = Math.floor(totalInches / 12);
+  const inches = totalInches % 12;
+  return `${feet} ft ${inches} in`;
+}
 
 type Props = {
   summaryChips: string[];
   goal: string;
   experience: string;
+  heightCm: number | null;
   weightKg: number | null;
+  sex: "male" | "female" | "other" | null;
   trainingLine: string;
   coachLine: string;
   planStart: "workout" | "nutrition" | "both";
@@ -17,12 +28,14 @@ export default function OnboardingReviewSummary({
   summaryChips,
   goal,
   experience,
+  heightCm,
   weightKg,
+  sex,
   trainingLine,
   coachLine,
   planStart,
 }: Props) {
-  const weightLb = weightKg ? Math.round(weightKg * LB_PER_KG) : null;
+  const weightLb = weightKg === null ? null : Math.round(weightKg * LB_PER_KG);
 
   return (
     <View className="gap-4">
@@ -38,7 +51,9 @@ export default function OnboardingReviewSummary({
         <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Goal & profile</Text>
         <Text className="mt-2 text-sm text-neutral-200">Goal: {goal}</Text>
         <Text className="mt-1 text-sm text-neutral-200">Experience: {experience}</Text>
-        <Text className="mt-1 text-sm text-neutral-200">Weight: {weightLb ? `${weightLb} lb` : "not set"}</Text>
+        <Text className="mt-1 text-sm text-neutral-200">Sex: {sex ?? "not set"}</Text>
+        <Text className="mt-1 text-sm text-neutral-200">Height: {heightDisplay(heightCm)}</Text>
+        <Text className="mt-1 text-sm text-neutral-200">Weight: {weightLb === null ? "not set" : `${weightLb} lb`}</Text>
       </Card>
 
       <Card variant="subtle" className="p-4">

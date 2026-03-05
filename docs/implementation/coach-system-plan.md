@@ -62,7 +62,9 @@ Last updated: 2026-03-04
 
 ### Current app implementation notes
 - `CoachOnboardingFlow` is the required pre-workspace intake surface for Pro users missing `coach_user_profiles.profile_json` required fields.
+- Coach onboarding body profile includes explicit `sex` selection (`male | female | other`) plus defaulted height/weight values (`5'5"`, `170 lb`) that are valid without manual picker movement.
 - Onboarding submission writes `coach_user_profiles`, sets unified persona selection, and triggers initial workout + nutrition plan generation via `coach-chat` (`plan_generate`).
+- `CoachOnboardingResults` is the post-submit review surface that shows both Training + Nutrition outcomes and routes into per-track plan views/intake.
 - `CoachWorkspace` is now the canonical plan + chat surface.
 - `CoachChat` is a compatibility shim that redirects to `CoachWorkspace` with `tab: "chat"` and carries `prefill`.
 - Voice recording/transcription/synthesis orchestration is consolidated in `lib/features/coaches/hooks/useCoachVoiceComposer.ts` and consumed by workspace chat pane.
@@ -90,7 +92,7 @@ export type UserProfile = {
   heightCm: number;
   weightKg: number;
   age: number;
-  sex: "male" | "female";
+  sex: "male" | "female" | "other";
   equipmentAccess: "full_gym" | "home_basic" | "dumbbells" | "bodyweight";
   dietaryPreferences: string[];
   dietaryRestrictions: string[];

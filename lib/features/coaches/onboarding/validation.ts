@@ -1,11 +1,15 @@
 import type { CoachOnboardingDraft, CoachOnboardingStepId } from "./models";
 
 export function validateCoachOnboardingStep(step: CoachOnboardingStepId, draft: CoachOnboardingDraft): string | null {
-  if (step === "weight" && !draft.body.weightKg) {
+  if (step === "sex" && draft.body.sex === null) {
+    return "Select your sex to calibrate your nutrition plan.";
+  }
+
+  if (step === "weight" && draft.body.weightKg === null) {
     return "Add your current weight to personalize your plan.";
   }
 
-  if (step === "height" && !draft.body.heightCm) {
+  if (step === "height" && draft.body.heightCm === null) {
     return "Add your height so we can calibrate your plan.";
   }
 

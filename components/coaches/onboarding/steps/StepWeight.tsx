@@ -10,7 +10,7 @@ type Props = {
 
 const LB_PER_KG = 2.2046226218;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-const kgToLb = (kg: number | null) => (kg ? clamp(Math.round(kg * LB_PER_KG), 80, 450) : 180);
+const kgToLb = (kg: number | null) => (kg === null ? 170 : clamp(Math.round(kg * LB_PER_KG), 80, 450));
 const lbToKg = (lb: number) => Number((lb / LB_PER_KG).toFixed(1));
 
 export default function StepWeight({ draft, patchDraft }: Props) {

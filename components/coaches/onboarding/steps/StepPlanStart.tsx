@@ -17,8 +17,7 @@ const labels: Record<Option, string> = {
 };
 
 export default function StepPlanStart({ draft, patchDraft }: Props) {
-  const workoutCoach = coachFromSelection("workout", draft.persona.gender, draft.persona.personality);
-  const nutritionCoach = coachFromSelection("nutrition", draft.persona.gender, draft.persona.personality);
+  const coach = coachFromSelection("workout", draft.persona.gender, draft.persona.personality);
 
   const renderOption = (value: Option) => {
     const selected = draft.planStart === value;
@@ -39,15 +38,9 @@ export default function StepPlanStart({ draft, patchDraft }: Props) {
   return (
     <View className="gap-5">
       <Text className="text-sm font-semibold text-neutral-300">Choose how to start</Text>
-      <View className="flex-row items-center justify-center gap-3">
-        <View className="items-center gap-2">
-          <CoachAvatar coach={workoutCoach} size="md" />
-          <Text className="text-xs font-semibold text-neutral-300">Workout Coach</Text>
-        </View>
-        <View className="items-center gap-2">
-          <CoachAvatar coach={nutritionCoach} size="md" />
-          <Text className="text-xs font-semibold text-neutral-300">Nutrition Coach</Text>
-        </View>
+      <View className="items-center gap-2">
+        <CoachAvatar coach={coach} size="md" />
+        <Text className="text-xs font-semibold text-neutral-300">One unified coach for both tracks</Text>
       </View>
       <View className="gap-3">
         {renderOption("both")}

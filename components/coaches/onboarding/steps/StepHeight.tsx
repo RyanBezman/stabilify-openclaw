@@ -11,7 +11,7 @@ type Props = {
 const CM_PER_IN = 2.54;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const cmToFeetInches = (cm: number | null): { feet: number; inches: number } => {
-  if (!cm || Number.isNaN(cm)) return { feet: 5, inches: 10 };
+  if (cm === null || Number.isNaN(cm)) return { feet: 5, inches: 5 };
   const totalInches = Math.round(cm / CM_PER_IN);
   const feet = clamp(Math.floor(totalInches / 12), 4, 7);
   const inches = clamp(totalInches % 12, 0, 11);

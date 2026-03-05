@@ -49,7 +49,7 @@ export type NutritionIntake = {
   heightCm: number;
   weightKg: number;
   ageYears: number;
-  sex: "male" | "female";
+  sex: "male" | "female" | "other";
   goal?: NutritionGoal;
 };
 

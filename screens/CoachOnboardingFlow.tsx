@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Easing,
   ScrollView,
   Text,
   View,
@@ -42,7 +43,14 @@ const GENERATING_PHASES_BY_START = {
   ],
 } as const;
 
-export default function CoachOnboardingFlow({ navigation, route }: Props) {
+const LOADING_TIPS = [
+  "Calibrating your plan to your goal, schedule, and constraints.",
+  "Balancing training intensity and recovery for consistency.",
+  "Setting nutrition targets that match your selected outcome.",
+  "Final quality checks before opening your workspace.",
+] as const;
+
+export default function CoachOnboardingFlow({ navigation }: Props) {
   const {
     currentStep,
     draft,
@@ -66,7 +74,10 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
   const slide = useRef(new Animated.Value(18)).current;
   const scale = useRef(new Animated.Value(0.98)).current;
   const progressAnim = useRef(new Animated.Value(progress)).current;
+  const loadingPulse = useRef(new Animated.Value(0)).current;
   const [generatingIndex, setGeneratingIndex] = useState(0);
+  const [tipIndex, setTipIndex] = useState(0);
+  const [submitSeconds, setSubmitSeconds] = useState(0);
 
   useEffect(() => {
     fade.setValue(0);
@@ -90,6 +101,8 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
   useEffect(() => {
     if (!submitting) {
       setGeneratingIndex(0);
+      setTipIndex(0);
+      setSubmitSeconds(0);
       return;
     }
 
@@ -97,9 +110,49 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
     const interval = setInterval(() => {
       setGeneratingIndex((prev) => (prev < phases.length - 1 ? prev + 1 : prev));
     }, 900);
+    const tipInterval = setInterval(() => {
+      setTipIndex((prev) => (prev + 1) % LOADING_TIPS.length);
+    }, 2400);
+    const secondsInterval = setInterval(() => {
+      setSubmitSeconds((prev) => prev + 1);
+    }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearInterval(tipInterval);
+      clearInterval(secondsInterval);
+    };
   }, [draft.planStart, submitting]);
+
+  useEffect(() => {
+    if (!submitting) {
+      loadingPulse.setValue(0);
+      return;
+    }
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(loadingPulse, {
+          toValue: 1,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(loadingPulse, {
+          toValue: 0,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+
+    return () => {
+      loop.stop();
+      loadingPulse.setValue(0);
+    };
+  }, [loadingPulse, submitting]);
 
   const title = useMemo(() => {
     const titleByStep: Record<CoachOnboardingStepId, string> = {
@@ -109,6 +162,7 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
       equipment: "What equipment do you have?",
       nutrition: "How do you like to eat?",
       constraints: "Any constraints to plan around?",
+      sex: "Select your sex",
       weight: "Set your weight",
       height: "Set your height",
       persona: "Pick your coach personality",
@@ -126,6 +180,7 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
       equipment: "Your program will only include what you can actually use.",
       nutrition: "Set preferences now so food recommendations feel realistic.",
       constraints: "Tell us what to work around so consistency stays high.",
+      sex: "This helps estimate calories and macros accurately.",
       weight: "Use the wheel to set your current bodyweight.",
       height: "Use feet and inches to dial in your height.",
       persona: "One unified personality across workout and nutrition coaching.",
@@ -144,9 +199,10 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
       return;
     }
     setSubmitDone();
-    navigation.replace("CoachWorkspace", {
-      specialization: route.params?.specialization ?? "workout",
-      tab: "plan",
+    navigation.replace("CoachOnboardingResults", {
+      planStart: draft.planStart,
+      coachGender: draft.persona.gender,
+      coachPersonality: draft.persona.personality,
     });
   };
 
@@ -161,6 +217,21 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
   );
 
   const generatingPhases = GENERATING_PHASES_BY_START[draft.planStart];
+  const loadingProgressPct = Math.round(((generatingIndex + 1) / generatingPhases.length) * 100);
+  const tipFadeStyle = {
+    opacity: loadingPulse.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.65, 1],
+    }),
+    transform: [
+      {
+        scale: loadingPulse.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.995, 1],
+        }),
+      },
+    ],
+  };
 
   if (submitting) {
     return (
@@ -172,6 +243,20 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
             <Text className="text-center text-sm text-neutral-400">We’re preparing your selected plans and coach workspace.</Text>
 
             <View className="mt-3 rounded-3xl border border-neutral-800 bg-neutral-900/60 p-5">
+              <View className="mb-4">
+                <View className="mb-2 flex-row items-center justify-between">
+                  <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-neutral-400">Progress</Text>
+                  <Text className="text-xs font-semibold text-violet-200">{loadingProgressPct}%</Text>
+                </View>
+                <View className="h-2 w-full rounded-full bg-neutral-800">
+                  <View
+                    className="h-2 rounded-full bg-violet-400"
+                    style={{ width: `${loadingProgressPct}%` }}
+                  />
+                </View>
+                <Text className="mt-2 text-[11px] text-neutral-500">Elapsed: {submitSeconds}s</Text>
+              </View>
+
               {generatingPhases.map((phase, idx) => {
                 const done = idx < generatingIndex;
                 const active = idx === generatingIndex;
@@ -187,6 +272,11 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
                 );
               })}
             </View>
+
+            <Animated.View style={tipFadeStyle} className="mt-1 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+              <Text className="text-[11px] font-semibold uppercase tracking-[1.4px] text-neutral-400">What’s happening now</Text>
+              <Text className="mt-2 text-sm leading-relaxed text-neutral-200">{LOADING_TIPS[tipIndex]}</Text>
+            </Animated.View>
 
             <View className="mt-2 flex-row items-center justify-center gap-2">
               <ActivityIndicator color="#a78bfa" />
