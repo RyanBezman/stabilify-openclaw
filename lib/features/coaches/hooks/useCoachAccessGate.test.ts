@@ -1,9 +1,7 @@
+// @vitest-environment jsdom
 // @ts-nocheck
-import React from "react";
-import TestRenderer, { act } from "react-test-renderer";
+import { renderHook, act } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
   fetchMembershipTier: vi.fn(),
@@ -22,34 +20,7 @@ vi.mock("../../billing", () => ({
   fetchMembershipTier: mocks.fetchMembershipTier,
 }));
 
-import {
-  __resetCoachAccessGateCacheForTests,
-  useCoachAccessGate,
-} from "./useCoachAccessGate";
-
-type HookValue = ReturnType<typeof useCoachAccessGate>;
-
-function renderUseCoachAccessGate() {
-  let current: HookValue | null = null;
-
-  function HookHarness() {
-    current = useCoachAccessGate();
-    return null;
-  }
-
-  let renderer: TestRenderer.ReactTestRenderer;
-  act(() => {
-    renderer = TestRenderer.create(React.createElement(HookHarness));
-  });
-
-  return {
-    get current() {
-      if (!current) throw new Error("Hook state not available yet");
-      return current;
-    },
-    unmount: () => act(() => renderer.unmount()),
-  };
-}
+import { __resetCoachAccessGateCacheForTests, useCoachAccessGate } from "./useCoachAccessGate";
 
 async function flushAsyncWork(ticks = 5) {
   for (let index = 0; index < ticks; index += 1) {
@@ -74,12 +45,12 @@ describe("useCoachAccessGate", () => {
       data: { tier: "pro" },
     });
 
-    const hook = renderUseCoachAccessGate();
+    const hook = renderHook(() => useCoachAccessGate());
     await flushAsyncWork();
 
-    expect(hook.current.viewState).toBe("ready");
-    expect(hook.current.isPro).toBe(true);
-    expect(hook.current.tierError).toBeNull();
+    expect(hook.result.current.viewState).toBe("ready");
+    expect(hook.result.current.isPro).toBe(true);
+    expect(hook.result.current.tierError).toBeNull();
 
     hook.unmount();
   });
@@ -93,16 +64,16 @@ describe("useCoachAccessGate", () => {
         error: "Temporary network issue.",
       });
 
-    const hook = renderUseCoachAccessGate();
+    const hook = renderHook(() => useCoachAccessGate());
     await flushAsyncWork();
 
     await act(async () => {
-      await hook.current.refreshMembershipTier();
+      await hook.result.current.refreshMembershipTier();
     });
 
-    expect(hook.current.viewState).toBe("ready");
-    expect(hook.current.isPro).toBe(true);
-    expect(hook.current.tierError).toContain("Temporary network issue");
+    expect(hook.result.current.viewState).toBe("ready");
+    expect(hook.result.current.isPro).toBe(true);
+    expect(hook.result.current.tierError).toContain("Temporary network issue");
 
     hook.unmount();
   });
@@ -112,15 +83,15 @@ describe("useCoachAccessGate", () => {
       data: { tier: "pro" },
     });
 
-    const hook = renderUseCoachAccessGate();
+    const hook = renderHook(() => useCoachAccessGate());
     await flushAsyncWork();
 
     act(() => {
-      hook.current.lockToFreeTier();
+      hook.result.current.lockToFreeTier();
     });
 
-    expect(hook.current.viewState).toBe("locked");
-    expect(hook.current.isPro).toBe(false);
+    expect(hook.result.current.viewState).toBe("locked");
+    expect(hook.result.current.isPro).toBe(false);
 
     hook.unmount();
   });
@@ -134,15 +105,15 @@ describe("useCoachAccessGate", () => {
         data: { tier: "pro" },
       });
 
-    const firstMount = renderUseCoachAccessGate();
+    const firstMount = renderHook(() => useCoachAccessGate());
     await flushAsyncWork();
-    expect(firstMount.current.viewState).toBe("locked");
+    expect(firstMount.result.current.viewState).toBe("locked");
     firstMount.unmount();
 
-    const secondMount = renderUseCoachAccessGate();
-    expect(secondMount.current.viewState).toBe("gating");
+    const secondMount = renderHook(() => useCoachAccessGate());
+    expect(secondMount.result.current.viewState).toBe("gating");
     await flushAsyncWork();
-    expect(secondMount.current.viewState).toBe("ready");
+    expect(secondMount.result.current.viewState).toBe("ready");
 
     secondMount.unmount();
   });

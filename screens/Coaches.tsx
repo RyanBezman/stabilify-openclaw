@@ -79,7 +79,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   const [personality, setPersonality] = useState<CoachPersonality>("hype");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [onboardingGate, setOnboardingGate] = useState<"checking" | "needs_onboarding" | "ready">("checking");
   const [forcePicker, setForcePicker] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [loadedAvatars, setLoadedAvatars] = useState<Record<string, boolean>>(
@@ -135,29 +135,29 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
 
     const run = async () => {
       if (viewState !== "ready") {
-        if (mounted) setCheckingOnboarding(false);
+        if (mounted) setOnboardingGate("checking");
         return;
       }
 
       const userIdResult = await fetchCurrentUserId();
       const userId = userIdResult.data?.userId;
       if (userIdResult.error || !userId) {
-        if (mounted) setCheckingOnboarding(false);
+        if (mounted) setOnboardingGate("ready");
         return;
       }
 
       const onboardingStatus = await fetchCoachOnboardingStatus(userId);
       if (onboardingStatus.error) {
-        if (mounted) setCheckingOnboarding(false);
+        if (mounted) setOnboardingGate("ready");
         return;
       }
 
       if (onboardingStatus.data && !onboardingStatus.data.complete) {
-        navigation.replace("CoachOnboardingFlow", { specialization: "workout" });
+        if (mounted) setOnboardingGate("needs_onboarding");
         return;
       }
 
-      if (mounted) setCheckingOnboarding(false);
+      if (mounted) setOnboardingGate("ready");
     };
 
     void run();
@@ -165,7 +165,13 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
     return () => {
       mounted = false;
     };
-  }, [navigation, viewState]);
+  }, [viewState]);
+
+  useEffect(() => {
+    if (onboardingGate === "needs_onboarding") {
+      navigation.replace("CoachOnboardingFlow", { specialization: "workout" });
+    }
+  }, [navigation, onboardingGate]);
 
   const persistCoachSelection = async (
     coach: ActiveCoach,
@@ -302,7 +308,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
 
   const ready = hydrated && serverChecked;
 
-  if (viewState === "ready" && checkingOnboarding) {
+  if (viewState === "ready" && onboardingGate !== "ready") {
     return <CoachesLoadingSkeleton />;
   }
 

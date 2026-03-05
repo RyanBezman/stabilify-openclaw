@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { Text, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import Card from "../../../ui/Card";
 import type { CoachOnboardingDraft } from "../../../../lib/features/coaches";
 
 type Props = {
@@ -36,13 +35,11 @@ export default function StepStats({ draft, patchDraft }: Props) {
   const selectedHeight = useMemo(() => cmToFeetInches(draft.body.heightCm), [draft.body.heightCm]);
 
   return (
-    <View className="gap-4">
-      <Text className="text-sm font-semibold text-neutral-300">Set your body stats</Text>
-
-      <Card variant="subtle" className="p-4">
-        <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-neutral-400">Weight</Text>
-        <Text className="mt-1 text-sm text-neutral-300">{selectedWeightLb} lb</Text>
-        <View className="mt-3 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
+    <View className="gap-8">
+      <View className="items-center">
+        <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-neutral-500">Weight</Text>
+        <Text className="mt-1 text-xl font-semibold text-white">{selectedWeightLb} lb</Text>
+        <View className="w-full">
           <Picker
             selectedValue={selectedWeightLb}
             dropdownIconColor="#a3a3a3"
@@ -60,15 +57,15 @@ export default function StepStats({ draft, patchDraft }: Props) {
             ))}
           </Picker>
         </View>
-      </Card>
+      </View>
 
-      <Card variant="subtle" className="p-4">
-        <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-neutral-400">Height</Text>
-        <Text className="mt-1 text-sm text-neutral-300">
+      <View className="items-center">
+        <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-neutral-500">Height</Text>
+        <Text className="mt-1 text-xl font-semibold text-white">
           {selectedHeight.feet}' {selectedHeight.inches}\"
         </Text>
-        <View className="mt-3 flex-row gap-3">
-          <View className="flex-1 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
+        <View className="mt-2 w-full flex-row">
+          <View className="flex-1">
             <Picker
               selectedValue={selectedHeight.feet}
               dropdownIconColor="#a3a3a3"
@@ -89,8 +86,7 @@ export default function StepStats({ draft, patchDraft }: Props) {
               ))}
             </Picker>
           </View>
-
-          <View className="flex-1 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
+          <View className="flex-1">
             <Picker
               selectedValue={selectedHeight.inches}
               dropdownIconColor="#a3a3a3"
@@ -112,7 +108,7 @@ export default function StepStats({ draft, patchDraft }: Props) {
             </Picker>
           </View>
         </View>
-      </Card>
+      </View>
     </View>
   );
 }

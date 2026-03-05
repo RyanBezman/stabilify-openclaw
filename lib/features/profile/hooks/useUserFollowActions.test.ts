@@ -1,11 +1,9 @@
-import React from "react";
-import TestRenderer, { act } from "react-test-renderer";
+// @vitest-environment jsdom
+import { renderHook, act } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Dispatch, SetStateAction } from "react";
 import type { ViewerFollowState } from "../../../data/relationships";
 import type { UserDirectoryRow } from "../../../data/userDirectory";
-
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
   Alert: {
@@ -28,44 +26,12 @@ vi.mock("../../../data/relationships", () => ({
 
 import { useUserFollowActions } from "./useUserFollowActions";
 
-type HookValue = ReturnType<typeof useUserFollowActions>;
-
 type FollowHarnessProps = {
   followState: ViewerFollowState;
   setFollowState: Dispatch<SetStateAction<ViewerFollowState>>;
   setFollowersCount: Dispatch<SetStateAction<number>>;
   profile: UserDirectoryRow;
 };
-
-function renderUseUserFollowActions(props: FollowHarnessProps) {
-  let current: HookValue | null = null;
-
-  function HookHarness() {
-    current = useUserFollowActions({
-      targetUserId: "target-1",
-      profile: props.profile,
-      followState: props.followState,
-      setFollowState: props.setFollowState,
-      setFollowersCount: props.setFollowersCount,
-    });
-    return null;
-  }
-
-  let renderer: TestRenderer.ReactTestRenderer;
-  act(() => {
-    renderer = TestRenderer.create(React.createElement(HookHarness));
-  });
-
-  return {
-    get current() {
-      if (!current) {
-        throw new Error("Hook state not available yet");
-      }
-      return current;
-    },
-    unmount: () => act(() => renderer.unmount()),
-  };
-}
 
 function buildProfile(overrides?: Partial<UserDirectoryRow>): UserDirectoryRow {
   return {
@@ -112,15 +78,23 @@ describe("useUserFollowActions", () => {
     const setFollowState = vi.fn<(value: SetStateAction<ViewerFollowState>) => void>();
     const setFollowersCount = vi.fn<(value: SetStateAction<number>) => void>();
 
-    const hook = renderUseUserFollowActions({
-      followState: "none",
-      setFollowState,
-      setFollowersCount,
-      profile: buildProfile(),
+    const hook = renderHook((props: FollowHarnessProps) => useUserFollowActions({
+      targetUserId: "target-1",
+      profile: props.profile,
+      followState: props.followState,
+      setFollowState: props.setFollowState,
+      setFollowersCount: props.setFollowersCount,
+    }), {
+      initialProps: {
+        followState: "none",
+        setFollowState,
+        setFollowersCount,
+        profile: buildProfile(),
+      },
     });
 
     await act(async () => {
-      await hook.current.handleFollowPress();
+      await hook.result.current.handleFollowPress();
     });
 
     expect(mocks.followUser).toHaveBeenCalledWith("target-1");
@@ -137,22 +111,26 @@ describe("useUserFollowActions", () => {
     const setFollowState = vi.fn<(value: SetStateAction<ViewerFollowState>) => void>();
     const setFollowersCount = vi.fn<(value: SetStateAction<number>) => void>();
 
-    const hook = renderUseUserFollowActions({
-      followState: "accepted",
-      setFollowState,
-      setFollowersCount,
-      profile: buildProfile(),
+    const hook = renderHook((props: FollowHarnessProps) => useUserFollowActions({
+      targetUserId: "target-1",
+      profile: props.profile,
+      followState: props.followState,
+      setFollowState: props.setFollowState,
+      setFollowersCount: props.setFollowersCount,
+    }), {
+      initialProps: {
+        followState: "accepted",
+        setFollowState,
+        setFollowersCount,
+        profile: buildProfile(),
+      },
     });
 
     await act(async () => {
-      await hook.current.handleFollowPress();
+      await hook.result.current.handleFollowPress();
     });
 
-    expect(mocks.Alert.alert).toHaveBeenCalledWith(
-      "Unfollow",
-      "Unfollow @target_user?",
-      expect.any(Array),
-    );
+    expect(mocks.Alert.alert).toHaveBeenCalledWith("Unfollow", "Unfollow @target_user?", expect.any(Array));
 
     await runAlertAction("Unfollow");
 
@@ -170,22 +148,26 @@ describe("useUserFollowActions", () => {
     const setFollowState = vi.fn<(value: SetStateAction<ViewerFollowState>) => void>();
     const setFollowersCount = vi.fn<(value: SetStateAction<number>) => void>();
 
-    const hook = renderUseUserFollowActions({
-      followState: "pending",
-      setFollowState,
-      setFollowersCount,
-      profile: buildProfile(),
+    const hook = renderHook((props: FollowHarnessProps) => useUserFollowActions({
+      targetUserId: "target-1",
+      profile: props.profile,
+      followState: props.followState,
+      setFollowState: props.setFollowState,
+      setFollowersCount: props.setFollowersCount,
+    }), {
+      initialProps: {
+        followState: "pending",
+        setFollowState,
+        setFollowersCount,
+        profile: buildProfile(),
+      },
     });
 
     await act(async () => {
-      await hook.current.handleFollowPress();
+      await hook.result.current.handleFollowPress();
     });
 
-    expect(mocks.Alert.alert).toHaveBeenCalledWith(
-      "Cancel request",
-      "Cancel follow request to @target_user?",
-      expect.any(Array),
-    );
+    expect(mocks.Alert.alert).toHaveBeenCalledWith("Cancel request", "Cancel follow request to @target_user?", expect.any(Array));
 
     await runAlertAction("Cancel request");
 
@@ -201,15 +183,23 @@ describe("useUserFollowActions", () => {
     const setFollowState = vi.fn<(value: SetStateAction<ViewerFollowState>) => void>();
     const setFollowersCount = vi.fn<(value: SetStateAction<number>) => void>();
 
-    const hook = renderUseUserFollowActions({
-      followState: "none",
-      setFollowState,
-      setFollowersCount,
-      profile: buildProfile({ accountVisibility: "private" }),
+    const hook = renderHook((props: FollowHarnessProps) => useUserFollowActions({
+      targetUserId: "target-1",
+      profile: props.profile,
+      followState: props.followState,
+      setFollowState: props.setFollowState,
+      setFollowersCount: props.setFollowersCount,
+    }), {
+      initialProps: {
+        followState: "none",
+        setFollowState,
+        setFollowersCount,
+        profile: buildProfile({ accountVisibility: "private" }),
+      },
     });
 
     await act(async () => {
-      await hook.current.handleFollowPress();
+      await hook.result.current.handleFollowPress();
     });
 
     expect(setFollowState).toHaveBeenCalledWith("pending");

@@ -23,10 +23,11 @@ import {
 
 type Props = NativeStackScreenProps<RootStackParamList, "CoachOnboardingFlow">;
 
-const GENERATING_STATES = [
-  "Analyzing your goals...",
-  "Building your training plan...",
-  "Tuning your nutrition targets...",
+const GENERATING_PHASES = [
+  "Saving your coaching profile",
+  "Generating workout plan",
+  "Generating nutrition plan",
+  "Finalizing coach workspace",
 ] as const;
 
 export default function CoachOnboardingFlow({ navigation, route }: Props) {
@@ -81,7 +82,9 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
     }
 
     const interval = setInterval(() => {
-      setGeneratingIndex((prev) => (prev + 1) % GENERATING_STATES.length);
+      setGeneratingIndex((prev) =>
+        prev < GENERATING_PHASES.length - 1 ? prev + 1 : prev,
+      );
     }, 900);
 
     return () => clearInterval(interval);
@@ -177,11 +180,25 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
           </Text>
         ) : null}
         {submitting ? (
-          <View className="items-center justify-center gap-2 py-3">
-            <ActivityIndicator color="#a78bfa" />
-            <Text className="text-sm font-semibold text-neutral-300">
-              {GENERATING_STATES[generatingIndex]}
-            </Text>
+          <View className="gap-2 py-3">
+            <View className="mb-1 flex-row items-center justify-center gap-2">
+              <ActivityIndicator color="#a78bfa" />
+              <Text className="text-sm font-semibold text-neutral-200">Preparing your coach...</Text>
+            </View>
+            {GENERATING_PHASES.map((phase, idx) => {
+              const done = idx < generatingIndex;
+              const active = idx === generatingIndex;
+              return (
+                <View key={phase} className="flex-row items-center gap-2">
+                  <Text className={`text-sm ${done ? "text-emerald-300" : active ? "text-violet-200" : "text-neutral-600"}`}>
+                    {done ? "✓" : active ? "•" : "○"}
+                  </Text>
+                  <Text className={`text-sm font-medium ${done ? "text-emerald-200" : active ? "text-neutral-200" : "text-neutral-500"}`}>
+                    {phase}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         ) : (
           <Button
