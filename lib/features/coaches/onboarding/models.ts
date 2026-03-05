@@ -35,6 +35,7 @@ export type CoachOnboardingDraft = {
     gender: CoachGender;
     personality: Extract<CoachPersonality, "strict" | "hype" | "sweet">;
   };
+  planStart: "workout" | "nutrition" | "both";
 };
 
 export type CoachOnboardingStepId =
@@ -44,8 +45,10 @@ export type CoachOnboardingStepId =
   | "equipment"
   | "nutrition"
   | "constraints"
-  | "stats"
+  | "weight"
+  | "height"
   | "persona"
+  | "plan_start"
   | "review";
 
 export const COACH_ONBOARDING_STEPS: CoachOnboardingStepId[] = [
@@ -55,8 +58,10 @@ export const COACH_ONBOARDING_STEPS: CoachOnboardingStepId[] = [
   "equipment",
   "nutrition",
   "constraints",
-  "stats",
+  "weight",
+  "height",
   "persona",
+  "plan_start",
   "review",
 ];
 
@@ -83,5 +88,6 @@ export function createInitialCoachOnboardingDraft(): CoachOnboardingDraft {
       gender: "woman",
       personality: "sweet",
     },
+    planStart: "both",
   };
 }

@@ -1,8 +1,12 @@
 import type { CoachOnboardingDraft, CoachOnboardingStepId } from "./models";
 
 export function validateCoachOnboardingStep(step: CoachOnboardingStepId, draft: CoachOnboardingDraft): string | null {
-  if (step === "stats" && !draft.body.weightKg) {
+  if (step === "weight" && !draft.body.weightKg) {
     return "Add your current weight to personalize your plan.";
+  }
+
+  if (step === "height" && !draft.body.heightCm) {
+    return "Add your height so we can calibrate your plan.";
   }
 
   if (step === "schedule") {
@@ -14,6 +18,12 @@ export function validateCoachOnboardingStep(step: CoachOnboardingStepId, draft: 
   if (step === "persona") {
     if (!["strict", "hype", "sweet"].includes(draft.persona.personality)) {
       return "Select one of the V1 coach personalities.";
+    }
+  }
+
+  if (step === "plan_start") {
+    if (!["workout", "nutrition", "both"].includes(draft.planStart)) {
+      return "Choose how you want to start with your coach.";
     }
   }
 

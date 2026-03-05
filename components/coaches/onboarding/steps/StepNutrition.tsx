@@ -9,6 +9,12 @@ type Props = {
 const NUTRITION_PREFS = ["high_protein", "simple_meals", "high_carb", "mediterranean"] as const;
 const NUTRITION_RESTRICTIONS = ["vegetarian", "vegan", "no_dairy", "gluten_free"] as const;
 
+const toTitle = (value: string) =>
+  value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
 type ChoiceProps = {
   label: string;
   selected: boolean;
@@ -34,14 +40,14 @@ function ChoiceButton({ label, selected, onPress }: ChoiceProps) {
 export default function StepNutrition({ draft, patchDraft }: Props) {
   return (
     <View className="gap-5">
-      <Text className="text-sm font-semibold text-neutral-300">Meal style</Text>
+      <Text className="text-sm font-semibold text-neutral-300">Meal Style</Text>
       <View className="flex-row flex-wrap gap-3">
         {NUTRITION_PREFS.map((item) => {
           const selected = draft.nutrition.dietaryPreferences.includes(item);
           return (
             <View key={item} className="w-[48%]">
               <ChoiceButton
-                label={item.replace("_", " ")}
+                label={toTitle(item)}
                 selected={selected}
                 onPress={() =>
                   patchDraft((prev) => ({
@@ -67,7 +73,7 @@ export default function StepNutrition({ draft, patchDraft }: Props) {
           return (
             <View key={item} className="w-[48%]">
               <ChoiceButton
-                label={item.replace("_", " ")}
+                label={toTitle(item)}
                 selected={selected}
                 onPress={() =>
                   patchDraft((prev) => ({
