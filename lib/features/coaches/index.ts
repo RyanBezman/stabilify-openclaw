@@ -15,8 +15,14 @@ export { logCoachRequestDiagnostics, useCoachRenderDiagnostics } from "./models/
 export {
   clearUnifiedCoachOnServer,
   ensureCoachSelectionProfile,
+  fetchCoachOnboardingStatus,
+  fetchCoachUserProfileJson,
   setUnifiedCoachOnServer,
+  upsertCoachUserProfileJson,
 } from "./services/api";
+
+export { submitCoachOnboardingWorkflow, useCoachOnboarding } from "./onboarding";
+export type { CoachOnboardingDraft, CoachOnboardingStepId } from "./onboarding";
 export { invokeCoachChat, isTierRestrictedCoachError, mapCoachMessages } from "./services/chatClient";
 export { synthesizeCoachSpeech, transcribeCoachAudio } from "./services/voiceClient";
 export {

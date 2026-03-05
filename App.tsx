@@ -22,6 +22,7 @@ import CoachWorkspace from "./screens/CoachWorkspace";
 import CoachChat from "./screens/CoachChat";
 import CoachProfile from "./screens/CoachProfile";
 import CoachCheckins from "./screens/CoachCheckins";
+import CoachOnboardingFlow from "./screens/CoachOnboardingFlow";
 import UserProfile from "./screens/UserProfile";
 import FollowRequests from "./screens/FollowRequests";
 import GymValidationRequestDetail from "./screens/GymValidationRequestDetail";
@@ -115,6 +116,7 @@ export default function App() {
               <Stack.Screen name="BillingPlans" component={BillingPlans} />
               <Stack.Screen name="CreatePost" component={CreatePost} />
               <Stack.Screen name="CoachWorkspace" component={CoachWorkspace} />
+              <Stack.Screen name="CoachOnboardingFlow" component={CoachOnboardingFlow} />
               <Stack.Screen name="CoachChat" component={CoachChat} />
               <Stack.Screen name="CoachProfile" component={CoachProfile} />
               <Stack.Screen name="CoachCheckins" component={CoachCheckins} />

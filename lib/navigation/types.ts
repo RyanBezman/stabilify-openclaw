@@ -44,6 +44,11 @@ export type RootStackParamList = {
         inputMode?: "text" | "voice";
       }
     | undefined;
+  CoachOnboardingFlow:
+    | {
+        specialization?: CoachSpecialization;
+      }
+    | undefined;
   CoachChat:
     | {
         coach?: ActiveCoach;

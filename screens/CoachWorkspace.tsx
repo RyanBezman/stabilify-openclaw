@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   type AlertButton,
@@ -30,7 +30,7 @@ import type {
   CoachSpecialization,
 } from "../lib/features/coaches";
 import { useCoachWorkspace } from "../lib/features/coaches";
-import { clearUnifiedCoachOnServer } from "../lib/features/coaches";
+import { clearUnifiedCoachOnServer, fetchCoachOnboardingStatus } from "../lib/features/coaches";
 import { fetchCurrentUserId } from "../lib/features/auth";
 import NutritionIntakeCard from "../components/coaches/nutrition/NutritionIntakeCard";
 import NutritionPlanCard from "../components/coaches/nutrition/NutritionPlanCard";
@@ -697,6 +697,7 @@ export default function CoachWorkspaceScreen({
     route.params?.specialization ?? route.params?.coach?.specialization ?? "workout";
   const coach = route.params?.coach ?? getActiveCoach(specialization);
   const [removing, setRemoving] = useState(false);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const {
     isPro,
     membershipTier,
@@ -706,12 +707,48 @@ export default function CoachWorkspaceScreen({
     lockToFreeTier,
   } = useCoachAccessGate();
 
+  useEffect(() => {
+    let mounted = true;
+
+    const run = async () => {
+      if (viewState !== "ready" || !isPro) {
+        if (mounted) setCheckingOnboarding(false);
+        return;
+      }
+
+      const authResult = await fetchCurrentUserId();
+      const userId = authResult.data?.userId;
+      if (authResult.error || !userId) {
+        if (mounted) setCheckingOnboarding(false);
+        return;
+      }
+
+      const status = await fetchCoachOnboardingStatus(userId);
+      if (mounted && !status.error && !status.data?.complete) {
+        navigation.replace("CoachOnboardingFlow", { specialization });
+        return;
+      }
+
+      if (mounted) setCheckingOnboarding(false);
+    };
+
+    void run();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isPro, navigation, specialization, viewState]);
+
   useCoachRenderDiagnostics("CoachWorkspaceScreen", {
     specialization,
     coach: coach ? `${coach.gender}:${coach.personality}` : "none",
     viewState,
     removing,
   });
+
+  if (checkingOnboarding) {
+    return <CoachWorkspaceSkeleton />;
+  }
 
   if (viewState === "locked") {
     return (

@@ -25,6 +25,10 @@ type LegacyProfileCoachRow = {
   active_coach_personality: CoachPersonality | null;
 };
 
+type CoachUserProfileRow = {
+  profile_json: Record<string, unknown> | null;
+};
+
 async function fetchCoachProfileById(
   id: string,
 ): Promise<Result<{ row: CoachProfileIdentityRow | null }>> {
@@ -228,6 +232,55 @@ export async function clearUnifiedCoachOnServer(
     return fail(nutritionRes.error ?? "Couldn't clear nutrition coach.");
   }
 
+  return ok({ ok: true });
+}
+
+export async function fetchCoachUserProfileJson(
+  userId: string,
+): Promise<Result<{ profile: Record<string, unknown> | null }>> {
+  const { data, error } = await supabase
+    .from("coach_user_profiles")
+    .select("profile_json")
+    .eq("user_id", userId)
+    .maybeSingle<CoachUserProfileRow>();
+
+  if (error) return fail(error);
+  return ok({ profile: (data?.profile_json as Record<string, unknown> | null) ?? null });
+}
+
+function hasRequiredCoachProfileFields(profile: Record<string, unknown> | null): boolean {
+  if (!profile) return false;
+  const goals = profile.goals as Record<string, unknown> | undefined;
+  const schedule = profile.scheduleConstraints as Record<string, unknown> | undefined;
+  const hasGoal = typeof goals?.primary === "string" && goals.primary.length > 0;
+  const hasExperience = typeof profile.experienceLevel === "string";
+  const hasDays = typeof schedule?.trainingDaysPerWeek === "number";
+  const hasMinutes = typeof schedule?.sessionMinutes === "number";
+  const hasWeight = typeof profile.weightKg === "number";
+  return hasGoal && hasExperience && hasDays && hasMinutes && hasWeight;
+}
+
+export async function fetchCoachOnboardingStatus(
+  userId: string,
+): Promise<Result<{ complete: boolean }>> {
+  const profileRes = await fetchCoachUserProfileJson(userId);
+  if (profileRes.error) return fail(profileRes.error);
+  return ok({ complete: hasRequiredCoachProfileFields(profileRes.data?.profile ?? null) });
+}
+
+export async function upsertCoachUserProfileJson(
+  userId: string,
+  profileJson: Record<string, unknown>,
+): Promise<Result<{ ok: true }>> {
+  const { error } = await supabase.from("coach_user_profiles").upsert(
+    {
+      user_id: userId,
+      profile_json: profileJson,
+    },
+    { onConflict: "user_id" },
+  );
+
+  if (error) return fail(error);
   return ok({ ok: true });
 }
 
