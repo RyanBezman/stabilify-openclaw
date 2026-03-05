@@ -1,0 +1,205 @@
+import React from "react";
+import TestRenderer, { act } from "react-test-renderer";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+type CameraPermission = {
+  granted: boolean;
+};
+
+type CameraPermissionResponse = {
+  granted: boolean;
+};
+
+type CameraAsset = {
+  uri: string;
+  mimeType: string | null;
+  fileName: string | null;
+  base64: string | null;
+};
+
+type CameraResult = {
+  canceled: boolean;
+  assets?: CameraAsset[];
+};
+
+type LocationPermissionResponse = {
+  status: "granted" | "denied" | "undetermined";
+};
+
+const mocks = vi.hoisted(() => ({
+  useCameraPermissions: vi.fn<() => [CameraPermission | null, () => Promise<CameraPermissionResponse>]>(),
+  requestCameraPermission: vi.fn<() => Promise<CameraPermissionResponse>>(),
+  launchCameraAsync: vi.fn<(options: object) => Promise<CameraResult>>(),
+  getForegroundPermissionsAsync: vi.fn<() => Promise<LocationPermissionResponse>>(),
+  requestForegroundPermissionsAsync: vi.fn<() => Promise<LocationPermissionResponse>>(),
+  getCurrentPositionAsync: vi.fn<() => Promise<{ coords: { latitude: number; longitude: number } }>>(),
+  fetchGymSessionDefaults: vi.fn<() => Promise<{ data: { timezone: string } | null; error?: string }>>(),
+  saveGymSession: vi.fn(),
+  alert: vi.fn<(title: string, message?: string) => void>(),
+}));
+
+vi.mock("react-native", () => ({
+  Alert: {
+    alert: mocks.alert,
+  },
+}));
+
+vi.mock("expo-image-picker", () => ({
+  useCameraPermissions: mocks.useCameraPermissions,
+  launchCameraAsync: mocks.launchCameraAsync,
+  MediaTypeOptions: {
+    Images: "images",
+  },
+}));
+
+vi.mock("expo-location", () => ({
+  getForegroundPermissionsAsync: mocks.getForegroundPermissionsAsync,
+  requestForegroundPermissionsAsync: mocks.requestForegroundPermissionsAsync,
+  getCurrentPositionAsync: mocks.getCurrentPositionAsync,
+  Accuracy: {
+    Balanced: "balanced",
+  },
+}));
+
+vi.mock("../../data/gymSessions", () => ({
+  fetchGymSessionDefaults: mocks.fetchGymSessionDefaults,
+  saveGymSession: mocks.saveGymSession,
+}));
+
+import { useLogGymSession } from "./useLogGymSession";
+
+type HookValue = ReturnType<typeof useLogGymSession>;
+
+function renderUseLogGymSession() {
+  let current: HookValue | null = null;
+
+  function HookHarness() {
+    current = useLogGymSession();
+    return null;
+  }
+
+  let renderer: TestRenderer.ReactTestRenderer;
+  act(() => {
+    renderer = TestRenderer.create(React.createElement(HookHarness));
+  });
+
+  return {
+    get current() {
+      if (!current) {
+        throw new Error("Hook state not available.");
+      }
+      return current;
+    },
+    unmount: () => {
+      act(() => {
+        renderer.unmount();
+      });
+    },
+  };
+}
+
+async function flushAsyncWork(ticks = 4) {
+  for (let index = 0; index < ticks; index += 1) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+}
+
+describe("useLogGymSession", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requestCameraPermission.mockResolvedValue({ granted: true });
+    mocks.useCameraPermissions.mockReturnValue([
+      { granted: true },
+      mocks.requestCameraPermission,
+    ]);
+    mocks.launchCameraAsync.mockResolvedValue({ canceled: true, assets: [] });
+    mocks.getForegroundPermissionsAsync.mockResolvedValue({ status: "undetermined" });
+    mocks.requestForegroundPermissionsAsync.mockResolvedValue({ status: "granted" });
+    mocks.getCurrentPositionAsync.mockResolvedValue({
+      coords: { latitude: 40.7128, longitude: -74.006 },
+    });
+    mocks.fetchGymSessionDefaults.mockResolvedValue({
+      data: { timezone: "America/New_York" },
+    });
+  });
+
+  it("does not auto-open the camera on mount", async () => {
+    const hook = renderUseLogGymSession();
+    await flushAsyncWork();
+
+    expect(mocks.launchCameraAsync).not.toHaveBeenCalled();
+    expect(mocks.requestCameraPermission).not.toHaveBeenCalled();
+
+    hook.unmount();
+  });
+
+  it("requests camera permission only when handleCapture is triggered", async () => {
+    mocks.useCameraPermissions.mockReturnValue([
+      { granted: false },
+      mocks.requestCameraPermission,
+    ]);
+    mocks.requestCameraPermission.mockResolvedValue({ granted: true });
+    mocks.launchCameraAsync.mockResolvedValue({ canceled: true, assets: [] });
+
+    const hook = renderUseLogGymSession();
+    await flushAsyncWork();
+
+    expect(mocks.requestCameraPermission).not.toHaveBeenCalled();
+    expect(mocks.launchCameraAsync).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await hook.current.handleCapture();
+    });
+
+    expect(mocks.requestCameraPermission).toHaveBeenCalledTimes(1);
+    expect(mocks.launchCameraAsync).toHaveBeenCalledTimes(1);
+
+    hook.unmount();
+  });
+
+  it("requests location permission only when capture location is triggered", async () => {
+    mocks.getForegroundPermissionsAsync.mockResolvedValue({ status: "undetermined" });
+    mocks.requestForegroundPermissionsAsync.mockResolvedValue({ status: "granted" });
+
+    const hook = renderUseLogGymSession();
+    await flushAsyncWork();
+
+    expect(mocks.getForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(mocks.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await hook.current.handleCaptureLocation();
+    });
+
+    expect(mocks.getForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+    expect(mocks.requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+    expect(hook.current.coords).toEqual({
+      latitude: 40.7128,
+      longitude: -74.006,
+    });
+
+    hook.unmount();
+  });
+
+  it("sets location error and keeps coords null when location permission is denied", async () => {
+    mocks.getForegroundPermissionsAsync.mockResolvedValue({ status: "denied" });
+    mocks.requestForegroundPermissionsAsync.mockResolvedValue({ status: "denied" });
+
+    const hook = renderUseLogGymSession();
+    await flushAsyncWork();
+
+    await act(async () => {
+      await hook.current.handleCaptureLocation();
+    });
+
+    expect(mocks.getCurrentPositionAsync).not.toHaveBeenCalled();
+    expect(hook.current.locationError).toBe("Location permission is required to verify sessions.");
+    expect(hook.current.coords).toBeNull();
+
+    hook.unmount();
+  });
+});

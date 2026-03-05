@@ -1,0 +1,28 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "App.tsx",
+    "index.ts",
+    "scripts/**/*.{js,ts}",
+    "supabase/functions/*/index.ts"
+  ],
+  "project": [
+    "**/*.{ts,tsx,js,jsx}",
+    "!android/**",
+    "!ios/**",
+    "!node_modules/**"
+  ],
+  "ignore": [
+    "babel.config.js",
+    "metro.config.js",
+    "supabase/functions/coach-chat/**",
+    "supabase/functions/coach-voice/**"
+  ],
+  "ignoreDependencies": [
+    "expo-system-ui",
+    "expo-updates",
+    "react-native-reanimated",
+    "babel-preset-expo"
+  ],
+  "ignoreExportsUsedInFile": true
+}

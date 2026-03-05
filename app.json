@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "stabilify",
+    "slug": "stabilify",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/stabilifylogo.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/stabilifylogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/stabilifylogo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Stabilify to use the camera to log gym proof photos.",
+          "photosPermission": "Allow Stabilify to access your photos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Stabilify to access your location to verify gym sessions."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Stabilify to use your microphone for coach voice chat."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/stabilifylogo.png",
+          "color": "#7c3aed",
+          "sounds": []
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2b70c026-7e5e-44a1-92f5-279658a5b185"
+      }
+    },
+    "owner": "ryanbezman"
+  }
+}
