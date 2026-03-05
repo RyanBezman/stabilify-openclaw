@@ -6,6 +6,8 @@ import Coaches from "./Coaches";
 import Profile from "./Profile";
 import FloatingTabBar from "../components/ui/FloatingTabBar";
 import type { AuthedTabsProps } from "../lib/features/auth";
+import { fetchCurrentUserId } from "../lib/features/auth";
+import { fetchCoachOnboardingStatus } from "../lib/features/coaches";
 import type { AuthedTabParamList } from "../lib/navigation/types";
 import { appSceneStyle } from "../lib/navigation/theme";
 
@@ -26,7 +28,34 @@ export default function AuthedTabs({ user }: AuthedTabsProps) {
       </Tab.Screen>
       <Tab.Screen name="Feed" component={Feed} />
       <Tab.Screen name="Search" component={SearchUsers} />
-      <Tab.Screen name="Coaches" component={Coaches} />
+      <Tab.Screen
+        name="Coaches"
+        component={Coaches}
+        listeners={({ navigation }) => ({
+          tabPress: (event) => {
+            event.preventDefault();
+            void (async () => {
+              const userIdResult = await fetchCurrentUserId();
+              const userId = userIdResult.data?.userId;
+
+              if (!userIdResult.error && userId) {
+                const onboardingStatus = await fetchCoachOnboardingStatus(userId);
+                if (onboardingStatus.data && !onboardingStatus.data.complete) {
+                  const parentNav = navigation.getParent() as any;
+                  if (parentNav) {
+                    parentNav.navigate("CoachOnboardingFlow", {
+                      specialization: "workout",
+                    });
+                    return;
+                  }
+                }
+              }
+
+              navigation.navigate("Coaches");
+            })();
+          },
+        })}
+      />
       <Tab.Screen name="Profile">
         {(props) => <Profile {...props} user={user} />}
       </Tab.Screen>
