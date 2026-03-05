@@ -899,6 +899,15 @@ const seedUser = async ({
   return { userId, email, password, displayName, username, membershipTier };
 };
 
+const getProjectRefFromUrl = (url) => {
+  try {
+    const { hostname } = new URL(url);
+    return hostname.split(".")[0] ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const main = async () => {
   loadEnv();
 
@@ -907,6 +916,23 @@ const main = async () => {
   if (!supabaseUrl) {
     throw new Error(
       "Missing SUPABASE_URL or EXPO_PUBLIC_SUPABASE_URL in environment.",
+    );
+  }
+
+  const currentProjectRef = getProjectRefFromUrl(supabaseUrl);
+  const expectedProjectRef =
+    process.env.EXPECTED_SUPABASE_PROJECT_REF?.trim() || null;
+  const blockedRefs = ["igidaqmxvnyjeghfvkxs"];
+
+  if (expectedProjectRef && currentProjectRef !== expectedProjectRef) {
+    throw new Error(
+      `Seed safety check failed: expected project ref ${expectedProjectRef}, got ${currentProjectRef ?? "unknown"}.`,
+    );
+  }
+
+  if (currentProjectRef && blockedRefs.includes(currentProjectRef)) {
+    throw new Error(
+      `Seed safety check failed: project ref ${currentProjectRef} is blocked for this clone.`,
     );
   }
 
