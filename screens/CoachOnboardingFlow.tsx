@@ -1,5 +1,5 @@
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -25,6 +25,11 @@ type Props = NativeStackScreenProps<RootStackParamList, "CoachOnboardingFlow">;
 
 const NUTRITION_PREFS = ["high_protein", "simple_meals", "high_carb", "mediterranean"] as const;
 const NUTRITION_RESTRICTIONS = ["vegetarian", "vegan", "no_dairy", "gluten_free"] as const;
+const GENERATING_STATES = [
+  "Analyzing your goals...",
+  "Building your training plan...",
+  "Tuning your nutrition targets...",
+] as const;
 
 export default function CoachOnboardingFlow({ navigation, route }: Props) {
   const {
@@ -48,6 +53,7 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
 
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(18)).current;
+  const [generatingIndex, setGeneratingIndex] = useState(0);
 
   useEffect(() => {
     fade.setValue(0);
@@ -57,6 +63,19 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
       Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: true }),
     ]).start();
   }, [currentStep, fade, slide]);
+
+  useEffect(() => {
+    if (!submitting) {
+      setGeneratingIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setGeneratingIndex((prev) => (prev + 1) % GENERATING_STATES.length);
+    }, 900);
+
+    return () => clearInterval(interval);
+  }, [submitting]);
 
   const title = useMemo(() => {
     const titleByStep: Record<CoachOnboardingStepId, string> = {
@@ -71,6 +90,21 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
       review: "Review and build your plan",
     };
     return titleByStep[currentStep];
+  }, [currentStep]);
+
+  const subtitle = useMemo(() => {
+    const subtitleByStep: Record<CoachOnboardingStepId, string> = {
+      goal: "Choose the primary outcome you care about most right now.",
+      experience: "We adapt complexity and pacing to your training level.",
+      schedule: "We’ll design the plan around your real week.",
+      equipment: "Your program will only include what you can actually use.",
+      nutrition: "Set preferences now so food recommendations feel realistic.",
+      constraints: "Tell us what to work around so consistency stays high.",
+      stats: "These numbers help the coach calibrate targets correctly.",
+      persona: "One unified personality across workout and nutrition coaching.",
+      review: "Quick confirmation before your first plans are generated.",
+    };
+    return subtitleByStep[currentStep];
   }, [currentStep]);
 
   const onSubmit = async () => {
@@ -108,9 +142,7 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-40 pt-6" keyboardShouldPersistTaps="handled">
         <Animated.View style={{ opacity: fade, transform: [{ translateX: slide }] }}>
           <Text className="text-3xl font-bold tracking-tight text-white">{title}</Text>
-          <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
-            Premium setup for your unified workout + nutrition coach.
-          </Text>
+          <Text className="mt-2 text-sm leading-relaxed text-neutral-400">{subtitle}</Text>
 
           <Card className="mt-6 p-5">
             {currentStep === "goal" ? (
@@ -275,6 +307,16 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
                     />
                   ))}
                 </View>
+                <Card variant="subtle" className="p-4">
+                  <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-violet-300">Preview</Text>
+                  <Text className="mt-2 text-sm font-semibold text-white">
+                    {draft.persona.personality === "strict"
+                      ? "No excuses today. Hit your sessions and keep nutrition tight."
+                      : draft.persona.personality === "hype"
+                        ? "Let’s stack wins today. You’ve got momentum—let’s use it."
+                        : "You’re doing great. We’ll keep this realistic and consistent."}
+                  </Text>
+                </Card>
                 <Text className="text-sm font-semibold text-neutral-300">Coach style</Text>
                 <View className="flex-row flex-wrap gap-2">
                   <OptionPill label="Woman" selected={draft.persona.gender === "woman"} onPress={() => patchDraft((prev) => ({ ...prev, persona: { ...prev.persona, gender: "woman" } }))} />
@@ -301,9 +343,11 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
 
       <View className="border-t border-neutral-900 bg-neutral-950 px-5 pb-6 pt-4">
         {submitting ? (
-          <View className="flex-row items-center justify-center gap-2 py-3">
+          <View className="items-center justify-center gap-2 py-3">
             <ActivityIndicator color="#a78bfa" />
-            <Text className="text-sm font-semibold text-neutral-300">Generating your plans...</Text>
+            <Text className="text-sm font-semibold text-neutral-300">
+              {GENERATING_STATES[generatingIndex]}
+            </Text>
           </View>
         ) : (
           <Button
