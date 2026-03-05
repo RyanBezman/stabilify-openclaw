@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "App.tsx",
-    "index.ts",
     "scripts/**/*.{js,ts}",
     "supabase/functions/*/index.ts"
   ],

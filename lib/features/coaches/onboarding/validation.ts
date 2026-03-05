@@ -19,16 +19,3 @@ export function validateCoachOnboardingStep(step: CoachOnboardingStepId, draft: 
 
   return null;
 }
-
-export function isCoachOnboardingComplete(draft: CoachOnboardingDraft): boolean {
-  return Boolean(
-    draft.goal.primary &&
-      draft.experienceLevel &&
-      draft.training.daysPerWeek &&
-      draft.training.sessionMinutes &&
-      draft.training.equipmentAccess &&
-      draft.persona.gender &&
-      draft.persona.personality &&
-      draft.body.weightKg,
-  );
-}
