@@ -2,7 +2,7 @@ import { Text, View } from "react-native";
 
 type Props = {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   showReadyBadge: boolean;
 };
 
@@ -10,7 +10,7 @@ export default function OnboardingHero({ title, subtitle, showReadyBadge }: Prop
   return (
     <>
       <Text className="text-3xl font-bold tracking-tight text-white">{title}</Text>
-      <Text className="mt-2 text-sm leading-relaxed text-neutral-400">{subtitle}</Text>
+      {subtitle ? <Text className="mt-2 text-sm leading-relaxed text-neutral-400">{subtitle}</Text> : null}
       {showReadyBadge ? (
         <View className="mt-3 flex-row flex-wrap gap-2">
           <View className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5">

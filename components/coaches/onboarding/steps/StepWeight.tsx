@@ -17,10 +17,10 @@ export default function StepWeight({ draft, patchDraft }: Props) {
   const selectedWeightLb = useMemo(() => kgToLb(draft.body.weightKg), [draft.body.weightKg]);
 
   return (
-    <View className="items-center gap-3 py-2">
+    <View className="items-center gap-5 py-4">
       <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-neutral-500">Weight</Text>
-      <Text className="text-2xl font-semibold text-white">{selectedWeightLb} lb</Text>
-      <View className="w-full">
+      <Text className="text-3xl font-semibold text-white">{selectedWeightLb} lb</Text>
+      <View className="w-full rounded-2xl border border-neutral-800 bg-neutral-900/60 px-2 py-2">
         <Picker
           selectedValue={selectedWeightLb}
           dropdownIconColor="#a3a3a3"

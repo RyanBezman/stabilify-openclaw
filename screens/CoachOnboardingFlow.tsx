@@ -172,7 +172,7 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
   }, [currentStep]);
 
   const subtitle = useMemo(() => {
-    const subtitleByStep: Record<CoachOnboardingStepId, string> = {
+    const subtitleByStep: Record<CoachOnboardingStepId, string | undefined> = {
       goal: "Choose the primary outcome you care about most right now.",
       experience: "We adapt complexity and pacing to your training level.",
       schedule: "We’ll design the plan around your real week.",
@@ -184,7 +184,7 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
       height: "Use feet and inches to dial in your height.",
       persona: "One unified personality across workout and nutrition coaching.",
       plan_start: "Choose workout, nutrition, or both to generate first.",
-      review: "Quick confirmation before your first plans are generated.",
+      review: undefined,
     };
     return subtitleByStep[currentStep];
   }, [currentStep]);
@@ -331,11 +331,6 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
       </ScrollView>
 
       <View className="border-t border-neutral-900 bg-neutral-950 px-5 pb-6 pt-4">
-        {isLastStep ? (
-          <Text className="mb-3 text-center text-xs font-semibold uppercase tracking-[1.8px] text-neutral-500">
-            Your coach persona will be used across workout + nutrition
-          </Text>
-        ) : null}
         <Button
           title={isLastStep ? "Build my plan" : "Continue"}
           onPress={() => (isLastStep ? void onSubmit() : next())}
