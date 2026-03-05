@@ -1,9 +1,7 @@
-import React from "react";
-import TestRenderer, { act } from "react-test-renderer";
+// @vitest-environment jsdom
+import { renderHook, act } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_AUDIENCE_HINT } from "../models/audience";
-
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
   fetchVisiblePostsForCurrentUser: vi.fn(),
@@ -34,8 +32,6 @@ vi.mock("../services/authorContext", () => ({
 
 import { useFeed } from "./useFeed";
 
-type HookValue = ReturnType<typeof useFeed>;
-
 type VisiblePost = {
   id: string;
   authorUserId: string;
@@ -59,30 +55,6 @@ function createPost(id: string, authorUserId: string, authorAvatarPath: string |
     mediaUrls: [],
     visibility: "followers",
     createdAt: "2026-02-24T10:00:00.000Z",
-  };
-}
-
-function renderUseFeed() {
-  let current: HookValue | null = null;
-
-  function HookHarness() {
-    current = useFeed();
-    return null;
-  }
-
-  let renderer: TestRenderer.ReactTestRenderer;
-  act(() => {
-    renderer = TestRenderer.create(React.createElement(HookHarness));
-  });
-
-  return {
-    get current() {
-      if (!current) {
-        throw new Error("Hook state not available yet");
-      }
-      return current;
-    },
-    unmount: () => act(() => renderer.unmount()),
   };
 }
 
@@ -131,17 +103,17 @@ describe("useFeed", () => {
       data: { signedUrl: "https://cdn.example.com/author-a.jpg" },
     });
 
-    const hook = renderUseFeed();
+    const hook = renderHook(() => useFeed());
     await flushAsyncWork();
 
     expect(mocks.fetchVisiblePostsForCurrentUser).toHaveBeenCalledWith({ limit: 10, cursor: 0 });
-    expect(hook.current.loading).toBe(false);
-    expect(hook.current.error).toBeNull();
-    expect(hook.current.posts).toHaveLength(10);
-    expect(hook.current.hasMore).toBe(true);
-    expect(hook.current.defaultAudienceHint).toBe("Public");
-    expect(hook.current.currentAuthorContext?.userId).toBe("viewer-1");
-    expect(hook.current.authorPhotoUrls["viewer-1"]).toBe("https://cdn.example.com/viewer.jpg");
+    expect(hook.result.current.loading).toBe(false);
+    expect(hook.result.current.error).toBeNull();
+    expect(hook.result.current.posts).toHaveLength(10);
+    expect(hook.result.current.hasMore).toBe(true);
+    expect(hook.result.current.defaultAudienceHint).toBe("Public");
+    expect(hook.result.current.currentAuthorContext?.userId).toBe("viewer-1");
+    expect(hook.result.current.authorPhotoUrls["viewer-1"]).toBe("https://cdn.example.com/viewer.jpg");
     expect(mocks.getProfilePhotoSignedUrl).toHaveBeenCalledTimes(1);
 
     hook.unmount();
@@ -150,14 +122,14 @@ describe("useFeed", () => {
   it("surfaces initial load errors", async () => {
     mocks.fetchVisiblePostsForCurrentUser.mockResolvedValue({ error: "Feed load failed." });
 
-    const hook = renderUseFeed();
+    const hook = renderHook(() => useFeed());
     await flushAsyncWork();
 
-    expect(hook.current.loading).toBe(false);
-    expect(hook.current.posts).toEqual([]);
-    expect(hook.current.error).toBe("Feed load failed.");
-    expect(hook.current.hasMore).toBe(false);
-    expect(hook.current.defaultAudienceHint).toBe(DEFAULT_AUDIENCE_HINT);
+    expect(hook.result.current.loading).toBe(false);
+    expect(hook.result.current.posts).toEqual([]);
+    expect(hook.result.current.error).toBe("Feed load failed.");
+    expect(hook.result.current.hasMore).toBe(false);
+    expect(hook.result.current.defaultAudienceHint).toBe(DEFAULT_AUDIENCE_HINT);
 
     hook.unmount();
   });
@@ -187,21 +159,21 @@ describe("useFeed", () => {
         },
       });
 
-    const hook = renderUseFeed();
+    const hook = renderHook(() => useFeed());
     await flushAsyncWork();
 
     await act(async () => {
-      await hook.current.handleLoadMore();
+      await hook.result.current.handleLoadMore();
     });
 
     expect(mocks.fetchVisiblePostsForCurrentUser).toHaveBeenNthCalledWith(2, {
       limit: 10,
       cursor: 10,
     });
-    expect(hook.current.posts).toHaveLength(11);
-    expect(hook.current.posts[10]?.id).toBe("post-11");
-    expect(hook.current.hasMore).toBe(false);
-    expect(hook.current.error).toBeNull();
+    expect(hook.result.current.posts).toHaveLength(11);
+    expect(hook.result.current.posts[10]?.id).toBe("post-11");
+    expect(hook.result.current.hasMore).toBe(false);
+    expect(hook.result.current.error).toBeNull();
 
     hook.unmount();
   });
@@ -221,16 +193,16 @@ describe("useFeed", () => {
       })
       .mockResolvedValueOnce({ error: "Pagination failed." });
 
-    const hook = renderUseFeed();
+    const hook = renderHook(() => useFeed());
     await flushAsyncWork();
 
     await act(async () => {
-      await hook.current.handleLoadMore();
+      await hook.result.current.handleLoadMore();
     });
 
-    expect(hook.current.posts).toHaveLength(10);
-    expect(hook.current.error).toBe("Pagination failed.");
-    expect(hook.current.loadingMore).toBe(false);
+    expect(hook.result.current.posts).toHaveLength(10);
+    expect(hook.result.current.error).toBe("Pagination failed.");
+    expect(hook.result.current.loadingMore).toBe(false);
 
     hook.unmount();
   });
