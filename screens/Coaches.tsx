@@ -138,14 +138,13 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
+      setOnboardingGate("checking");
 
       const run = async () => {
         if (viewState !== "ready") {
           if (mounted) setOnboardingGate("checking");
           return;
         }
-
-        if (mounted) setOnboardingGate("checking");
 
         const userIdResult = await fetchCurrentUserId();
         const userId = userIdResult.data?.userId;
@@ -172,6 +171,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
 
       return () => {
         mounted = false;
+        setOnboardingGate("checking");
       };
     }, [viewState]),
   );
