@@ -363,6 +363,38 @@ const ensureCoachThread = async ({
   return threadId;
 };
 
+const seedUnifiedCoachSelectionWithoutOnboarding = async ({
+  supabase,
+  userId,
+  gender = "man",
+  personality = "hype",
+}) => {
+  const workoutCoachProfileId = `${gender}_${personality}`;
+  const nutritionCoachProfileId = `nutrition_${gender}_${personality}`;
+  const selectedAt = new Date().toISOString();
+
+  const { error: activeCoachError } = await supabase
+    .from("active_coaches")
+    .upsert(
+      [
+        {
+          user_id: userId,
+          specialization: "workout",
+          coach_profile_id: workoutCoachProfileId,
+          selected_at: selectedAt,
+        },
+        {
+          user_id: userId,
+          specialization: "nutrition",
+          coach_profile_id: nutritionCoachProfileId,
+          selected_at: selectedAt,
+        },
+      ],
+      { onConflict: "user_id,specialization" },
+    );
+  if (activeCoachError) throw activeCoachError;
+};
+
 const seedAccountANutritionCheckins = async ({ supabase, userId, timeZone }) => {
   const workoutCoachProfileId = "man_analyst";
   const nutritionCoachProfileId = "nutrition_man_analyst";
@@ -1100,6 +1132,8 @@ const main = async () => {
     }),
   );
 
+  const [ryan, terence, matthew] = seeded;
+
   const ryanSeed = seeded[0];
   await seedAccountANutritionCheckins({
     supabase,
@@ -1107,7 +1141,14 @@ const main = async () => {
     timeZone,
   });
 
-  const [ryan, terence, matthew] = seeded;
+  // Seed account B with an active coach selection but no coach onboarding profile.
+  // This guarantees coaching onboarding QA coverage for a Pro user.
+  await seedUnifiedCoachSelectionWithoutOnboarding({
+    supabase,
+    userId: terence.userId,
+    gender: "man",
+    personality: "hype",
+  });
   const follows = [
     {
       follower_user_id: ryan.userId,
