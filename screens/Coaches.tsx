@@ -26,12 +26,13 @@ import { coachPersonalityCopy } from "../lib/features/coaches";
 import {
   clearUnifiedCoachOnServer,
   ensureCoachSelectionProfile,
+  fetchCoachOnboardingStatus,
   setUnifiedCoachOnServer,
 } from "../lib/features/coaches";
 import { preloadCoachAvatars } from "../lib/features/coaches";
 import { useCoachDashboard } from "../lib/features/coaches";
 import type { CoachesScreenProps } from "../lib/features/coaches";
-import { fetchCurrentAuthUser } from "../lib/features/auth";
+import { fetchCurrentAuthUser, fetchCurrentUserId } from "../lib/features/auth";
 import { useCoachRenderDiagnostics } from "../lib/features/coaches";
 import { useCoachDashboardFocusRefresh } from "../lib/features/coaches/hooks/useCoachDashboardFocusRefresh";
 
@@ -78,6 +79,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   const [personality, setPersonality] = useState<CoachPersonality>("hype");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const [forcePicker, setForcePicker] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [loadedAvatars, setLoadedAvatars] = useState<Record<string, boolean>>(
@@ -127,6 +129,43 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
     forcePicker,
     refreshDashboard,
   });
+
+  useEffect(() => {
+    let mounted = true;
+
+    const run = async () => {
+      if (viewState !== "ready") {
+        if (mounted) setCheckingOnboarding(false);
+        return;
+      }
+
+      const userIdResult = await fetchCurrentUserId();
+      const userId = userIdResult.data?.userId;
+      if (userIdResult.error || !userId) {
+        if (mounted) setCheckingOnboarding(false);
+        return;
+      }
+
+      const onboardingStatus = await fetchCoachOnboardingStatus(userId);
+      if (onboardingStatus.error) {
+        if (mounted) setCheckingOnboarding(false);
+        return;
+      }
+
+      if (onboardingStatus.data && !onboardingStatus.data.complete) {
+        navigation.replace("CoachOnboardingFlow", { specialization: "workout" });
+        return;
+      }
+
+      if (mounted) setCheckingOnboarding(false);
+    };
+
+    void run();
+
+    return () => {
+      mounted = false;
+    };
+  }, [navigation, viewState]);
 
   const persistCoachSelection = async (
     coach: ActiveCoach,
@@ -262,6 +301,11 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   };
 
   const ready = hydrated && serverChecked;
+
+  if (viewState === "ready" && checkingOnboarding) {
+    return <CoachesLoadingSkeleton />;
+  }
+
   if (viewState === "locked") {
     return (
       <CoachWorkspaceLocked
