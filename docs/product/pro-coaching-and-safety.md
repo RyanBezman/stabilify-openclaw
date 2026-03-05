@@ -1,6 +1,6 @@
 # Pro Coaching and Safety Policy
 
-Last updated: 2026-03-02
+Last updated: 2026-03-04
 
 ## Goal
 
@@ -15,6 +15,7 @@ Define Pro-tier coaching boundaries, quality defaults, and safety behavior.
 - Keep one user-selected persona as the unified user-facing coach voice.
 - Keep specialist workout/nutrition logic behind that single voice.
 - Persona launch scope keeps all six personas.
+- Pro coach onboarding is required before first workspace run; onboarding captures goal, schedule, constraints, and one unified persona for both workout and nutrition tracks.
 - Coach cadence:
   - weekly check-ins are required,
   - light proactive prompts are allowed.

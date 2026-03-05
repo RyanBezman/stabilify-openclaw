@@ -1,6 +1,6 @@
 # Coach System Implementation Plan (One Coach + Dashboard + Weekly Check-ins)
 
-Last updated: 2026-03-03
+Last updated: 2026-03-04
 
 ## Goal
 - This file is implementation-focused: architecture, contracts, persistence, workflows, and testing.
@@ -61,6 +61,8 @@ Last updated: 2026-03-03
 - Keep schema-first structured outputs so changing providers does not change frontend contracts.
 
 ### Current app implementation notes
+- `CoachOnboardingFlow` is the required pre-workspace intake surface for Pro users missing `coach_user_profiles.profile_json` required fields.
+- Onboarding submission writes `coach_user_profiles`, sets unified persona selection, and triggers initial workout + nutrition plan generation via `coach-chat` (`plan_generate`).
 - `CoachWorkspace` is now the canonical plan + chat surface.
 - `CoachChat` is a compatibility shim that redirects to `CoachWorkspace` with `tab: "chat"` and carries `prefill`.
 - Voice recording/transcription/synthesis orchestration is consolidated in `lib/features/coaches/hooks/useCoachVoiceComposer.ts` and consumed by workspace chat pane.

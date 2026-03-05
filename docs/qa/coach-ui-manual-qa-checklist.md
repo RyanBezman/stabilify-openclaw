@@ -14,6 +14,7 @@ Last updated: 2026-03-03
 ## Scope
 - Coaches tab dashboard root (`Today`, `Training`, `Nutrition`, `Weekly recap` cards)
 - Unified coach chat entry routed through `CoachWorkspace` chat tab
+- Pro coach onboarding flow (`CoachOnboardingFlow`) before first workspace run
 - Weekly check-in v2 form fields + save/update behavior
 
 ## Devices
@@ -33,7 +34,19 @@ Last updated: 2026-03-03
 - Coach surfaces contain no `daily check-in` copy.
 
 ## Manual steps
-1. Open `Coaches` tab.
+1. Start from a Pro account with no `coach_user_profiles` onboarding profile (or clear onboarding fields).
+Expected:
+- Opening `CoachWorkspace` routes into `CoachOnboardingFlow` instead of plan/chat.
+- Progress bar + step count are visible.
+- Back/Continue controls work per step.
+
+2. Complete onboarding and submit `Build my plan`.
+Expected:
+- Submission shows loading state (`Generating your plans...`).
+- User is routed to `CoachWorkspace` plan tab after success.
+- Workout + nutrition tracks have generated plans/drafts.
+
+3. Open `Coaches` tab.
 Expected:
 - Dashboard root loads (not coach workspace hub).
 - For Pro users, no `Pro required` / `Upgrade to Pro` lock card flashes during initial tier check.
