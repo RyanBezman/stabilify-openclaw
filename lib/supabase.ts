@@ -17,8 +17,8 @@ if ((!supabaseUrl || !supabasePublishableKey) && !isVitest) {
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: {
     storage: localStorage,
-    autoRefreshToken: true,
-    persistSession: true,
+    autoRefreshToken: !isVitest,
+    persistSession: !isVitest,
     detectSessionInUrl: false,
     // Required for mobile OAuth when using `exchangeCodeForSession`.
     flowType: "pkce",
