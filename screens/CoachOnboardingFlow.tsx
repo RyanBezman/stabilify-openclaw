@@ -53,16 +53,28 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
 
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(18)).current;
+  const scale = useRef(new Animated.Value(0.98)).current;
+  const progressAnim = useRef(new Animated.Value(progress)).current;
   const [generatingIndex, setGeneratingIndex] = useState(0);
 
   useEffect(() => {
     fade.setValue(0);
     slide.setValue(18);
+    scale.setValue(0.98);
     Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }),
       Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, damping: 16, stiffness: 180, mass: 0.6, useNativeDriver: true }),
     ]).start();
-  }, [currentStep, fade, slide]);
+  }, [currentStep, fade, scale, slide]);
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progress,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [progress, progressAnim]);
 
   useEffect(() => {
     if (!submitting) {
@@ -135,12 +147,20 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
           </Text>
         </View>
         <View className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-neutral-900">
-          <View className="h-full rounded-full bg-violet-400" style={{ width: `${Math.max(8, progress * 100)}%` }} />
+          <Animated.View
+            className="h-full rounded-full bg-violet-400"
+            style={{
+              width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ["8%", "100%"],
+              }),
+            }}
+          />
         </View>
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-40 pt-6" keyboardShouldPersistTaps="handled">
-        <Animated.View style={{ opacity: fade, transform: [{ translateX: slide }] }}>
+        <Animated.View style={{ opacity: fade, transform: [{ translateX: slide }, { scale }] }}>
           <Text className="text-3xl font-bold tracking-tight text-white">{title}</Text>
           <Text className="mt-2 text-sm leading-relaxed text-neutral-400">{subtitle}</Text>
 
@@ -342,6 +362,11 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
       </ScrollView>
 
       <View className="border-t border-neutral-900 bg-neutral-950 px-5 pb-6 pt-4">
+        {!submitting && isLastStep ? (
+          <Text className="mb-3 text-center text-xs font-semibold uppercase tracking-[1.8px] text-neutral-500">
+            Your coach persona will be used across workout + nutrition
+          </Text>
+        ) : null}
         {submitting ? (
           <View className="items-center justify-center gap-2 py-3">
             <ActivityIndicator color="#a78bfa" />
