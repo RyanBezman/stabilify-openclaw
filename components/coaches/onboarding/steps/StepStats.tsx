@@ -38,9 +38,6 @@ export default function StepStats({ draft, patchDraft }: Props) {
   return (
     <View className="gap-4">
       <Text className="text-sm font-semibold text-neutral-300">Set your body stats</Text>
-      <Text className="-mt-2 text-xs leading-relaxed text-neutral-500">
-        Imperial inputs only for this flow (lbs + ft/in). We convert internally.
-      </Text>
 
       <Card variant="subtle" className="p-4">
         <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-neutral-400">Weight</Text>

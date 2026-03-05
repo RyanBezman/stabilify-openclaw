@@ -42,21 +42,37 @@ export async function submitCoachOnboardingWorkflow(
     coach_personality: draft.persona.personality,
   };
 
-  await invokeCoachChat({
-    action: "plan_generate",
-    specialization: "workout",
-    plan_type: "workout",
-    intake: mapDraftToWorkoutIntake(draft),
-    ...coachIdentityPayload,
-  });
+  const [workoutResult, nutritionResult] = await Promise.allSettled([
+    invokeCoachChat({
+      action: "plan_generate",
+      specialization: "workout",
+      plan_type: "workout",
+      intake: mapDraftToWorkoutIntake(draft),
+      ...coachIdentityPayload,
+    }),
+    invokeCoachChat({
+      action: "plan_generate",
+      specialization: "nutrition",
+      plan_type: "nutrition",
+      intake: mapDraftToNutritionIntake(draft),
+      ...coachIdentityPayload,
+    }),
+  ]);
 
-  await invokeCoachChat({
-    action: "plan_generate",
-    specialization: "nutrition",
-    plan_type: "nutrition",
-    intake: mapDraftToNutritionIntake(draft),
-    ...coachIdentityPayload,
-  });
+  const workoutFailed = workoutResult.status === "rejected";
+  const nutritionFailed = nutritionResult.status === "rejected";
+
+  if (workoutFailed && nutritionFailed) {
+    return fail("Could not generate workout and nutrition plans yet. Please retry.");
+  }
+
+  if (workoutFailed) {
+    return fail("Nutrition plan generated, but workout plan failed. Please retry to generate your workout plan.");
+  }
+
+  if (nutritionFailed) {
+    return fail("Workout plan generated, but nutrition plan failed. Please retry to generate your nutrition plan.");
+  }
 
   return ok({ ok: true });
 }

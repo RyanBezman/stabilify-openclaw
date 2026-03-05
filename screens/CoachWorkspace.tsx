@@ -746,6 +746,14 @@ export default function CoachWorkspaceScreen({
     removing,
   });
 
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    navigation.navigate("Authed", { screen: "Coaches", params: { specialization } });
+  };
+
   if (checkingOnboarding) {
     return <CoachWorkspaceSkeleton />;
   }
@@ -757,7 +765,7 @@ export default function CoachWorkspaceScreen({
         error={tierError}
         onRetry={() => void refreshMembershipTier({ blocking: true })}
         onUpgrade={() => navigation.navigate("BillingPlans")}
-        onBack={() => navigation.goBack()}
+        onBack={handleBack}
         onBrowseCoaches={() => navigation.navigate("Authed", { screen: "Coaches", params: { specialization } })}
       />
     );
@@ -778,7 +786,7 @@ export default function CoachWorkspaceScreen({
         initialInputMode={route.params?.inputMode}
         userTier={membershipTier}
         showBack
-        onBack={() => navigation.goBack()}
+        onBack={handleBack}
         onTierRequired={lockToFreeTier}
         onRequestChangeCoach={() => navigation.navigate("Authed", { screen: "Coaches", params: { specialization } })}
         onRequestRemoveCoach={async () => {
