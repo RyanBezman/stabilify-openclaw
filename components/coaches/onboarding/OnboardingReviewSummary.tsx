@@ -1,6 +1,8 @@
 import { Text, View } from "react-native";
 import Card from "../../ui/Card";
 
+const LB_PER_KG = 2.2046226218;
+
 type Props = {
   summaryChips: string[];
   goal: string;
@@ -18,6 +20,8 @@ export default function OnboardingReviewSummary({
   trainingLine,
   coachLine,
 }: Props) {
+  const weightLb = weightKg ? Math.round(weightKg * LB_PER_KG) : null;
+
   return (
     <View className="gap-4">
       <View className="flex-row flex-wrap gap-2">
@@ -32,12 +36,25 @@ export default function OnboardingReviewSummary({
         <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Goal & profile</Text>
         <Text className="mt-2 text-sm text-neutral-200">Goal: {goal}</Text>
         <Text className="mt-1 text-sm text-neutral-200">Experience: {experience}</Text>
-        <Text className="mt-1 text-sm text-neutral-200">Weight: {weightKg ? `${weightKg} kg` : "not set"}</Text>
+        <Text className="mt-1 text-sm text-neutral-200">Weight: {weightLb ? `${weightLb} lb` : "not set"}</Text>
       </Card>
 
       <Card variant="subtle" className="p-4">
         <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Training setup</Text>
         <Text className="mt-2 text-sm text-neutral-200">{trainingLine}</Text>
+      </Card>
+
+      <Card variant="subtle" className="p-4">
+        <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">What you get</Text>
+        <View className="mt-2 flex-row gap-2">
+          <View className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
+            <Text className="text-xs font-semibold text-emerald-200">Workout Plan</Text>
+          </View>
+          <View className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-2">
+            <Text className="text-xs font-semibold text-sky-200">Nutrition Plan</Text>
+          </View>
+        </View>
+        <Text className="mt-3 text-sm text-neutral-300">Both are generated together from your profile and coach personality.</Text>
       </Card>
 
       <Card variant="subtle" className="p-4">
