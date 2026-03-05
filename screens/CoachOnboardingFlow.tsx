@@ -5,7 +5,6 @@ import {
   Animated,
   ScrollView,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,6 +13,9 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
 import OptionPill from "../components/ui/OptionPill";
+import OnboardingHero from "../components/coaches/onboarding/OnboardingHero";
+import OnboardingReviewSummary from "../components/coaches/onboarding/OnboardingReviewSummary";
+import OnboardingTopBar from "../components/coaches/onboarding/OnboardingTopBar";
 import type { RootStackParamList } from "../lib/navigation/types";
 import {
   submitCoachOnboardingWorkflow,
@@ -147,42 +149,16 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-neutral-950">
       <StatusBar style="light" />
-      <View className="px-5 pt-4">
-        <View className="flex-row items-center justify-between">
-          <TouchableOpacity onPress={() => (stepIndex === 0 ? navigation.goBack() : back())}>
-            <Text className="text-sm font-semibold text-neutral-400">Back</Text>
-          </TouchableOpacity>
-          <Text className="text-xs font-semibold uppercase tracking-[2px] text-neutral-500">
-            {stepIndex + 1}/{totalSteps}
-          </Text>
-        </View>
-        <View className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-neutral-900">
-          <Animated.View
-            className="h-full rounded-full bg-violet-400"
-            style={{
-              width: progressAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ["8%", "100%"],
-              }),
-            }}
-          />
-        </View>
-      </View>
+      <OnboardingTopBar
+        stepIndex={stepIndex}
+        totalSteps={totalSteps}
+        progressAnim={progressAnim}
+        onBack={() => (stepIndex === 0 ? navigation.goBack() : back())}
+      />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-40 pt-6" keyboardShouldPersistTaps="handled">
         <Animated.View style={{ opacity: fade, transform: [{ translateX: slide }, { scale }] }}>
-          <Text className="text-3xl font-bold tracking-tight text-white">{title}</Text>
-          <Text className="mt-2 text-sm leading-relaxed text-neutral-400">{subtitle}</Text>
-          <View className="mt-3 flex-row flex-wrap gap-2">
-            <View className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5">
-              <Text className="text-[11px] font-semibold uppercase tracking-[1.4px] text-neutral-400">~60 sec setup</Text>
-            </View>
-            {currentStep === "review" ? (
-              <View className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5">
-                <Text className="text-[11px] font-semibold uppercase tracking-[1.4px] text-violet-300">ready to generate</Text>
-              </View>
-            ) : null}
-          </View>
+          <OnboardingHero title={title} subtitle={subtitle} showReadyBadge={currentStep === "review"} />
 
           <Card className="mt-6 p-5">
             {currentStep === "goal" ? (
@@ -366,38 +342,14 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
             ) : null}
 
             {currentStep === "review" ? (
-              <View className="gap-4">
-                <View className="flex-row flex-wrap gap-2">
-                  {summaryChips.map((chip) => (
-                    <View key={chip} className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1.5">
-                      <Text className="text-xs font-semibold text-violet-200">{chip}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                <Card variant="subtle" className="p-4">
-                  <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Goal & profile</Text>
-                  <Text className="mt-2 text-sm text-neutral-200">Goal: {draft.goal.primary}</Text>
-                  <Text className="mt-1 text-sm text-neutral-200">Experience: {draft.experienceLevel}</Text>
-                  <Text className="mt-1 text-sm text-neutral-200">
-                    Weight: {draft.body.weightKg ? `${draft.body.weightKg} kg` : "not set"}
-                  </Text>
-                </Card>
-
-                <Card variant="subtle" className="p-4">
-                  <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Training setup</Text>
-                  <Text className="mt-2 text-sm text-neutral-200">
-                    {draft.training.daysPerWeek} days • {draft.training.sessionMinutes} min • {draft.training.equipmentAccess.replace("_", " ")}
-                  </Text>
-                </Card>
-
-                <Card variant="subtle" className="p-4">
-                  <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Unified coach</Text>
-                  <Text className="mt-2 text-sm text-neutral-200">
-                    {draft.persona.gender} • {draft.persona.personality} personality
-                  </Text>
-                </Card>
-              </View>
+              <OnboardingReviewSummary
+                summaryChips={summaryChips}
+                goal={draft.goal.primary}
+                experience={draft.experienceLevel}
+                weightKg={draft.body.weightKg}
+                trainingLine={`${draft.training.daysPerWeek} days • ${draft.training.sessionMinutes} min • ${draft.training.equipmentAccess.replace("_", " ")}`}
+                coachLine={`${draft.persona.gender} • ${draft.persona.personality} personality`}
+              />
             ) : null}
           </Card>
 

@@ -1,0 +1,49 @@
+import { Text, View } from "react-native";
+import Card from "../../ui/Card";
+
+type Props = {
+  summaryChips: string[];
+  goal: string;
+  experience: string;
+  weightKg: number | null;
+  trainingLine: string;
+  coachLine: string;
+};
+
+export default function OnboardingReviewSummary({
+  summaryChips,
+  goal,
+  experience,
+  weightKg,
+  trainingLine,
+  coachLine,
+}: Props) {
+  return (
+    <View className="gap-4">
+      <View className="flex-row flex-wrap gap-2">
+        {summaryChips.map((chip) => (
+          <View key={chip} className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1.5">
+            <Text className="text-xs font-semibold text-violet-200">{chip}</Text>
+          </View>
+        ))}
+      </View>
+
+      <Card variant="subtle" className="p-4">
+        <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Goal & profile</Text>
+        <Text className="mt-2 text-sm text-neutral-200">Goal: {goal}</Text>
+        <Text className="mt-1 text-sm text-neutral-200">Experience: {experience}</Text>
+        <Text className="mt-1 text-sm text-neutral-200">Weight: {weightKg ? `${weightKg} kg` : "not set"}</Text>
+      </Card>
+
+      <Card variant="subtle" className="p-4">
+        <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Training setup</Text>
+        <Text className="mt-2 text-sm text-neutral-200">{trainingLine}</Text>
+      </Card>
+
+      <Card variant="subtle" className="p-4">
+        <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Unified coach</Text>
+        <Text className="mt-2 text-sm text-neutral-200">{coachLine}</Text>
+      </Card>
+    </View>
+  );
+}
