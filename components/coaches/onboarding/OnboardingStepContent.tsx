@@ -34,7 +34,6 @@ export default function OnboardingStepContent({ currentStep, draft, summaryChips
 
   return (
     <OnboardingReviewSummary
-      summaryChips={summaryChips}
       goal={draft.goal.primary}
       experience={draft.experienceLevel}
       heightCm={draft.body.heightCm}

@@ -20,7 +20,6 @@ function titleCase(value: string) {
 }
 
 type Props = {
-  summaryChips: string[];
   goal: string;
   experience: string;
   heightCm: number | null;
@@ -47,7 +46,6 @@ function DetailRow({ label, value, withBorder = true }: DetailRowProps) {
 }
 
 export default function OnboardingReviewSummary({
-  summaryChips,
   goal,
   experience,
   heightCm,
@@ -61,17 +59,6 @@ export default function OnboardingReviewSummary({
 
   return (
     <View className="gap-4">
-      <Card variant="subtle" className="p-4">
-        <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Review summary</Text>
-        <View className="mt-3 flex-row flex-wrap gap-2">
-          {summaryChips.map((chip) => (
-            <View key={chip} className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5">
-              <Text className="text-xs font-semibold text-violet-200">{chip}</Text>
-            </View>
-          ))}
-        </View>
-      </Card>
-
       <Card variant="subtle" className="p-4">
         <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Profile</Text>
         <View className="mt-2">
