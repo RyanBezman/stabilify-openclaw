@@ -1,10 +1,8 @@
+// @vitest-environment jsdom
 // @ts-nocheck
-import React from "react";
-import TestRenderer, { act } from "react-test-renderer";
+import { renderHook, act } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActiveCoach } from "../types";
-
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
   hydrateCoachDashboard: vi.fn(),
@@ -26,8 +24,6 @@ vi.mock("../services/syncEvents", () => ({
 }));
 
 import { useCoachDashboard } from "./useCoachDashboard";
-
-type HookValue = ReturnType<typeof useCoachDashboard>;
 
 const coach: ActiveCoach = {
   specialization: "nutrition",
@@ -90,29 +86,13 @@ function renderUseCoachDashboard(options?: {
   coach?: ActiveCoach | null;
   hydrated?: boolean;
 }) {
-  let current: HookValue | null = null;
-
-  function HookHarness() {
-    current = useCoachDashboard({
+  return renderHook(() =>
+    useCoachDashboard({
       coach: options?.coach ?? coach,
       hydrated: options?.hydrated ?? true,
       specialization: "nutrition",
-    });
-    return null;
-  }
-
-  let renderer: TestRenderer.ReactTestRenderer;
-  act(() => {
-    renderer = TestRenderer.create(React.createElement(HookHarness));
-  });
-
-  return {
-    get current() {
-      if (!current) throw new Error("Hook state not available yet");
-      return current;
-    },
-    unmount: () => act(() => renderer.unmount()),
-  };
+    }),
+  );
 }
 
 async function flushAsyncWork(ticks = 4) {
@@ -147,16 +127,16 @@ describe("useCoachDashboard", () => {
     mocks.hydrateCoachDashboard.mockResolvedValue(buildSnapshot());
 
     const hook = renderUseCoachDashboard();
-    const initialRefresh = hook.current.refresh;
+    const initialRefresh = hook.result.current.refresh;
 
     await flushAsyncWork();
-    expect(hook.current.refresh).toBe(initialRefresh);
+    expect(hook.result.current.refresh).toBe(initialRefresh);
 
     await act(async () => {
-      await hook.current.refresh("refresh");
+      await hook.result.current.refresh("refresh");
     });
 
-    expect(hook.current.refresh).toBe(initialRefresh);
+    expect(hook.result.current.refresh).toBe(initialRefresh);
 
     hook.unmount();
   });
@@ -182,7 +162,7 @@ describe("useCoachDashboard", () => {
 
     let refreshPromise: Promise<void> | null = null;
     await act(async () => {
-      refreshPromise = hook.current.refresh("refresh");
+      refreshPromise = hook.result.current.refresh("refresh");
     });
 
     await act(async () => {
@@ -190,14 +170,14 @@ describe("useCoachDashboard", () => {
       await refreshPromise;
     });
 
-    expect(hook.current.snapshot?.today.directive).toBe("Lift first, carbs later.");
+    expect(hook.result.current.snapshot?.today.directive).toBe("Lift first, carbs later.");
 
     await act(async () => {
       staleRequest.resolve(staleSnapshot);
       await Promise.resolve();
     });
 
-    expect(hook.current.snapshot?.today.directive).toBe("Lift first, carbs later.");
+    expect(hook.result.current.snapshot?.today.directive).toBe("Lift first, carbs later.");
 
     hook.unmount();
   });
@@ -227,13 +207,13 @@ describe("useCoachDashboard", () => {
 
     const hook = renderUseCoachDashboard();
     await flushAsyncWork();
-    const loadedSnapshotRef = hook.current.snapshot;
+    const loadedSnapshotRef = hook.result.current.snapshot;
 
     await act(async () => {
-      await hook.current.refresh("refresh");
+      await hook.result.current.refresh("refresh");
     });
 
-    expect(hook.current.snapshot).toBe(loadedSnapshotRef);
+    expect(hook.result.current.snapshot).toBe(loadedSnapshotRef);
 
     hook.unmount();
   });
@@ -258,8 +238,8 @@ describe("useCoachDashboard", () => {
       }
     });
 
-    expect(hook.current.effectiveNutritionPendingReview).toBe(true);
-    expect(hook.current.nutritionSyncing).toBe(true);
+    expect(hook.result.current.effectiveNutritionPendingReview).toBe(true);
+    expect(hook.result.current.nutritionSyncing).toBe(true);
 
     await act(async () => {
       deferredRefresh.resolve({
@@ -272,8 +252,8 @@ describe("useCoachDashboard", () => {
       await Promise.resolve();
     });
 
-    expect(hook.current.effectiveNutritionPendingReview).toBe(true);
-    expect(hook.current.nutritionSyncing).toBe(false);
+    expect(hook.result.current.effectiveNutritionPendingReview).toBe(true);
+    expect(hook.result.current.nutritionSyncing).toBe(false);
 
     hook.unmount();
   });
@@ -300,12 +280,12 @@ describe("useCoachDashboard", () => {
       }
     });
 
-    expect(hook.current.effectiveNutritionPendingReview).toBe(false);
-    expect(hook.current.nutritionSyncing).toBe(true);
+    expect(hook.result.current.effectiveNutritionPendingReview).toBe(false);
+    expect(hook.result.current.nutritionSyncing).toBe(true);
 
     await flushAsyncWork();
 
-    expect(hook.current.nutritionSyncing).toBe(false);
+    expect(hook.result.current.nutritionSyncing).toBe(false);
 
     hook.unmount();
   });
@@ -337,12 +317,12 @@ describe("useCoachDashboard", () => {
     const hook = renderUseCoachDashboard();
     await flushAsyncWork();
 
-    expect(hook.current.weeklyRecap.checkinCompleted).toBe(false);
-    expect(hook.current.weeklyRecap.planAcceptedThisWeek).toBeNull();
-    expect(hook.current.weeklyRecap.adherenceTrendDirection).toBe("up");
-    expect(hook.current.weeklyRecap.adherenceTrendDelta).toBe(4);
-    expect(hook.current.weeklyRecap.cta).toBe("Open weekly check-in");
-    expect(hook.current.weeklyRecap.nextDueLabel).toBe("Sun");
+    expect(hook.result.current.weeklyRecap.checkinCompleted).toBe(false);
+    expect(hook.result.current.weeklyRecap.planAcceptedThisWeek).toBeNull();
+    expect(hook.result.current.weeklyRecap.adherenceTrendDirection).toBe("up");
+    expect(hook.result.current.weeklyRecap.adherenceTrendDelta).toBe(4);
+    expect(hook.result.current.weeklyRecap.cta).toBe("Open weekly check-in");
+    expect(hook.result.current.weeklyRecap.nextDueLabel).toBe("Sun");
 
     hook.unmount();
   });

@@ -6,8 +6,10 @@ import StepExperience from "./steps/StepExperience";
 import StepGoal from "./steps/StepGoal";
 import StepNutrition from "./steps/StepNutrition";
 import StepPersona from "./steps/StepPersona";
+import StepPlanStart from "./steps/StepPlanStart";
 import StepSchedule from "./steps/StepSchedule";
-import StepStats from "./steps/StepStats";
+import StepHeight from "./steps/StepHeight";
+import StepWeight from "./steps/StepWeight";
 
 type Props = {
   currentStep: CoachOnboardingStepId;
@@ -23,8 +25,10 @@ export default function OnboardingStepContent({ currentStep, draft, summaryChips
   if (currentStep === "equipment") return <StepEquipment draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "nutrition") return <StepNutrition draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "constraints") return <StepConstraints draft={draft} patchDraft={patchDraft} />;
-  if (currentStep === "stats") return <StepStats draft={draft} patchDraft={patchDraft} />;
+  if (currentStep === "weight") return <StepWeight draft={draft} patchDraft={patchDraft} />;
+  if (currentStep === "height") return <StepHeight draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "persona") return <StepPersona draft={draft} patchDraft={patchDraft} />;
+  if (currentStep === "plan_start") return <StepPlanStart draft={draft} patchDraft={patchDraft} />;
 
   return (
     <OnboardingReviewSummary
@@ -34,6 +38,7 @@ export default function OnboardingStepContent({ currentStep, draft, summaryChips
       weightKg={draft.body.weightKg}
       trainingLine={`${draft.training.daysPerWeek} days • ${draft.training.sessionMinutes} min • ${draft.training.equipmentAccess.replace("_", " ")}`}
       coachLine={`${draft.persona.gender} • ${draft.persona.personality} personality`}
+      planStart={draft.planStart}
     />
   );
 }
