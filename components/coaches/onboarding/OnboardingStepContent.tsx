@@ -17,9 +17,18 @@ type Props = {
   draft: CoachOnboardingDraft;
   summaryChips: string[];
   patchDraft: (updater: (draft: CoachOnboardingDraft) => CoachOnboardingDraft) => void;
+  onEditProfile?: () => void;
+  onEditPlanSetup?: () => void;
 };
 
-export default function OnboardingStepContent({ currentStep, draft, summaryChips, patchDraft }: Props) {
+export default function OnboardingStepContent({
+  currentStep,
+  draft,
+  summaryChips,
+  patchDraft,
+  onEditProfile,
+  onEditPlanSetup,
+}: Props) {
   if (currentStep === "goal") return <StepGoal draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "experience") return <StepExperience draft={draft} patchDraft={patchDraft} />;
   if (currentStep === "schedule") return <StepSchedule draft={draft} patchDraft={patchDraft} />;
@@ -42,6 +51,8 @@ export default function OnboardingStepContent({ currentStep, draft, summaryChips
       trainingLine={`${draft.training.daysPerWeek} days • ${draft.training.sessionMinutes} min • ${draft.training.equipmentAccess.replace("_", " ")}`}
       coachLine={`${draft.persona.gender} • ${draft.persona.personality} personality`}
       planStart={draft.planStart}
+      onEditProfile={onEditProfile ?? (() => {})}
+      onEditPlanSetup={onEditPlanSetup ?? (() => {})}
     />
   );
 }

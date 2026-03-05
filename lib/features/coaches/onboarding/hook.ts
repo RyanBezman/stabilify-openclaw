@@ -18,6 +18,7 @@ type Action =
   | { type: "patch"; updater: (draft: CoachOnboardingDraft) => CoachOnboardingDraft }
   | { type: "next" }
   | { type: "back" }
+  | { type: "go_to"; stepIndex: number }
   | { type: "submit_start" }
   | { type: "submit_error"; error: string }
   | { type: "submit_done" };
@@ -32,6 +33,12 @@ function reducer(state: State, action: Action): State {
       return { ...state, stepIndex: Math.min(state.stepIndex + 1, COACH_ONBOARDING_STEPS.length - 1), error: null };
     case "back":
       return { ...state, stepIndex: Math.max(0, state.stepIndex - 1), error: null };
+    case "go_to":
+      return {
+        ...state,
+        stepIndex: Math.min(COACH_ONBOARDING_STEPS.length - 1, Math.max(0, action.stepIndex)),
+        error: null,
+      };
     case "submit_start":
       return { ...state, submitting: true, error: null };
     case "submit_error":
@@ -68,6 +75,7 @@ export function useCoachOnboarding() {
       dispatch({ type: "patch", updater }),
     next: () => dispatch({ type: "next" }),
     back: () => dispatch({ type: "back" }),
+    goToStep: (stepIndex: number) => dispatch({ type: "go_to", stepIndex }),
     setDraft: (draft: CoachOnboardingDraft) => dispatch({ type: "set", draft }),
     setSubmitStart: () => dispatch({ type: "submit_start" }),
     setSubmitDone: () => dispatch({ type: "submit_done" }),

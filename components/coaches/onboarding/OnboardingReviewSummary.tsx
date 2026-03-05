@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import Card from "../../ui/Card";
 
 const LB_PER_KG = 2.2046226218;
@@ -28,6 +28,8 @@ type Props = {
   trainingLine: string;
   coachLine: string;
   planStart: "workout" | "nutrition" | "both";
+  onEditProfile: () => void;
+  onEditPlanSetup: () => void;
 };
 
 type DetailRowProps = {
@@ -54,13 +56,20 @@ export default function OnboardingReviewSummary({
   trainingLine,
   coachLine,
   planStart,
+  onEditProfile,
+  onEditPlanSetup,
 }: Props) {
   const weightLb = weightKg === null ? null : Math.round(weightKg * LB_PER_KG);
 
   return (
     <View className="gap-4">
       <Card variant="subtle" className="p-4">
-        <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Profile</Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Profile</Text>
+          <TouchableOpacity onPress={onEditProfile}>
+            <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-violet-300">Edit</Text>
+          </TouchableOpacity>
+        </View>
         <View className="mt-2">
           <DetailRow label="Goal" value={titleCase(goal)} withBorder={false} />
           <DetailRow label="Experience" value={titleCase(experience)} />
@@ -71,7 +80,12 @@ export default function OnboardingReviewSummary({
       </Card>
 
       <Card variant="subtle" className="p-4">
-        <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Plan setup</Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Plan setup</Text>
+          <TouchableOpacity onPress={onEditPlanSetup}>
+            <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-violet-300">Edit</Text>
+          </TouchableOpacity>
+        </View>
         <View className="mt-2">
           <DetailRow label="Training" value={titleCase(trainingLine)} withBorder={false} />
           <DetailRow label="Coach" value={titleCase(coachLine)} />

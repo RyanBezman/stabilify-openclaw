@@ -61,6 +61,7 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
     progress,
     next,
     back,
+    goToStep,
     isLastStep,
     submitting,
     submitError,
@@ -298,12 +299,23 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
         stepIndex={stepIndex}
         totalSteps={totalSteps}
         progressAnim={progressAnim}
+        currentStepLabel={title}
         onBack={() => (stepIndex === 0 ? exitOnboarding() : back())}
       />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-40 pt-6" keyboardShouldPersistTaps="handled">
         <Animated.View style={{ opacity: fade, transform: [{ translateX: slide }, { scale }] }}>
           <OnboardingHero title={title} subtitle={subtitle} showReadyBadge={currentStep === "review"} />
+
+          {stepIndex > 1 && currentStep !== "review" ? (
+            <View className="mt-4 flex-row flex-wrap gap-2">
+              {summaryChips.slice(0, 3).map((chip) => (
+                <View key={chip} className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5">
+                  <Text className="text-[11px] font-semibold text-neutral-300">{chip}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
 
           {currentStep === "weight" || currentStep === "height" ? (
             <View className="mt-6 px-1">
@@ -312,6 +324,8 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
                 draft={draft}
                 summaryChips={summaryChips}
                 patchDraft={patchDraft}
+                onEditProfile={() => goToStep(0)}
+                onEditPlanSetup={() => goToStep(9)}
               />
             </View>
           ) : (
@@ -321,6 +335,8 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
                 draft={draft}
                 summaryChips={summaryChips}
                 patchDraft={patchDraft}
+                onEditProfile={() => goToStep(0)}
+                onEditPlanSetup={() => goToStep(9)}
               />
             </Card>
           )}
