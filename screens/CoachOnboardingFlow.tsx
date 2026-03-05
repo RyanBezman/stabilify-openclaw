@@ -49,7 +49,7 @@ const LOADING_TIPS = [
   "Final quality checks before opening your workspace.",
 ] as const;
 
-export default function CoachOnboardingFlow({ navigation }: Props) {
+export default function CoachOnboardingFlow({ navigation, route }: Props) {
   const {
     currentStep,
     draft,
@@ -205,6 +205,18 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
     });
   };
 
+  const exitOnboarding = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.navigate("Authed", {
+      screen: "Coaches",
+      params: { specialization: route.params?.specialization ?? "workout" },
+    });
+  };
+
   const summaryChips = useMemo(
     () => [
       `${draft.training.daysPerWeek} days/week`,
@@ -292,7 +304,7 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
         stepIndex={stepIndex}
         totalSteps={totalSteps}
         progressAnim={progressAnim}
-        onBack={() => (stepIndex === 0 ? navigation.goBack() : back())}
+        onBack={() => (stepIndex === 0 ? exitOnboarding() : back())}
       />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-40 pt-6" keyboardShouldPersistTaps="handled">
