@@ -134,6 +134,16 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
     });
   };
 
+  const summaryChips = useMemo(
+    () => [
+      `${draft.training.daysPerWeek} days/week`,
+      `${draft.training.sessionMinutes} min sessions`,
+      draft.goal.primary,
+      `${draft.persona.personality} coach`,
+    ],
+    [draft.goal.primary, draft.persona.personality, draft.training.daysPerWeek, draft.training.sessionMinutes],
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-neutral-950">
       <StatusBar style="light" />
@@ -163,6 +173,16 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
         <Animated.View style={{ opacity: fade, transform: [{ translateX: slide }, { scale }] }}>
           <Text className="text-3xl font-bold tracking-tight text-white">{title}</Text>
           <Text className="mt-2 text-sm leading-relaxed text-neutral-400">{subtitle}</Text>
+          <View className="mt-3 flex-row flex-wrap gap-2">
+            <View className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5">
+              <Text className="text-[11px] font-semibold uppercase tracking-[1.4px] text-neutral-400">~60 sec setup</Text>
+            </View>
+            {currentStep === "review" ? (
+              <View className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5">
+                <Text className="text-[11px] font-semibold uppercase tracking-[1.4px] text-violet-300">ready to generate</Text>
+              </View>
+            ) : null}
+          </View>
 
           <Card className="mt-6 p-5">
             {currentStep === "goal" ? (
@@ -275,13 +295,13 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
                 <Input
                   value={draft.constraints.scheduleConstraintsNote}
                   onChangeText={(text) => patchDraft((prev) => ({ ...prev, constraints: { ...prev.constraints, scheduleConstraintsNote: text } }))}
-                  placeholder="Any schedule constraints?"
+                  placeholder="Work/travel/time constraints (optional)"
                   multiline
                 />
                 <Input
                   value={draft.training.notes}
                   onChangeText={(text) => patchDraft((prev) => ({ ...prev, training: { ...prev.training, notes: text } }))}
-                  placeholder="Anything else your coach should know?"
+                  placeholder="Injuries, limitations, or preferences (optional)"
                   multiline
                 />
               </View>
@@ -346,12 +366,37 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
             ) : null}
 
             {currentStep === "review" ? (
-              <View className="gap-3">
-                <Text className="text-sm text-neutral-300">Goal: {draft.goal.primary}</Text>
-                <Text className="text-sm text-neutral-300">Experience: {draft.experienceLevel}</Text>
-                <Text className="text-sm text-neutral-300">Training: {draft.training.daysPerWeek} days • {draft.training.sessionMinutes} min</Text>
-                <Text className="text-sm text-neutral-300">Equipment: {draft.training.equipmentAccess.replace("_", " ")}</Text>
-                <Text className="text-sm text-neutral-300">Coach: {draft.persona.gender} • {draft.persona.personality}</Text>
+              <View className="gap-4">
+                <View className="flex-row flex-wrap gap-2">
+                  {summaryChips.map((chip) => (
+                    <View key={chip} className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1.5">
+                      <Text className="text-xs font-semibold text-violet-200">{chip}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <Card variant="subtle" className="p-4">
+                  <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Goal & profile</Text>
+                  <Text className="mt-2 text-sm text-neutral-200">Goal: {draft.goal.primary}</Text>
+                  <Text className="mt-1 text-sm text-neutral-200">Experience: {draft.experienceLevel}</Text>
+                  <Text className="mt-1 text-sm text-neutral-200">
+                    Weight: {draft.body.weightKg ? `${draft.body.weightKg} kg` : "not set"}
+                  </Text>
+                </Card>
+
+                <Card variant="subtle" className="p-4">
+                  <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Training setup</Text>
+                  <Text className="mt-2 text-sm text-neutral-200">
+                    {draft.training.daysPerWeek} days • {draft.training.sessionMinutes} min • {draft.training.equipmentAccess.replace("_", " ")}
+                  </Text>
+                </Card>
+
+                <Card variant="subtle" className="p-4">
+                  <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">Unified coach</Text>
+                  <Text className="mt-2 text-sm text-neutral-200">
+                    {draft.persona.gender} • {draft.persona.personality} personality
+                  </Text>
+                </Card>
               </View>
             ) : null}
           </Card>
