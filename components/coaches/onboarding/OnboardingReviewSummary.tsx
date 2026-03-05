@@ -80,14 +80,6 @@ export default function OnboardingReviewSummary({
             value={planStart === "both" ? "Workout + Nutrition" : titleCase(planStart)}
           />
         </View>
-
-        <Text className="mt-3 text-xs leading-5 text-neutral-400">
-          {planStart === "both"
-            ? "Both plans are generated together from this profile."
-            : planStart === "workout"
-              ? "Workout starts now. Nutrition can be added anytime."
-              : "Nutrition starts now. Workout can be added anytime."}
-        </Text>
       </Card>
     </View>
   );

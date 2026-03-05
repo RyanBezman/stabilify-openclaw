@@ -25,11 +25,11 @@ export default function StepHeight({ draft, patchDraft }: Props) {
   const stackPickers = width < 390;
 
   return (
-    <View className="items-center gap-5 py-4">
+    <View className="min-h-[360px] items-center justify-center gap-6 py-6">
       <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-neutral-500">Height</Text>
-      <Text className="text-2xl font-semibold text-white">{selectedHeight.feet} ft {selectedHeight.inches} in</Text>
+      <Text className="text-3xl font-semibold text-white">{selectedHeight.feet} ft {selectedHeight.inches} in</Text>
       <View className={stackPickers ? "w-full gap-3" : "w-full flex-row gap-3"}>
-        <View className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-900/60 px-2 py-2">
+        <View className="flex-1">
           <Picker
             selectedValue={selectedHeight.feet}
             dropdownIconColor="#a3a3a3"
@@ -47,7 +47,7 @@ export default function StepHeight({ draft, patchDraft }: Props) {
             ))}
           </Picker>
         </View>
-        <View className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-900/60 px-2 py-2">
+        <View className="flex-1">
           <Picker
             selectedValue={selectedHeight.inches}
             dropdownIconColor="#a3a3a3"
