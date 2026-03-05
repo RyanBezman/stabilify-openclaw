@@ -1,5 +1,6 @@
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import CoachAvatar from "../components/coaches/CoachAvatar";
 import CoachGenderPicker from "../components/coaches/CoachGenderPicker";
 import CoachOptionCard from "../components/coaches/CoachOptionCard";
@@ -134,42 +135,46 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
     refreshDashboard,
   });
 
-  useEffect(() => {
-    let mounted = true;
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
 
-    const run = async () => {
-      if (viewState !== "ready") {
+      const run = async () => {
+        if (viewState !== "ready") {
+          if (mounted) setOnboardingGate("checking");
+          return;
+        }
+
         if (mounted) setOnboardingGate("checking");
-        return;
-      }
 
-      const userIdResult = await fetchCurrentUserId();
-      const userId = userIdResult.data?.userId;
-      if (userIdResult.error || !userId) {
+        const userIdResult = await fetchCurrentUserId();
+        const userId = userIdResult.data?.userId;
+        if (userIdResult.error || !userId) {
+          if (mounted) setOnboardingGate("ready");
+          return;
+        }
+
+        const onboardingStatus = await fetchCoachOnboardingStatus(userId);
+        if (onboardingStatus.error) {
+          if (mounted) setOnboardingGate("ready");
+          return;
+        }
+
+        if (onboardingStatus.data && !onboardingStatus.data.complete) {
+          if (mounted) setOnboardingGate("needs_onboarding");
+          return;
+        }
+
         if (mounted) setOnboardingGate("ready");
-        return;
-      }
+      };
 
-      const onboardingStatus = await fetchCoachOnboardingStatus(userId);
-      if (onboardingStatus.error) {
-        if (mounted) setOnboardingGate("ready");
-        return;
-      }
+      void run();
 
-      if (onboardingStatus.data && !onboardingStatus.data.complete) {
-        if (mounted) setOnboardingGate("needs_onboarding");
-        return;
-      }
-
-      if (mounted) setOnboardingGate("ready");
-    };
-
-    void run();
-
-    return () => {
-      mounted = false;
-    };
-  }, [viewState]);
+      return () => {
+        mounted = false;
+      };
+    }, [viewState]),
+  );
 
   useEffect(() => {
     if (onboardingGate === "needs_onboarding") {

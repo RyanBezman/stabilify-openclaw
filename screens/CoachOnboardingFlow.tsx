@@ -206,11 +206,6 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
   };
 
   const exitOnboarding = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-
     navigation.navigate("Authed", {
       screen: "Today",
     });
