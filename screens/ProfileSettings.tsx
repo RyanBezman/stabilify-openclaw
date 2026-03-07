@@ -1,7 +1,5 @@
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { Alert, Linking, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import AuthHeader from "../components/auth/AuthHeader";
 import FormLabel from "../components/ui/FormLabel";
@@ -13,6 +11,7 @@ import Card from "../components/ui/Card";
 import { useProfileSettings } from "../lib/features/profile-settings";
 import type { RootStackParamList } from "../lib/navigation/types";
 import { sanitizeUsername } from "../lib/utils/username";
+import AppScreen from "../components/ui/AppScreen";
 
 type ProfileSettingsProps = NativeStackScreenProps<RootStackParamList, "ProfileSettings">;
 
@@ -185,8 +184,7 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-6">
         <AuthHeader title="Profile settings" onBack={navigation.goBack} />
 
@@ -457,6 +455,6 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
           onPress={handleSave}
         />
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

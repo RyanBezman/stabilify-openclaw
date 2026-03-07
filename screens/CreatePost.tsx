@@ -9,7 +9,7 @@ import {
   Text,
   TextInput,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import PostComposerActionBar from "../components/posts/PostComposerActionBar";
 import PostComposerHeader from "../components/posts/PostComposerHeader";
@@ -21,6 +21,7 @@ import {
   POST_BODY_MAX_CHARS,
 } from "../lib/data/posts";
 import type { RootStackParamList } from "../lib/navigation/types";
+import AppScreen from "../components/ui/AppScreen";
 
 const MAX_POST_PHOTOS = 4;
 
@@ -202,7 +203,7 @@ export default function CreatePost({ navigation }: CreatePostProps) {
   }, [canPost, navigation, newPostBody, newPostPhotoAssets, savingPost]);
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={760}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 6 : 0}
@@ -256,6 +257,6 @@ export default function CreatePost({ navigation }: CreatePostProps) {
           onSubmit={() => void handleSubmitPost()}
         />
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

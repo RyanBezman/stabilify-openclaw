@@ -5,9 +5,8 @@ import {
   ScrollView,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import AuthHeader from "./AuthHeader";
+import AppScreen from "../ui/AppScreen";
 
 type AuthLayoutProps = {
   title: string;
@@ -32,14 +31,17 @@ export default function AuthLayout({
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={480}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         {scroll ? (
-          <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
+          <ScrollView
+            className="flex-1"
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ flexGrow: 1 }}
+          >
             {content}
           </ScrollView>
         ) : (
@@ -47,6 +49,6 @@ export default function AuthLayout({
         )}
         {footer}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

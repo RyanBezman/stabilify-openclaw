@@ -1,5 +1,6 @@
-import { Modal, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import ModalSheet from "./ModalSheet";
 
 export type WheelPickerOption = {
   label: string;
@@ -29,50 +30,53 @@ export default function WheelPickerSheet({
   onCancel,
   onDone,
 }: WheelPickerSheetProps) {
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View className="flex-1 justify-end bg-black/60">
-        <View className="rounded-t-3xl border border-neutral-800 bg-neutral-950 px-5 pb-8 pt-4">
-          <View className="mb-4 flex-row items-center justify-between">
-            <TouchableOpacity
-              onPress={onCancel}
-              className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2"
-            >
-              <Text className="text-sm font-semibold text-neutral-200">Cancel</Text>
-            </TouchableOpacity>
-            <Text className="text-sm font-semibold text-neutral-400">{title}</Text>
-            <TouchableOpacity
-              onPress={onDone}
-              className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2"
-            >
-              <Text className="text-sm font-semibold text-white">Done</Text>
-            </TouchableOpacity>
-          </View>
+  const { width } = useWindowDimensions();
+  const stackColumns = width < 390;
 
-          <View className="flex-row gap-3">
-            {columns.map((column) => (
-              <View key={column.key} className="flex-1">
-                <Text className="mb-2 text-center text-xs font-semibold uppercase tracking-[1px] text-neutral-500">
-                  {column.label}
-                </Text>
-                <View className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
-                  <Picker
-                    selectedValue={column.value}
-                    onValueChange={(value) => column.onValueChange(value)}
-                    itemStyle={{ color: "#ffffff" }}
-                    style={{ color: "#ffffff", backgroundColor: "#171717" }}
-                    dropdownIconColor="#a3a3a3"
-                  >
-                    {column.options.map((option) => (
-                      <Picker.Item key={`${column.key}-${option.value}`} label={option.label} value={option.value} />
-                    ))}
-                  </Picker>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
+  return (
+    <ModalSheet visible={visible} onRequestClose={onCancel}>
+      <View className="mb-4 flex-row items-center justify-between">
+        <TouchableOpacity
+          onPress={onCancel}
+          className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2"
+        >
+          <Text className="text-sm font-semibold text-neutral-200">Cancel</Text>
+        </TouchableOpacity>
+        <Text className="text-sm font-semibold text-neutral-400">{title}</Text>
+        <TouchableOpacity
+          onPress={onDone}
+          className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2"
+        >
+          <Text className="text-sm font-semibold text-white">Done</Text>
+        </TouchableOpacity>
       </View>
-    </Modal>
+
+      <View className={stackColumns ? "gap-3" : "flex-row gap-3"}>
+        {columns.map((column) => (
+          <View key={column.key} className={stackColumns ? "w-full" : "flex-1"}>
+            <Text className="mb-2 text-center text-xs font-semibold uppercase tracking-[1px] text-neutral-500">
+              {column.label}
+            </Text>
+            <View className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
+              <Picker
+                selectedValue={column.value}
+                onValueChange={(value) => column.onValueChange(value)}
+                itemStyle={{ color: "#ffffff" }}
+                style={{ color: "#ffffff", backgroundColor: "#171717" }}
+                dropdownIconColor="#a3a3a3"
+              >
+                {column.options.map((option) => (
+                  <Picker.Item
+                    key={`${column.key}-${option.value}`}
+                    label={option.label}
+                    value={option.value}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
+        ))}
+      </View>
+    </ModalSheet>
   );
 }

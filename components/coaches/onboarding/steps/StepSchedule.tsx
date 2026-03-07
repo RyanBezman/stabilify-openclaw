@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import type { CoachOnboardingDraft } from "../../../../lib/features/coaches";
 
 type Props = {
@@ -29,12 +29,15 @@ function ChoiceButton({ label, selected, onPress }: ChoiceProps) {
 }
 
 export default function StepSchedule({ draft, patchDraft }: Props) {
+  const { width } = useWindowDimensions();
+  const useSingleColumn = width < 390;
+
   return (
     <View className="gap-5">
       <Text className="text-sm font-semibold text-neutral-300">Days per week</Text>
       <View className="flex-row flex-wrap gap-3">
         {[2, 3, 4, 5, 6].map((d) => (
-          <View key={d} className="w-[48%]">
+          <View key={d} className={useSingleColumn ? "w-full" : "w-[48%]"}>
             <ChoiceButton
               label={`${d} days`}
               selected={draft.training.daysPerWeek === d}
@@ -47,7 +50,7 @@ export default function StepSchedule({ draft, patchDraft }: Props) {
       <Text className="text-sm font-semibold text-neutral-300">Session length</Text>
       <View className="flex-row flex-wrap gap-3">
         {[30, 45, 60, 75].map((m) => (
-          <View key={m} className="w-[48%]">
+          <View key={m} className={useSingleColumn ? "w-full" : "w-[48%]"}>
             <ChoiceButton
               label={`${m} min`}
               selected={draft.training.sessionMinutes === m}

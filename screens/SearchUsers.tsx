@@ -1,7 +1,5 @@
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -13,6 +11,11 @@ import { searchUsersByUsernamePrefix, type UserDirectoryRow } from "../lib/data/
 import { sanitizeUsername } from "../lib/utils/username";
 import { getProfilePhotoSignedUrl } from "../lib/features/profile";
 import { fetchCurrentUserId } from "../lib/features/auth";
+import {
+  FLOATING_TAB_SCREEN_SAFE_AREA_EDGES,
+  useFloatingTabBarLayout,
+} from "../lib/navigation/useFloatingTabBarLayout";
+import AppScreen from "../components/ui/AppScreen";
 
 type SearchUsersProps = CompositeScreenProps<
   BottomTabScreenProps<AuthedTabParamList, "Search">,
@@ -20,6 +23,7 @@ type SearchUsersProps = CompositeScreenProps<
 >;
 
 export default function SearchUsers({ navigation }: SearchUsersProps) {
+  const { contentBottomPadding } = useFloatingTabBarLayout();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,8 +114,11 @@ export default function SearchUsers({ navigation }: SearchUsersProps) {
   }, [currentUserId, query]);
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen
+      className="flex-1 bg-neutral-950"
+      edges={FLOATING_TAB_SCREEN_SAFE_AREA_EDGES}
+      maxContentWidth={720}
+    >
       <View className="px-4 pb-2 pt-4">
         <Text className="text-3xl font-bold tracking-tight text-white">Search</Text>
         <Text className="mt-1 text-sm text-neutral-400">Find people by username.</Text>
@@ -127,7 +134,11 @@ export default function SearchUsers({ navigation }: SearchUsersProps) {
         />
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="px-4 pb-36 pt-2">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="px-4 pt-2"
+        contentContainerStyle={{ paddingBottom: contentBottomPadding }}
+      >
         {loading ? (
           <View className="mt-8 items-center">
             <ActivityIndicator size="small" color="#a3a3a3" />
@@ -180,6 +191,6 @@ export default function SearchUsers({ navigation }: SearchUsersProps) {
           </View>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

@@ -1,15 +1,14 @@
-import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useMemo } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../components/ui/Card";
 import CoachAvatar from "../components/coaches/CoachAvatar";
 import { useCoach } from "../lib/features/coaches";
 import type { CoachSpecialization } from "../lib/features/coaches";
 import type { RootStackParamList } from "../lib/navigation/types";
 import { coachPersonalityCopy } from "../lib/features/coaches";
+import AppScreen from "../components/ui/AppScreen";
 
 type ScreenProps = NativeStackScreenProps<RootStackParamList, "CoachProfile">;
 
@@ -27,8 +26,7 @@ export default function CoachProfileScreen({ navigation, route }: ScreenProps) {
 
   if (!coach || !copy) {
     return (
-      <SafeAreaView className="flex-1 bg-neutral-950">
-        <StatusBar style="light" />
+      <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base font-semibold text-neutral-200">No coach selected.</Text>
           <TouchableOpacity
@@ -39,13 +37,12 @@ export default function CoachProfileScreen({ navigation, route }: ScreenProps) {
             <Text className="text-sm font-semibold text-neutral-200">Back</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </AppScreen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-28 pt-4"
@@ -92,6 +89,6 @@ export default function CoachProfileScreen({ navigation, route }: ScreenProps) {
           </View>
         </Card>
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

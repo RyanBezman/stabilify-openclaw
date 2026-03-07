@@ -1,6 +1,6 @@
 # Screen Architecture Guide
 
-Last updated: 2026-03-03
+Last updated: 2026-03-06
 
 ## Goal
 - This file defines technical layer boundaries and extraction rules.
@@ -63,6 +63,10 @@ Last updated: 2026-03-03
 
 - Screens orchestrate and compose; feature logic lives in hooks/workflows/services.
 - Dependency direction remains one-way from UI to data.
+- The app shell owns the full-device background color at the navigation root so top and bottom safe-area regions paint consistently on Dynamic Island, notch, and home-indicator devices.
+- Full-screen routes should use the shared `AppScreen` shell so safe-area padding is applied consistently without clipping the device frame.
+- Form, list, and detail routes that should stay readable on tablets or landscape phones should set `maxContentWidth` on `AppScreen` instead of letting content stretch edge-to-edge.
+- Modal panels and sheets should fill the available screen bounds and apply safe-area padding to their inner content instead of shrinking the outer container with inset offsets.
 
 ## Analytics
 

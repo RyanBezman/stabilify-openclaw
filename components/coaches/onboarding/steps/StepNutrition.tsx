@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import type { CoachOnboardingDraft } from "../../../../lib/features/coaches";
 
 type Props = {
@@ -38,6 +38,9 @@ function ChoiceButton({ label, selected, onPress }: ChoiceProps) {
 }
 
 export default function StepNutrition({ draft, patchDraft }: Props) {
+  const { width } = useWindowDimensions();
+  const useSingleColumn = width < 390;
+
   return (
     <View className="gap-5">
       <Text className="text-sm font-semibold text-neutral-300">Meal Style</Text>
@@ -45,7 +48,7 @@ export default function StepNutrition({ draft, patchDraft }: Props) {
         {NUTRITION_PREFS.map((item) => {
           const selected = draft.nutrition.dietaryPreferences.includes(item);
           return (
-            <View key={item} className="w-[48%]">
+            <View key={item} className={useSingleColumn ? "w-full" : "w-[48%]"}>
               <ChoiceButton
                 label={toTitle(item)}
                 selected={selected}
@@ -71,7 +74,7 @@ export default function StepNutrition({ draft, patchDraft }: Props) {
         {NUTRITION_RESTRICTIONS.map((item) => {
           const selected = draft.nutrition.dietaryRestrictions.includes(item);
           return (
-            <View key={item} className="w-[48%]">
+            <View key={item} className={useSingleColumn ? "w-full" : "w-[48%]"}>
               <ChoiceButton
                 label={toTitle(item)}
                 selected={selected}

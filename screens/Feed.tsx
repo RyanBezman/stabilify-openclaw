@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
@@ -12,23 +11,26 @@ import {
   useWindowDimensions,
 } from "react-native";
 import type { CompositeScreenProps } from "@react-navigation/native";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PostCard from "../components/posts/PostCard";
 import FeedPostsSkeleton from "../components/posts/FeedPostsSkeleton";
 import type { AuthedTabParamList, RootStackParamList } from "../lib/navigation/types";
 import { useFeed } from "../lib/features/feed";
+import {
+  FLOATING_TAB_HORIZONTAL_PADDING,
+  FLOATING_TAB_SCREEN_SAFE_AREA_EDGES,
+  useFloatingTabBarLayout,
+} from "../lib/navigation/useFloatingTabBarLayout";
+import AppScreen from "../components/ui/AppScreen";
 
 const FAB_TAB_GAP = 20;
 const REFRESH_OFFSET = 72;
-const FLOATING_TAB_TOP_PAD = 12;
-const FLOATING_TAB_MIN_BOTTOM_PAD = 12;
-const FLOATING_TAB_HORIZONTAL_PAD = 16;
 const TAB_COUNT = 5;
 const PROFILE_TAB_INDEX = 4;
 const FAB_SIZE = 56;
+const FEED_MAX_CONTENT_WIDTH = 820;
 
 type FeedProps = CompositeScreenProps<
   BottomTabScreenProps<AuthedTabParamList, "Feed">,
@@ -36,9 +38,9 @@ type FeedProps = CompositeScreenProps<
 >;
 
 export default function Feed({ navigation, route }: FeedProps) {
-  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const tabBarHeight = useBottomTabBarHeight();
+  const insets = useSafeAreaInsets();
+  const { overlayHeight } = useFloatingTabBarLayout();
 
   const {
     posts,
@@ -76,25 +78,33 @@ export default function Feed({ navigation, route }: FeedProps) {
     }
   }, [loading, contentOpacity]);
 
-  const floatingTabBottomPad = Math.max(insets.bottom, FLOATING_TAB_MIN_BOTTOM_PAD);
-  const floatingTabChromeHeight = FLOATING_TAB_TOP_PAD + floatingTabBottomPad;
-  const fabBottom = tabBarHeight + floatingTabChromeHeight + FAB_TAB_GAP;
-  const tabBarInnerWidth = Math.max(0, width - FLOATING_TAB_HORIZONTAL_PAD * 2);
+  const fabBottom = overlayHeight + FAB_TAB_GAP;
+  const contentHorizontalOffset = Math.max(0, (width - FEED_MAX_CONTENT_WIDTH) / 2);
+  const tabBarInnerWidth = Math.max(
+    0,
+    width - FLOATING_TAB_HORIZONTAL_PADDING * 2 - insets.left - insets.right,
+  );
   const profileTabCenterX =
-    FLOATING_TAB_HORIZONTAL_PAD +
+    FLOATING_TAB_HORIZONTAL_PADDING +
+    insets.left +
     tabBarInnerWidth * ((PROFILE_TAB_INDEX + 0.5) / TAB_COUNT);
-  const fabLeft = profileTabCenterX - FAB_SIZE / 2;
+  const fabLeft = profileTabCenterX - contentHorizontalOffset - FAB_SIZE / 2;
+  const contentBottomPadding = fabBottom + FAB_SIZE + 24;
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen
+      className="flex-1 bg-neutral-950"
+      edges={FLOATING_TAB_SCREEN_SAFE_AREA_EDGES}
+      maxContentWidth={FEED_MAX_CONTENT_WIDTH}
+    >
       <View className="px-4 pb-2 pt-4">
         <Text className="text-3xl font-bold tracking-tight text-white">Feed</Text>
       </View>
 
       <ScrollView
         className="flex-1"
-        contentContainerClassName="pb-36 pt-2"
+        contentContainerClassName="pt-2"
+        contentContainerStyle={{ paddingBottom: contentBottomPadding }}
         showsVerticalScrollIndicator={false}
         onScroll={handleFeedScroll}
         scrollEventThrottle={16}
@@ -195,6 +205,6 @@ export default function Feed({ navigation, route }: FeedProps) {
       >
         <Ionicons name="add" size={26} color="#ffffff" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

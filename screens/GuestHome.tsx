@@ -1,5 +1,3 @@
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useEffect, useRef } from "react";
 import {
   AccessibilityInfo,
@@ -9,6 +7,7 @@ import {
   View,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import GuestHeader from "../components/guest/GuestHeader";
 import GuestCtaRow from "../components/guest/GuestCtaRow";
 import GuestHowItWorks from "../components/guest/GuestHowItWorks";
@@ -17,10 +16,13 @@ import GuestPreviewCard from "../components/guest/GuestPreviewCard";
 import GuestPremiumTeaser from "../components/guest/GuestPremiumTeaser";
 import type { RootStackParamList } from "../lib/navigation/types";
 import { GUEST_HOW_IT_WORKS_ITEMS } from "../lib/features/guest-home";
+import AppScreen from "../components/ui/AppScreen";
 
 type GuestHomeProps = NativeStackScreenProps<RootStackParamList, "Guest">;
 
 export default function GuestHome({ navigation }: GuestHomeProps) {
+  const insets = useSafeAreaInsets();
+  const contentBottomPadding = Math.max(insets.bottom, 12) + 88;
   const previewOpacity = useRef(new Animated.Value(0)).current;
   const previewTranslateY = useRef(new Animated.Value(10)).current;
   const ctaOpacity = useRef(new Animated.Value(0)).current;
@@ -112,12 +114,12 @@ export default function GuestHome({ navigation }: GuestHomeProps) {
   ]);
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={760}>
       <View className="flex-1">
         <ScrollView
           className="flex-1"
-          contentContainerClassName="px-5 pb-32 pt-6"
+          contentContainerClassName="px-5 pt-6"
+          contentContainerStyle={{ paddingBottom: contentBottomPadding }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -168,6 +170,6 @@ export default function GuestHome({ navigation }: GuestHomeProps) {
           visible
         />
       </View>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

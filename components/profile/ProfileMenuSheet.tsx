@@ -3,18 +3,19 @@ import {
   Animated,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ProfileMenuSheetProps = {
   mounted: boolean;
-  topInset: number;
-  bottomInset: number;
   backdropStyle: StyleProp<ViewStyle>;
   panelStyle: StyleProp<ViewStyle>;
   pendingFollowRequestsCount: number;
@@ -28,8 +29,6 @@ type ProfileMenuSheetProps = {
 
 export default function ProfileMenuSheet({
   mounted,
-  topInset,
-  bottomInset,
   backdropStyle,
   panelStyle,
   pendingFollowRequestsCount,
@@ -40,8 +39,22 @@ export default function ProfileMenuSheet({
   onOpenUpgradePlan,
   onSignOut,
 }: ProfileMenuSheetProps) {
+  const insets = useSafeAreaInsets();
+  const { height: screenHeight, width: screenWidth } = useWindowDimensions();
+  const panelTopOffset = Math.max(insets.top, 10) + 6;
+  const panelBottomPadding = Math.max(insets.bottom, 16);
+  const panelWidth = Math.min(440, Math.max(320, screenWidth - 12));
+  const panelHeight = Math.max(360, screenHeight - panelTopOffset);
+
   return (
-    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
+    <Modal
+      visible={mounted}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+    >
       <View className="flex-1">
         <Pressable className="absolute inset-0" onPress={onClose}>
           <Animated.View
@@ -58,17 +71,40 @@ export default function ProfileMenuSheet({
           style={[
             {
               position: "absolute",
-              top: topInset,
+              top: panelTopOffset,
               right: 0,
-              bottom: bottomInset,
-              borderLeftWidth: StyleSheet.hairlineWidth,
+              bottom: 0,
+              width: panelWidth,
+              minHeight: panelHeight,
+              borderTopLeftRadius: 30,
+              borderBottomLeftRadius: 30,
+              borderTopRightRadius: 0,
+              borderBottomRightRadius: 0,
+              borderWidth: StyleSheet.hairlineWidth,
               borderLeftColor: "#262626",
-              backgroundColor: "#0a0a0a",
+              borderTopColor: "#262626",
+              borderRightColor: "transparent",
+              borderBottomColor: "#262626",
+              backgroundColor: "#09090b",
+              overflow: "hidden",
+              shadowColor: "#000000",
+              shadowOffset: { width: -6, height: 0 },
+              shadowOpacity: 0.28,
+              shadowRadius: 24,
+              elevation: 16,
             },
             panelStyle,
           ]}
         >
-          <View className="flex-1">
+          <ScrollView
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingTop: 12,
+              paddingBottom: panelBottomPadding + 8,
+              minHeight: panelHeight,
+            }}
+          >
             <View className="flex-row items-center justify-between px-5 pb-4 pt-3">
               <Text className="text-3xl font-bold tracking-tight text-white">Menu</Text>
               <TouchableOpacity
@@ -135,7 +171,7 @@ export default function ProfileMenuSheet({
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </Animated.View>
       </View>
     </Modal>

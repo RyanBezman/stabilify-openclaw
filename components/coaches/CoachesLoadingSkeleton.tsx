@@ -1,12 +1,10 @@
 import { ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import SkeletonBlock from "../ui/SkeletonBlock";
+import AppScreen from "../ui/AppScreen";
 
 export default function CoachesLoadingSkeleton() {
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={860}>
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-32 pt-6"
@@ -31,7 +29,6 @@ export default function CoachesLoadingSkeleton() {
 
         <SkeletonBlock className="mt-8 h-40 w-full" />
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }
-

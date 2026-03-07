@@ -1,4 +1,3 @@
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -8,7 +7,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -16,6 +14,7 @@ import OnboardingHero from "../components/coaches/onboarding/OnboardingHero";
 import OnboardingStepContent from "../components/coaches/onboarding/OnboardingStepContent";
 import OnboardingTopBar from "../components/coaches/onboarding/OnboardingTopBar";
 import type { RootStackParamList } from "../lib/navigation/types";
+import AppScreen from "../components/ui/AppScreen";
 import {
   submitCoachOnboardingWorkflow,
   useCoachOnboarding,
@@ -235,8 +234,7 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
 
   if (submitting) {
     return (
-      <SafeAreaView className="flex-1 bg-neutral-950 px-6">
-        <StatusBar style="light" />
+      <AppScreen className="flex-1 bg-neutral-950 px-6" maxContentWidth={720}>
         <View className="flex-1 items-center justify-center">
           <View className="w-full max-w-md gap-4">
             <Text className="text-center text-2xl font-bold text-white">Building your coaching setup</Text>
@@ -284,13 +282,12 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </AppScreen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <OnboardingTopBar
         stepIndex={stepIndex}
         totalSteps={totalSteps}
@@ -339,6 +336,6 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
           disabled={!canContinue}
         />
       </View>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

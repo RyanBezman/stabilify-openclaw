@@ -181,9 +181,9 @@ export default function PostCard({
           <View className="mr-3 h-10 w-10 rounded-full bg-neutral-800" />
         )}
 
-        <View className="flex-1">
+        <View className="min-w-0 flex-1">
           <View className="flex-row items-center justify-between">
-            <View className="flex-1 flex-row items-center">
+            <View className="min-w-0 flex-1 flex-row items-center">
               {authorDisplayName ? (
                 onPressAuthor ? (
                   <TouchableOpacity
@@ -192,17 +192,25 @@ export default function PostCard({
                     accessibilityRole="button"
                     accessibilityLabel={`Open ${authorDisplayName}'s profile`}
                   >
-                    <Text className={isProfileVariant ? "text-[14px] font-semibold text-white" : "text-[15px] font-semibold text-white"}>
+                    <Text
+                      numberOfLines={1}
+                      className={isProfileVariant ? "text-[14px] font-semibold text-white" : "text-[15px] font-semibold text-white"}
+                    >
                       {authorDisplayName}
                     </Text>
                   </TouchableOpacity>
                 ) : (
-                  <Text className={isProfileVariant ? "text-[14px] font-semibold text-white" : "text-[15px] font-semibold text-white"}>
+                  <Text
+                    numberOfLines={1}
+                    className={isProfileVariant ? "text-[14px] font-semibold text-white" : "text-[15px] font-semibold text-white"}
+                  >
                     {authorDisplayName}
                   </Text>
                 )
               ) : null}
-              <Text className={`ml-1.5 ${metaTextClassName}`}>{formatPostCreatedAt(createdAt)}</Text>
+              <Text numberOfLines={1} className={`ml-1.5 shrink ${metaTextClassName}`}>
+                {formatPostCreatedAt(createdAt)}
+              </Text>
             </View>
 
             {canDelete ? (

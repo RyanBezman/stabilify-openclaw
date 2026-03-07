@@ -1,15 +1,12 @@
-import { StatusBar } from "expo-status-bar";
 import {
   Alert,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { formatShortDate } from "../lib/utils/metrics";
 import { sanitizeWeightInput, formatWeight } from "../lib/utils/weight";
@@ -18,8 +15,10 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import HelperText from "../components/ui/HelperText";
 import Input from "../components/ui/Input";
+import ModalSheet from "../components/ui/ModalSheet";
 import SectionTitle from "../components/ui/SectionTitle";
 import { useLogWeighIn } from "../lib/features/log-weigh-in";
+import AppScreen from "../components/ui/AppScreen";
 import type {
   IOSPickerModalProps,
   LoadErrorCardProps,
@@ -150,22 +149,18 @@ function IOSPickerModal({
   children,
 }: IOSPickerModalProps) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/60">
-        <View className="rounded-t-3xl border border-neutral-800 bg-neutral-950 px-5 pb-8 pt-4">
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-sm font-semibold text-neutral-400">{title}</Text>
-            <TouchableOpacity
-              onPress={onClose}
-              className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2"
-            >
-              <Text className="text-sm font-semibold text-white">Done</Text>
-            </TouchableOpacity>
-          </View>
-          {children}
-        </View>
+    <ModalSheet visible={visible} onRequestClose={onClose}>
+      <View className="mb-4 flex-row items-center justify-between">
+        <Text className="text-sm font-semibold text-neutral-400">{title}</Text>
+        <TouchableOpacity
+          onPress={onClose}
+          className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2"
+        >
+          <Text className="text-sm font-semibold text-white">Done</Text>
+        </TouchableOpacity>
       </View>
-    </Modal>
+      {children}
+    </ModalSheet>
   );
 }
 
@@ -212,8 +207,7 @@ export default function LogWeighIn({ navigation }: LogWeighInScreenProps) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <KeyboardAvoidingView
         behavior={IS_IOS ? "padding" : "height"}
         className="flex-1"
@@ -314,6 +308,6 @@ export default function LogWeighIn({ navigation }: LogWeighInScreenProps) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

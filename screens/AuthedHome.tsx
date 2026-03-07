@@ -1,4 +1,3 @@
-import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import {
@@ -10,7 +9,6 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -32,6 +30,11 @@ import { requestGymSessionValidation } from "../lib/data/gymSessionValidation";
 import { formatDistance } from "../lib/utils/distance";
 import { useAuthedHome, type AuthedHomeUser } from "../lib/features/dashboard";
 import type { AuthedTabParamList, RootStackParamList } from "../lib/navigation/types";
+import {
+  FLOATING_TAB_SCREEN_SAFE_AREA_EDGES,
+  useFloatingTabBarLayout,
+} from "../lib/navigation/useFloatingTabBarLayout";
+import AppScreen from "../components/ui/AppScreen";
 
 const ANALYSIS_INITIAL_PROGRESS = 0.17;
 const ANALYSIS_PENDING_CAP = 0.92;
@@ -74,6 +77,7 @@ type AuthedHomeProps = CompositeScreenProps<
 
 export default function AuthedHome({ navigation, route, user }: AuthedHomeProps) {
   const { height: windowHeight } = useWindowDimensions();
+  const { contentBottomPadding } = useFloatingTabBarLayout();
   const scrollViewRef = useRef<ScrollView | null>(null);
   const gymFlowCardYRef = useRef<number | null>(null);
   const previousGymFlowActiveRef = useRef(false);
@@ -388,12 +392,16 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen
+      className="flex-1 bg-neutral-950"
+      edges={FLOATING_TAB_SCREEN_SAFE_AREA_EDGES}
+      maxContentWidth={820}
+    >
       <ScrollView
         ref={scrollViewRef}
         className="flex-1"
-        contentContainerClassName="px-5 pb-32 pt-4"
+        contentContainerClassName="px-5 pt-4"
+        contentContainerStyle={{ paddingBottom: contentBottomPadding }}
         showsVerticalScrollIndicator={false}
       >
         {dashboardError ? (
@@ -599,6 +607,6 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
         onChangeNote={setValidationNote}
         onSubmit={handleRequestGymValidation}
       />
-    </SafeAreaView>
+    </AppScreen>
   );
 }

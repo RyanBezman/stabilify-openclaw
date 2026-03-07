@@ -1,9 +1,8 @@
-import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
+import AppScreen from "../ui/AppScreen";
 
 const PRO_VALUE_POINTS = [
   "Unlimited coach chat to work through plateaus and adjustments.",
@@ -31,8 +30,7 @@ export default function CoachWorkspaceLocked({
   onUpgrade,
 }: CoachWorkspaceLockedProps) {
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={960}>
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10 pt-6"
@@ -114,6 +112,6 @@ export default function CoachWorkspaceLocked({
           ) : null}
         </Card>
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

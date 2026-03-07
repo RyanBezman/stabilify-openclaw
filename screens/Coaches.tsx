@@ -1,6 +1,4 @@
-import { StatusBar } from "expo-status-bar";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import CoachAvatar from "../components/coaches/CoachAvatar";
 import CoachGenderPicker from "../components/coaches/CoachGenderPicker";
@@ -35,6 +33,11 @@ import type { CoachesScreenProps } from "../lib/features/coaches";
 import { fetchCurrentAuthUser, fetchCurrentUserId } from "../lib/features/auth";
 import { useCoachRenderDiagnostics } from "../lib/features/coaches";
 import { useCoachDashboardFocusRefresh } from "../lib/features/coaches/hooks/useCoachDashboardFocusRefresh";
+import {
+  FLOATING_TAB_SCREEN_SAFE_AREA_EDGES,
+  useFloatingTabBarLayout,
+} from "../lib/navigation/useFloatingTabBarLayout";
+import AppScreen from "../components/ui/AppScreen";
 
 const personalityLabels: Record<CoachPersonality, string> = Object.fromEntries(
   (Object.keys(coachPersonalityCopy) as CoachPersonality[]).map((p) => [
@@ -53,6 +56,7 @@ const personalities: CoachPersonality[] = [
 ];
 
 export default function Coaches({ navigation }: CoachesScreenProps) {
+  const { contentBottomPadding } = useFloatingTabBarLayout();
   const {
     setActiveCoach,
     getActiveCoach,
@@ -328,11 +332,15 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
     const nutritionPendingApproval = dashboard.effectiveNutritionPendingReview;
 
     return (
-      <SafeAreaView className="flex-1 bg-neutral-950">
-        <StatusBar style="light" />
+      <AppScreen
+        className="flex-1 bg-neutral-950"
+        edges={FLOATING_TAB_SCREEN_SAFE_AREA_EDGES}
+        maxContentWidth={860}
+      >
         <ScrollView
           className="flex-1"
-          contentContainerClassName="px-5 pb-40 pt-6"
+          contentContainerClassName="px-5 pt-6"
+          contentContainerStyle={{ paddingBottom: contentBottomPadding }}
           showsVerticalScrollIndicator={false}
         >
           <View className="mb-6 flex-row items-center justify-between gap-3">
@@ -458,7 +466,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </AppScreen>
     );
   }
 
@@ -467,11 +475,15 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen
+      className="flex-1 bg-neutral-950"
+      edges={FLOATING_TAB_SCREEN_SAFE_AREA_EDGES}
+      maxContentWidth={860}
+    >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-40 pt-6"
+        contentContainerClassName="px-5 pt-6"
+        contentContainerStyle={{ paddingBottom: contentBottomPadding }}
         showsVerticalScrollIndicator={false}
       >
         <Text className="text-3xl font-bold tracking-tight text-white">
@@ -537,6 +549,6 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
           })}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

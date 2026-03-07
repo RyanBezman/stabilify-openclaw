@@ -1,8 +1,6 @@
-import { StatusBar } from "expo-status-bar";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, ScrollView, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import AuthHeader from "../components/auth/AuthHeader";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -10,6 +8,7 @@ import { fetchMembershipTier, setMembershipTier } from "../lib/features/billing"
 import type { MembershipTier } from "../lib/data/types";
 import type { BillingPlansScreenProps, PlanTier } from "../lib/features/billing";
 import { isSessionRequired } from "../lib/features/shared";
+import AppScreen from "../components/ui/AppScreen";
 
 const PLAN_TIERS: PlanTier[] = [
   {
@@ -112,8 +111,7 @@ export default function BillingPlans({ navigation }: BillingPlansScreenProps) {
   }, [currentTier, handleSwitchTier, savingTier]);
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-6">
         <AuthHeader title="Billing & plans" onBack={navigation.goBack} />
 
@@ -204,6 +202,6 @@ export default function BillingPlans({ navigation }: BillingPlansScreenProps) {
           Pricing and checkout are still preview-only in this version.
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

@@ -1,4 +1,3 @@
-import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
@@ -12,7 +11,6 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ProfileSkeleton from "../components/profile/ProfileSkeleton";
 import ProfileHero from "../components/profile/ProfileHero";
@@ -27,6 +25,11 @@ import {
   useProfilePhotoActionHandlers,
 } from "../lib/features/profile";
 import { signOutCurrentUser } from "../lib/features/auth";
+import {
+  FLOATING_TAB_SCREEN_SAFE_AREA_EDGES,
+  useFloatingTabBarLayout,
+} from "../lib/navigation/useFloatingTabBarLayout";
+import AppScreen from "../components/ui/AppScreen";
 import type {
   ProfileHeaderProps,
   ProfileScreenProps,
@@ -57,7 +60,7 @@ const PROFILE_REFRESH_OFFSET = 72;
 
 export default function Profile({ navigation, user }: ProfileScreenProps) {
   const { width: screenWidth } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+  const { contentBottomPadding } = useFloatingTabBarLayout();
   const [signingOut, setSigningOut] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("posts");
   const [pullRefreshing, setPullRefreshing] = useState(false);
@@ -198,7 +201,7 @@ export default function Profile({ navigation, user }: ProfileScreenProps) {
   );
 
   const profileMenuWidth = useMemo(
-    () => Math.min(420, Math.max(260, Math.round(screenWidth * 0.9))),
+    () => Math.min(440, Math.max(320, Math.round(screenWidth * 0.92))),
     [screenWidth],
   );
 
@@ -250,11 +253,15 @@ export default function Profile({ navigation, user }: ProfileScreenProps) {
     pullRefreshing || (activeTab === "progress" ? refreshingProgress : refreshingPosts);
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen
+      className="flex-1 bg-neutral-950"
+      edges={FLOATING_TAB_SCREEN_SAFE_AREA_EDGES}
+      maxContentWidth={760}
+    >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-32 pt-6"
+        contentContainerClassName="px-5 pt-6"
+        contentContainerStyle={{ paddingBottom: contentBottomPadding }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -324,8 +331,6 @@ export default function Profile({ navigation, user }: ProfileScreenProps) {
 
       <ProfileMenuSheet
         mounted={profileMenuMounted}
-        topInset={insets.top}
-        bottomInset={insets.bottom}
         backdropStyle={menuBackdropStyle}
         panelStyle={menuPanelStyle}
         pendingFollowRequestsCount={pendingFollowRequestsCount}
@@ -336,6 +341,6 @@ export default function Profile({ navigation, user }: ProfileScreenProps) {
         onOpenUpgradePlan={openUpgradePlan}
         onSignOut={handleMenuSignOut}
       />
-    </SafeAreaView>
+    </AppScreen>
   );
 }

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 
 type PostComposerPhotosGridProps = {
   uris: string[];
@@ -15,6 +15,8 @@ export default function PostComposerPhotosGrid({
   onClearAll,
 }: PostComposerPhotosGridProps) {
   const hasPhotos = uris.length > 0;
+  const { width } = useWindowDimensions();
+  const useSingleColumn = width < 360;
 
   return (
     <View className="mt-5">
@@ -29,9 +31,13 @@ export default function PostComposerPhotosGrid({
             {uris.map((uri, index) => (
               <View
                 key={`${uri}-${index}`}
-                className="relative w-[49.2%] overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900"
+                className="relative overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900"
+                style={{
+                  width: uris.length === 1 || useSingleColumn ? "100%" : "49.2%",
+                  aspectRatio: 1,
+                }}
               >
-                <Image source={{ uri }} className="h-40 w-full" resizeMode="cover" />
+                <Image source={{ uri }} className="h-full w-full" resizeMode="cover" />
                 <TouchableOpacity
                   onPress={() => onRemovePhoto(index)}
                   accessibilityRole="button"

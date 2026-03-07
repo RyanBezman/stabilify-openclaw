@@ -1,8 +1,6 @@
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { Animated, ScrollView, Text, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { RootStackParamList } from "../lib/navigation/types";
 import AuthHeader from "../components/auth/AuthHeader";
 import ProfileSkeleton from "../components/profile/ProfileSkeleton";
@@ -14,6 +12,7 @@ import ProfileLockedState from "../components/profile/ProfileLockedState";
 import Button from "../components/ui/Button";
 import { useUserFollowActions } from "../lib/features/profile";
 import { useUserProfileQuery } from "../lib/features/profile";
+import AppScreen from "../components/ui/AppScreen";
 
 type UserProfileProps = NativeStackScreenProps<RootStackParamList, "UserProfile">;
 
@@ -67,31 +66,28 @@ export default function UserProfile({ navigation, route }: UserProfileProps) {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-neutral-950">
-        <StatusBar style="light" />
+      <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={760}>
         <ScrollView className="flex-1" contentContainerClassName="px-5 pb-20 pt-6">
           <AuthHeader title="Profile" onBack={navigation.goBack} />
           <ProfileSkeleton variant="public" />
         </ScrollView>
-      </SafeAreaView>
+      </AppScreen>
     );
   }
 
   if (error || !profile) {
     return (
-      <SafeAreaView className="flex-1 bg-neutral-950">
-        <StatusBar style="light" />
+      <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={760}>
         <View className="flex-1 px-5 pt-6">
           <AuthHeader title="Profile" onBack={navigation.goBack} />
           <Text className="text-sm text-rose-300">{error ?? "Couldn't load profile."}</Text>
         </View>
-      </SafeAreaView>
+      </AppScreen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={760}>
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-32 pt-6"
@@ -158,6 +154,6 @@ export default function UserProfile({ navigation, route }: UserProfileProps) {
           )}
         </Animated.View>
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

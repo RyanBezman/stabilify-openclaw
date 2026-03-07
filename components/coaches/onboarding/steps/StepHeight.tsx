@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Text, View } from "react-native";
+import { Text, View, useWindowDimensions } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import type { CoachOnboardingDraft } from "../../../../lib/features/coaches";
 
@@ -21,12 +21,14 @@ const feetInchesToCm = (feet: number, inches: number) => Math.round((feet * 12 +
 
 export default function StepHeight({ draft, patchDraft }: Props) {
   const selectedHeight = useMemo(() => cmToFeetInches(draft.body.heightCm), [draft.body.heightCm]);
+  const { width } = useWindowDimensions();
+  const stackPickers = width < 390;
 
   return (
     <View className="items-center gap-3 py-2">
       <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-neutral-500">Height</Text>
       <Text className="text-2xl font-semibold text-white">{selectedHeight.feet} ft {selectedHeight.inches} in</Text>
-      <View className="w-full flex-row">
+      <View className={stackPickers ? "w-full gap-3" : "w-full flex-row"}>
         <View className="flex-1">
           <Picker
             selectedValue={selectedHeight.feet}

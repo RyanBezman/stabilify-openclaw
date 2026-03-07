@@ -1,7 +1,5 @@
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -11,6 +9,7 @@ import {
   hydrateCoachDashboard,
 } from "../lib/features/coaches";
 import type { RootStackParamList } from "../lib/navigation/types";
+import AppScreen from "../components/ui/AppScreen";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CoachOnboardingResults">;
 type DashboardSnapshot = Awaited<ReturnType<typeof hydrateCoachDashboard>>;
@@ -65,8 +64,7 @@ export default function CoachOnboardingResults({ navigation, route }: Props) {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-8 pt-6">
         <Text className="text-3xl font-bold tracking-tight text-white">Your coach is ready</Text>
         <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
@@ -146,6 +144,6 @@ export default function CoachOnboardingResults({ navigation, route }: Props) {
           onPress={() => navigation.navigate("Authed", { screen: "Coaches" })}
         />
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

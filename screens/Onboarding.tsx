@@ -1,21 +1,19 @@
-import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { saveOnboarding } from "../lib/data/onboarding";
 import Button from "../components/ui/Button";
 import HelperText from "../components/ui/HelperText";
+import ModalSheet from "../components/ui/ModalSheet";
 import OnboardingHeader from "../components/onboarding/OnboardingHeader";
 import StepProgress from "../components/onboarding/StepProgress";
 import StepProfile from "../components/onboarding/steps/StepProfile";
@@ -34,6 +32,7 @@ import {
   getOnboardingValidationState,
 } from "../lib/features/onboarding";
 import { sanitizeUsername } from "../lib/utils/username";
+import AppScreen from "../components/ui/AppScreen";
 
 type OnboardingProps = NativeStackScreenProps<RootStackParamList, "Onboarding">;
 
@@ -117,8 +116,7 @@ export default function Onboarding({ navigation, route }: OnboardingProps) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -259,39 +257,28 @@ export default function Onboarding({ navigation, route }: OnboardingProps) {
             ) : null}
 
             {Platform.OS === "ios" ? (
-              <Modal
-                visible={showTimePicker}
-                transparent
-                animationType="fade"
-                onRequestClose={closeTimePicker}
-              >
-                <View className="flex-1 justify-end bg-black/60">
-                  <View className="rounded-t-3xl border border-neutral-800 bg-neutral-950 px-5 pb-8 pt-4">
-                    <View className="mb-4 flex-row items-center justify-between">
-                      <Text className="text-sm font-semibold text-neutral-400">
-                        Select reminder time
-                      </Text>
-                      <TouchableOpacity
-                        onPress={closeTimePicker}
-                        className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2"
-                      >
-                        <Text className="text-sm font-semibold text-white">
-                          Done
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                    <DateTimePicker
-                      value={timeToDate(form.reminderTime)}
-                      mode="time"
-                      display="spinner"
-                      themeVariant="dark"
-                      textColor="#ffffff"
-                      onChange={handleTimeChange}
-                      style={{ alignSelf: "stretch" }}
-                    />
-                  </View>
+              <ModalSheet visible={showTimePicker} onRequestClose={closeTimePicker}>
+                <View className="mb-4 flex-row items-center justify-between">
+                  <Text className="text-sm font-semibold text-neutral-400">
+                    Select reminder time
+                  </Text>
+                  <TouchableOpacity
+                    onPress={closeTimePicker}
+                    className="rounded-full border border-neutral-800 bg-neutral-900 px-4 py-2"
+                  >
+                    <Text className="text-sm font-semibold text-white">Done</Text>
+                  </TouchableOpacity>
                 </View>
-              </Modal>
+                <DateTimePicker
+                  value={timeToDate(form.reminderTime)}
+                  mode="time"
+                  display="spinner"
+                  themeVariant="dark"
+                  textColor="#ffffff"
+                  onChange={handleTimeChange}
+                  style={{ alignSelf: "stretch" }}
+                />
+              </ModalSheet>
             ) : null}
 
             <View className="mt-10">
@@ -323,6 +310,6 @@ export default function Onboarding({ navigation, route }: OnboardingProps) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

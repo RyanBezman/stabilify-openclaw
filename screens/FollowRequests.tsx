@@ -1,9 +1,7 @@
-import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { SafeAreaView } from "react-native-safe-area-context";
 import AuthHeader from "../components/auth/AuthHeader";
 import Button from "../components/ui/Button";
 import ProfileAvatar from "../components/profile/ProfileAvatar";
@@ -15,6 +13,7 @@ import {
 } from "../lib/data/notifications";
 import { getProfilePhotoSignedUrl } from "../lib/features/profile";
 import { formatShortDate } from "../lib/utils/metrics";
+import AppScreen from "../components/ui/AppScreen";
 
 type FollowRequestsProps = NativeStackScreenProps<RootStackParamList, "FollowRequests">;
 
@@ -102,8 +101,7 @@ export default function FollowRequests({ navigation }: FollowRequestsProps) {
   const pendingCount = useMemo(() => notifications.length, [notifications.length]);
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-20 pt-6">
         <AuthHeader title="Notifications" onBack={navigation.goBack} />
 
@@ -229,6 +227,6 @@ export default function FollowRequests({ navigation }: FollowRequestsProps) {
           </View>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

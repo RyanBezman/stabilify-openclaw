@@ -16,7 +16,7 @@ export default function AuthedHeader({
         <View className="flex-row items-end gap-2.5">
           <Image
             source={require("../../assets/scale-logo.png")}
-            className="h-9 w-9"
+            style={{ width: 36, height: 36 }}
             resizeMode="contain"
             accessibilityLabel="Stabilify app icon"
           />

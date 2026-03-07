@@ -1,4 +1,5 @@
 import { Modal, Pressable, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Input from "../ui/Input";
 
 type GymValidationNoteModalProps = {
@@ -18,12 +19,29 @@ export default function GymValidationNoteModal({
   onChangeNote,
   onSubmit,
 }: GymValidationNoteModalProps) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={onClose}>
-      <Pressable className="flex-1 items-center justify-center bg-black/70 px-5" onPress={onClose}>
+    <Modal
+      transparent
+      animationType="fade"
+      visible={visible}
+      onRequestClose={onClose}
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+    >
+      <Pressable
+        className="flex-1 items-center justify-center bg-black/70 px-5"
+        style={{
+          paddingTop: Math.max(insets.top, 20),
+          paddingBottom: Math.max(insets.bottom, 20),
+        }}
+        onPress={onClose}
+      >
         <Pressable
           onPress={(event) => event.stopPropagation()}
           className="w-full rounded-2xl border border-neutral-800 bg-neutral-950 p-5"
+          style={{ maxWidth: 420 }}
         >
           <Text className="text-lg font-semibold text-white">Request close-friend validation</Text>
           <Text className="mt-2 text-sm text-neutral-400">

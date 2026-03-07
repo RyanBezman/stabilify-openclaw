@@ -1,4 +1,3 @@
-import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -7,12 +6,12 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
   type ImageErrorEventData,
   type NativeSyntheticEvent,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { SafeAreaView } from "react-native-safe-area-context";
 import AuthHeader from "../components/auth/AuthHeader";
 import ProfileAvatar from "../components/profile/ProfileAvatar";
 import Card from "../components/ui/Card";
@@ -25,6 +24,7 @@ import {
 import { getProfilePhotoSignedUrl } from "../lib/features/profile";
 import { getGymSessionStatusReasonCopy } from "../lib/data/gymSessionStatusReason";
 import { formatShortDate } from "../lib/utils/metrics";
+import AppScreen from "../components/ui/AppScreen";
 
 type GymValidationRequestDetailProps = NativeStackScreenProps<
   RootStackParamList,
@@ -55,6 +55,7 @@ export default function GymValidationRequestDetail({
   navigation,
   route,
 }: GymValidationRequestDetailProps) {
+  const { width } = useWindowDimensions();
   const requestId = route.params.requestId;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -138,6 +139,7 @@ export default function GymValidationRequestDetail({
   const hasProofPhoto = Boolean(detail?.proofPhotoUrl) && !proofPhotoLoadError;
   const disableAccept = !canVote || !hasProofPhoto || Boolean(submittingDecision);
   const disableDecline = !canVote || Boolean(submittingDecision);
+  const proofPhotoHeight = Math.min(Math.max(width * 0.92, 260), 420);
 
   const handleProofPhotoError = useCallback(
     (event: NativeSyntheticEvent<ImageErrorEventData>) => {
@@ -185,8 +187,7 @@ export default function GymValidationRequestDetail({
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-20 pt-6">
         <AuthHeader title="Validation review" onBack={navigation.goBack} />
 
@@ -229,7 +230,8 @@ export default function GymValidationRequestDetail({
               <View className="mb-4 overflow-hidden rounded-2xl border border-neutral-800">
                 <Image
                   source={{ uri: detail.proofPhotoUrl }}
-                  className="h-72 w-full"
+                  className="w-full"
+                  style={{ height: proofPhotoHeight }}
                   resizeMode="cover"
                   onError={handleProofPhotoError}
                 />
@@ -343,6 +345,6 @@ export default function GymValidationRequestDetail({
           </>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

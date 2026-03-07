@@ -1,7 +1,6 @@
 import { ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import SkeletonBlock from "../ui/SkeletonBlock";
+import AppScreen from "../ui/AppScreen";
 
 type CoachWorkspaceSkeletonProps = {
   withScreenWrapper?: boolean;
@@ -54,9 +53,8 @@ export default function CoachWorkspaceSkeleton({
   if (!withScreenWrapper) return <SkeletonContent />;
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={960}>
       <SkeletonContent />
-    </SafeAreaView>
+    </AppScreen>
   );
 }

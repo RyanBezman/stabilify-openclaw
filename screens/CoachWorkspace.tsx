@@ -1,4 +1,3 @@
-import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -10,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -39,6 +37,7 @@ import type {
   CoachWorkspaceViewProps,
 } from "../lib/features/coaches";
 import { useCoachRenderDiagnostics } from "../lib/features/coaches";
+import AppScreen from "../components/ui/AppScreen";
 
 export function CoachWorkspaceView({
   coach,
@@ -159,8 +158,7 @@ export function CoachWorkspaceView({
 
   if (!coach) {
     return (
-      <SafeAreaView className="flex-1 bg-neutral-950">
-        <StatusBar style="light" />
+      <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={960}>
         <ScrollView
           className="flex-1"
           contentContainerClassName="px-5 pb-32 pt-6"
@@ -185,7 +183,7 @@ export function CoachWorkspaceView({
             />
           </Card>
         </ScrollView>
-      </SafeAreaView>
+      </AppScreen>
     );
   }
 
@@ -215,8 +213,7 @@ export function CoachWorkspaceView({
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={960}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -684,7 +681,7 @@ export function CoachWorkspaceView({
         stage={planStage}
         action={planLoadingAction}
       />
-    </SafeAreaView>
+    </AppScreen>
   );
 }
 

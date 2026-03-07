@@ -1,4 +1,3 @@
-import { StatusBar } from "expo-status-bar";
 import {
   Alert,
   Keyboard,
@@ -8,7 +7,6 @@ import {
   View,
 } from "react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import AuthHeader from "../components/auth/AuthHeader";
 import GymProofSettingsCard from "../components/gym/GymProofSettingsCard";
@@ -16,6 +14,7 @@ import GymSettingsSkeleton from "../components/gym/GymSettingsSkeleton";
 import Button from "../components/ui/Button";
 import { useGymSettings } from "../lib/features/gym-settings";
 import type { RootStackParamList } from "../lib/navigation/types";
+import AppScreen from "../components/ui/AppScreen";
 
 type GymSettingsProps = NativeStackScreenProps<RootStackParamList, "GymSettings">;
 
@@ -84,8 +83,7 @@ export default function GymSettings({ navigation }: GymSettingsProps) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -145,6 +143,6 @@ export default function GymSettings({ navigation }: GymSettingsProps) {
           )}
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

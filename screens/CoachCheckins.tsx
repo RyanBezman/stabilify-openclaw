@@ -1,4 +1,3 @@
-import { StatusBar } from "expo-status-bar";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -9,8 +8,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Slider from "@react-native-community/slider";
 import { Ionicons } from "@expo/vector-icons";
 import CoachWorkspaceLocked from "../components/coaches/CoachWorkspaceLocked";
@@ -42,6 +41,7 @@ import { formatShortDate } from "../lib/utils/metrics";
 import { formatWeight } from "../lib/utils/weight";
 import type { RootStackParamList } from "../lib/navigation/types";
 import { useCoachRenderDiagnostics } from "../lib/features/coaches";
+import AppScreen from "../components/ui/AppScreen";
 
 type ScreenProps = NativeStackScreenProps<RootStackParamList, "CoachCheckins">;
 type BannerTone = "info" | "success" | "error";
@@ -230,9 +230,11 @@ function RatingPicker({
   disabled?: boolean;
 }) {
   const values: WeeklyCheckinRating[] = [1, 2, 3, 4, 5];
+  const { width } = useWindowDimensions();
+  const compactLayout = width < 390;
 
   return (
-    <View className="mt-3 flex-row justify-between gap-2">
+    <View className="mt-3 flex-row flex-wrap justify-between gap-2">
       {values.map((entry, index) => {
         const selected = value === entry;
         return (
@@ -246,7 +248,7 @@ function RatingPicker({
             className={`h-12 items-center justify-center rounded-xl border px-2 ${optionButtonClass(selected)} ${
               disabled ? "opacity-60" : ""
             }`}
-            style={{ width: "19%" }}
+            style={{ width: compactLayout ? "31.5%" : "19%" }}
           >
             <Text
               className={`text-[11px] font-semibold ${
@@ -505,8 +507,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
 
   if (viewState === "gating") {
     return (
-      <SafeAreaView className="flex-1 bg-neutral-950">
-        <StatusBar style="light" />
+      <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={840}>
         <CheckinHeader
           onBack={() => navigation.goBack()}
           title="Weekly check-in"
@@ -516,7 +517,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
           <ActivityIndicator color="#a3a3a3" />
           <Text className="mt-3 text-sm text-neutral-400">Loading weekly check-ins...</Text>
         </View>
-      </SafeAreaView>
+      </AppScreen>
     );
   }
 
@@ -540,8 +541,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
 
   if (!coach) {
     return (
-      <SafeAreaView className="flex-1 bg-neutral-950">
-        <StatusBar style="light" />
+      <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={840}>
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base font-semibold text-neutral-200">
             Select a nutrition coach to start weekly check-ins.
@@ -557,7 +557,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
             }
           />
         </View>
-      </SafeAreaView>
+      </AppScreen>
     );
   }
 
@@ -580,8 +580,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
   const showHeaderToggle = isFormOpen || !hasCurrentWeekCheckin;
 
   return (
-    <SafeAreaView className="flex-1 bg-neutral-950">
-      <StatusBar style="light" />
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={840}>
       <CheckinHeader
         onBack={() => navigation.goBack()}
         title="Weekly check-in"
@@ -1229,6 +1228,6 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
           })}
         </HistoryList>
       </ScrollView>
-    </SafeAreaView>
+    </AppScreen>
   );
 }

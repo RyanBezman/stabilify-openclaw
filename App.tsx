@@ -6,6 +6,7 @@ import {
   createNavigationContainerRef,
 } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { LogBox } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AuthedTabs from "./screens/AuthedTabs";
@@ -30,9 +31,20 @@ import GymValidationRequestDetail from "./screens/GymValidationRequestDetail";
 import { supabase } from "./lib/supabase";
 import type { RootStackParamList } from "./lib/navigation/types";
 import { CoachProvider } from "./lib/features/coaches";
+import { appNavigationTheme, appSceneStyle, appSurfaceStyle } from "./lib/navigation/theme";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+if (__DEV__) {
+  // Keep Metro focused on actionable app issues; these warnings come from known dependency/tooling behavior.
+  LogBox.ignoreLogs([
+    "SafeAreaView has been deprecated and will be removed in a future release.",
+    "expo-notifications: Android Push notifications",
+    "`expo-notifications` functionality is not fully supported in Expo Go",
+    "[expo-av]: Expo AV has been deprecated and will be removed in SDK 54.",
+  ]);
+}
 
 export default function App() {
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -93,12 +105,15 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
+    <GestureHandlerRootView style={appSurfaceStyle}>
+      <SafeAreaProvider style={appSurfaceStyle}>
         <CoachProvider>
-          <NavigationContainer ref={navigationRef}>
+          <NavigationContainer ref={navigationRef} theme={appNavigationTheme}>
             <Stack.Navigator
-              screenOptions={{ headerShown: false }}
+              screenOptions={{
+                headerShown: false,
+                contentStyle: appSceneStyle,
+              }}
               initialRouteName={user ? "Authed" : "Guest"}
             >
               <Stack.Screen name="Guest" component={GuestHome} />
