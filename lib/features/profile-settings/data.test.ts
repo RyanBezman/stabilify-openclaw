@@ -26,6 +26,7 @@ function buildValues(overrides?: Partial<ProfileSettingsValues>): ProfileSetting
     displayName: "User One",
     username: "userone",
     bio: "",
+    avatarPath: null,
     preferredUnit: "lb",
     timezone: "America/New_York",
     accountVisibility: "private",

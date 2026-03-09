@@ -15,9 +15,19 @@ export default function ProfileAvatar({
   className,
 }: ProfileAvatarProps) {
   const [imageFailed, setImageFailed] = useState(false);
-  const initial = displayName.trim().charAt(0).toUpperCase() || "U";
+  const parts = displayName
+    .trim()
+    .split(/\s+/)
+    .filter((part) => part.length > 0);
+  const initials = [
+    parts[0]?.charAt(0).toUpperCase() ?? "",
+    parts.length > 1 ? parts[parts.length - 1]?.charAt(0).toUpperCase() ?? "" : "",
+  ]
+    .join("")
+    .trim() || "U";
   const showPhoto = Boolean(photoUrl) && !imageFailed;
   const resolvedPhotoUrl = photoUrl ?? "";
+  const initialsFontSize = Math.max(18, Math.round(size * 0.28));
 
   useEffect(() => {
     setImageFailed(false);
@@ -36,7 +46,9 @@ export default function ProfileAvatar({
           onError={() => setImageFailed(true)}
         />
       ) : (
-        <Text className="text-lg font-bold text-white">{initial}</Text>
+        <Text className="font-bold text-white" style={{ fontSize: initialsFontSize }}>
+          {initials}
+        </Text>
       )}
     </View>
   );

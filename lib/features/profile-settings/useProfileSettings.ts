@@ -20,6 +20,7 @@ import {
 } from "./data";
 import { isSessionRequired } from "../shared";
 import { getExpoProjectId } from "../../utils/expo";
+import type { ProfileSettingsValues } from "./data";
 
 type ProfileSettingsActionResult = {
   success: boolean;
@@ -82,6 +83,7 @@ export function useProfileSettings() {
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const [preferredUnit, setPreferredUnit] = useState<WeightUnit>("lb");
   const [timezone, setTimezone] = useState("");
   const [accountVisibility, setAccountVisibility] = useState<AccountVisibility>("private");
@@ -101,69 +103,31 @@ export function useProfileSettings() {
   const [dailyStepGoal, setDailyStepGoal] = useState(10000);
   const [updatingAppleHealthSteps, setUpdatingAppleHealthSteps] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-
-    const load = async () => {
-      setLoading(true);
-      const [profileSettingsResult, pushDeviceResult] = await Promise.all([
-        fetchProfileSettingsValues(),
-        fetchHasActivePushNotificationDevice(),
-      ]);
-      const { data, error, code } = profileSettingsResult;
-      if (!active) return;
-
-      if (isSessionRequired({ code })) {
-        setLoadError("Please sign in again.");
-      } else if (error) {
-        setLoadError(error);
-      } else {
-        setLoadError(null);
-      }
-
-      if (data) {
-        setDisplayName(data.displayName);
-        setUsername(data.username);
-        setBio(data.bio);
-        setPreferredUnit(data.preferredUnit);
-        setTimezone(data.timezone);
-        setAccountVisibility(data.accountVisibility);
-        setProgressVisibility(data.progressVisibility);
-        setSocialEnabled(data.socialEnabled);
-        setWeighInShareVisibility(data.weighInShareVisibility);
-        setGymEventShareVisibility(data.gymEventShareVisibility);
-        setPostShareVisibility(data.postShareVisibility);
-        setAutoSupportEnabled(data.autoSupportEnabled && Boolean(data.autoSupportConsentedAt));
-        setAutoSupportConsentedAt(data.autoSupportConsentedAt);
-        setAppleHealthStepsEnabledState(data.appleHealthStepsEnabled);
-        setDailyStepGoal(data.dailyStepGoal);
-      }
-
-      if (!pushDeviceResult.error) {
-        setPhoneNudgesEnabledState(pushDeviceResult.data?.hasActiveDevice ?? false);
-      } else {
-        setPhoneNudgesEnabledState(false);
-      }
-      setLoading(false);
-    };
-
-    void load();
-
-    return () => {
-      active = false;
-    };
+  const applyProfileSettings = useCallback((values: ProfileSettingsValues) => {
+    setDisplayName(values.displayName);
+    setUsername(values.username);
+    setBio(values.bio);
+    setAvatarPath(values.avatarPath);
+    setPreferredUnit(values.preferredUnit);
+    setTimezone(values.timezone);
+    setAccountVisibility(values.accountVisibility);
+    setProgressVisibility(values.progressVisibility);
+    setSocialEnabled(values.socialEnabled);
+    setWeighInShareVisibility(values.weighInShareVisibility);
+    setGymEventShareVisibility(values.gymEventShareVisibility);
+    setPostShareVisibility(values.postShareVisibility);
+    setAutoSupportEnabled(values.autoSupportEnabled && Boolean(values.autoSupportConsentedAt));
+    setAutoSupportConsentedAt(values.autoSupportConsentedAt);
+    setAppleHealthStepsEnabledState(values.appleHealthStepsEnabled);
+    setDailyStepGoal(values.dailyStepGoal);
   }, []);
 
-  const save = useCallback(async () => {
-    if (saving) {
-      return { success: false, error: "Save already in progress." };
-    }
-
-    setSaving(true);
-    const { data, error, code } = await saveProfileSettingsValues({
+  const buildCurrentValues = useCallback(
+    (): ProfileSettingsValues => ({
       displayName,
       username,
       bio,
+      avatarPath,
       preferredUnit,
       timezone,
       accountVisibility,
@@ -176,7 +140,72 @@ export function useProfileSettings() {
       autoSupportConsentedAt,
       appleHealthStepsEnabled,
       dailyStepGoal,
-    });
+    }),
+    [
+      accountVisibility,
+      appleHealthStepsEnabled,
+      autoSupportConsentedAt,
+      autoSupportEnabled,
+      avatarPath,
+      bio,
+      dailyStepGoal,
+      displayName,
+      gymEventShareVisibility,
+      postShareVisibility,
+      preferredUnit,
+      progressVisibility,
+      socialEnabled,
+      timezone,
+      username,
+      weighInShareVisibility,
+    ],
+  );
+
+  const refresh = useCallback(async (): Promise<ProfileSettingsActionResult> => {
+    setLoading(true);
+    const [profileSettingsResult, pushDeviceResult] = await Promise.all([
+      fetchProfileSettingsValues(),
+      fetchHasActivePushNotificationDevice(),
+    ]);
+    const { data, error, code } = profileSettingsResult;
+
+    if (isSessionRequired({ code })) {
+      setLoadError("Please sign in again.");
+      setLoading(false);
+      return { success: false, error: "Please sign in again." };
+    }
+
+    if (error || !data) {
+      setLoadError(error ?? "Couldn't load profile settings.");
+      setLoading(false);
+      return { success: false, error: error ?? "Couldn't load profile settings." };
+    }
+
+    setLoadError(null);
+    applyProfileSettings(data);
+
+    if (!pushDeviceResult.error) {
+      setPhoneNudgesEnabledState(pushDeviceResult.data?.hasActiveDevice ?? false);
+    } else {
+      setPhoneNudgesEnabledState(false);
+    }
+
+    setLoading(false);
+    return { success: true };
+  }, [applyProfileSettings]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const save = useCallback(async () => {
+    if (saving) {
+      return { success: false, error: "Save already in progress." };
+    }
+
+    const values = buildCurrentValues();
+    setSaving(true);
+    const { data, error, code } = await saveProfileSettingsValues(values);
     setSaving(false);
 
     if (isSessionRequired({ code })) {
@@ -191,24 +220,43 @@ export function useProfileSettings() {
     setAutoSupportConsentedAt(data.autoSupportConsentedAt);
 
     return { success: true };
-  }, [
-    accountVisibility,
-    bio,
-    displayName,
-    username,
-    gymEventShareVisibility,
-    postShareVisibility,
-    progressVisibility,
-    preferredUnit,
-    saving,
-    socialEnabled,
-    timezone,
-    weighInShareVisibility,
-    autoSupportConsentedAt,
-    autoSupportEnabled,
-    appleHealthStepsEnabled,
-    dailyStepGoal,
-  ]);
+  }, [autoSupportConsentedAt, buildCurrentValues, saving]);
+
+  const updateProfileValues = useCallback(
+    async (patch: Partial<ProfileSettingsValues>): Promise<ProfileSettingsActionResult> => {
+      if (saving) {
+        return { success: false, error: "Save already in progress." };
+      }
+
+      const previousValues = buildCurrentValues();
+      const nextValues: ProfileSettingsValues = {
+        ...previousValues,
+        ...patch,
+      };
+
+      applyProfileSettings(nextValues);
+      setSaving(true);
+      const { data, error, code } = await saveProfileSettingsValues(nextValues);
+      setSaving(false);
+
+      if (isSessionRequired({ code })) {
+        applyProfileSettings(previousValues);
+        return { success: false, error: "Please sign in again." };
+      }
+
+      if (error || !data?.ok) {
+        applyProfileSettings(previousValues);
+        return {
+          success: false,
+          error: error ?? "Couldn't save profile settings.",
+        };
+      }
+
+      setAutoSupportConsentedAt(data.autoSupportConsentedAt);
+      return { success: true };
+    },
+    [applyProfileSettings, buildCurrentValues, saving],
+  );
 
   const grantAutoSupportConsent = useCallback(async (): Promise<ProfileSettingsActionResult> => {
     if (grantingAutoSupportConsent) {
@@ -298,25 +346,21 @@ export function useProfileSettings() {
         return { success: false };
       }
 
-      if (!enabled) {
-        setAppleHealthStepsEnabledState(false);
-        return { success: true };
-      }
-
       setUpdatingAppleHealthSteps(true);
       try {
-        const accessResult = await requestAppleHealthStepReadAccess();
-        if (accessResult.error) {
-          return { success: false, error: accessResult.error };
+        if (enabled) {
+          const accessResult = await requestAppleHealthStepReadAccess();
+          if (accessResult.error) {
+            return { success: false, error: accessResult.error };
+          }
         }
 
-        setAppleHealthStepsEnabledState(true);
-        return { success: true };
+        return await updateProfileValues({ appleHealthStepsEnabled: enabled });
       } finally {
         setUpdatingAppleHealthSteps(false);
       }
     },
-    [updatingAppleHealthSteps],
+    [updateProfileValues, updatingAppleHealthSteps],
   );
 
   return {
@@ -326,12 +370,15 @@ export function useProfileSettings() {
     updatingAppleHealthSteps,
     grantingAutoSupportConsent,
     loadError,
+    refresh,
     displayName,
     setDisplayName,
     username,
     setUsername,
     bio,
     setBio,
+    avatarPath,
+    setAvatarPath,
     preferredUnit,
     setPreferredUnit,
     timezone,
@@ -358,6 +405,7 @@ export function useProfileSettings() {
     dailyStepGoal,
     setDailyStepGoal,
     grantAutoSupportConsent,
+    updateProfileValues,
     save,
   };
 }

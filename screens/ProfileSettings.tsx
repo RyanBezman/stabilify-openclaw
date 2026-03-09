@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Alert,
   Linking,
@@ -9,23 +10,48 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as Notifications from "expo-notifications";
-import AuthHeader from "../components/auth/AuthHeader";
-import FormLabel from "../components/ui/FormLabel";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HelperText from "../components/ui/HelperText";
-import Input from "../components/ui/Input";
 import OptionPill from "../components/ui/OptionPill";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import ProfileAvatar from "../components/profile/ProfileAvatar";
 import { useProfileSettings } from "../lib/features/profile-settings";
 import { fetchHasActivePushNotificationDevice } from "../lib/data/supportAutomation";
+import {
+  getProfilePhotoSignedUrl,
+  useOwnProfilePhotoActions,
+  useProfilePhotoActionHandlers,
+} from "../lib/features/profile";
+import {
+  profileSettingsEditableFields,
+  type EditableProfileSettingsFieldKey,
+} from "../lib/features/profile-settings/editableFields";
 import type { RootStackParamList } from "../lib/navigation/types";
 import { getExpoProjectId } from "../lib/utils/expo";
-import { sanitizeUsername } from "../lib/utils/username";
 import AppScreen from "../components/ui/AppScreen";
 
 type ProfileSettingsProps = NativeStackScreenProps<RootStackParamList, "ProfileSettings">;
+
+type SettingsToggleRowProps = {
+  title: string;
+  description?: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+  disabled?: boolean;
+  isLast?: boolean;
+};
+
+type SettingsLinkRowProps = {
+  title: string;
+  description?: string;
+  value?: string;
+  onPress: () => void;
+  isLast?: boolean;
+};
 
 function isPhoneNudgesPermissionError(message?: string) {
   if (!message) return false;
@@ -33,7 +59,98 @@ function isPhoneNudgesPermissionError(message?: string) {
   return normalized.includes("notification permission is required");
 }
 
+function SettingsToggleRow({
+  title,
+  description,
+  value,
+  onValueChange,
+  disabled,
+  isLast = false,
+}: SettingsToggleRowProps) {
+  return (
+    <View className={`flex-row items-center px-5 py-4 ${isLast ? "" : "border-b border-neutral-900"}`}>
+      <View className="mr-4 flex-1">
+        <Text className="text-[16px] text-white">{title}</Text>
+        {description ? <HelperText className="mt-1">{description}</HelperText> : null}
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: "#262626", true: "#7c3aed" }}
+        thumbColor="#f5f3ff"
+        disabled={disabled}
+      />
+    </View>
+  );
+}
+
+function SettingsLinkRow({
+  title,
+  description,
+  value,
+  onPress,
+  isLast = false,
+}: SettingsLinkRowProps) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      className={`flex-row items-center px-5 py-4 ${isLast ? "" : "border-b border-neutral-900"}`}
+    >
+      <View className="mr-4 flex-1">
+        <Text className="text-[16px] text-white">{title}</Text>
+        {description ? <HelperText className="mt-1">{description}</HelperText> : null}
+      </View>
+      {value ? <Text className="mr-3 text-[16px] text-neutral-400">{value}</Text> : null}
+      <Ionicons name="chevron-forward" size={18} color="#737373" />
+    </TouchableOpacity>
+  );
+}
+
+type SettingsEditableFieldRowProps = {
+  label: string;
+  value: string;
+  usesPlaceholder?: boolean;
+  onPress: () => void;
+  disabled?: boolean;
+  isLast?: boolean;
+};
+
+function SettingsEditableFieldRow({
+  label,
+  value,
+  usesPlaceholder = false,
+  onPress,
+  disabled = false,
+  isLast = false,
+}: SettingsEditableFieldRowProps) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.8}
+      className={`flex-row items-start px-5 py-4 ${isLast ? "" : "border-b border-neutral-900"} ${
+        disabled ? "opacity-60" : ""
+      }`}
+    >
+      <View className="w-28 pr-4">
+        <Text className="text-[16px] text-neutral-200">{label}</Text>
+      </View>
+      <View className="flex-1 pr-3">
+        <Text
+          numberOfLines={label === "Bio" ? 3 : 2}
+          className={`text-[16px] ${usesPlaceholder ? "text-neutral-500" : "text-white"}`}
+        >
+          {value}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#737373" />
+    </TouchableOpacity>
+  );
+}
+
 export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
+  const insets = useSafeAreaInsets();
   const {
     loading,
     saving,
@@ -41,98 +158,198 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     updatingAppleHealthSteps,
     grantingAutoSupportConsent,
     loadError,
+    refresh,
     displayName,
-    setDisplayName,
     username,
-    setUsername,
     bio,
-    setBio,
+    avatarPath,
     preferredUnit,
-    setPreferredUnit,
     timezone,
-    setTimezone,
     accountVisibility,
-    setAccountVisibility,
     progressVisibility,
-    setProgressVisibility,
     socialEnabled,
-    setSocialEnabled,
     weighInShareVisibility,
-    setWeighInShareVisibility,
     gymEventShareVisibility,
-    setGymEventShareVisibility,
     postShareVisibility,
-    setPostShareVisibility,
     autoSupportEnabled,
+    autoSupportConsentedAt,
     setAutoSupportEnabled,
     phoneNudgesEnabled,
     setPhoneNudgesEnabled,
     appleHealthStepsEnabled,
     setAppleHealthStepsEnabled,
     dailyStepGoal,
-    setDailyStepGoal,
     grantAutoSupportConsent,
-    save,
+    updateProfileValues,
   } = useProfileSettings();
   const [showAdvancedPrivacy, setShowAdvancedPrivacy] = useState(false);
-  const [dailyStepGoalInput, setDailyStepGoalInput] = useState("10000");
   const [sendingTestNotification, setSendingTestNotification] = useState(false);
   const [sendingDelayedTestNotification, setSendingDelayedTestNotification] = useState(false);
   const [loadingPushDebugInfo, setLoadingPushDebugInfo] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+
+  const refreshProfileSettingsSurface = useCallback(async () => {
+    const result = await refresh();
+    return result.error ? { error: result.error } : {};
+  }, [refresh]);
+
+  const { photoLoading, uploadPhoto, removePhoto } = useOwnProfilePhotoActions({
+    refreshProfile: refreshProfileSettingsSurface,
+  });
+  const { openPhotoActions } = useProfilePhotoActionHandlers({
+    photoUrl,
+    photoLoading,
+    uploadPhoto,
+    removePhoto,
+  });
 
   useEffect(() => {
     if (!loadError) return;
     Alert.alert("Couldn't load profile settings", loadError);
   }, [loadError]);
 
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
+
   useEffect(() => {
-    setDailyStepGoalInput(String(dailyStepGoal));
-  }, [dailyStepGoal]);
+    let active = true;
 
-  const handleSave = async () => {
-    const result = await save();
-    if (!result.success) {
-      Alert.alert("Save failed", result.error ?? "Couldn't save profile settings.");
+    const loadPhotoUrl = async () => {
+      if (!avatarPath) {
+        if (active) {
+          setPhotoUrl(null);
+        }
+        return;
+      }
+
+      const result = await getProfilePhotoSignedUrl(avatarPath);
+      if (!active) {
+        return;
+      }
+
+      setPhotoUrl(result.data?.signedUrl ?? null);
+    };
+
+    void loadPhotoUrl();
+
+    return () => {
+      active = false;
+    };
+  }, [avatarPath]);
+
+  const editableFieldValues = {
+    displayName,
+    username,
+    bio,
+    avatarPath,
+    preferredUnit,
+    timezone,
+    accountVisibility,
+    progressVisibility,
+    socialEnabled,
+    weighInShareVisibility,
+    gymEventShareVisibility,
+    postShareVisibility,
+    autoSupportEnabled,
+    autoSupportConsentedAt,
+    appleHealthStepsEnabled,
+    dailyStepGoal,
+  };
+
+  const renderEditableFieldRow = (
+    fieldKey: EditableProfileSettingsFieldKey,
+    isLast = false,
+  ) => {
+    const field = profileSettingsEditableFields[fieldKey];
+    const preview = field.getPreview(editableFieldValues);
+
+    return (
+      <SettingsEditableFieldRow
+        key={fieldKey}
+        label={field.label}
+        value={preview.value}
+        usesPlaceholder={preview.usesPlaceholder}
+        disabled={loading || saving}
+        onPress={() => {
+          navigation.navigate("ProfileSettingsTextEdit", { fieldKey });
+        }}
+        isLast={isLast}
+      />
+    );
+  };
+
+  const handleImmediateSaveError = (title: string, message?: string) => {
+    if (!message) {
       return;
     }
-
-    Alert.alert("Saved", "Profile settings updated.", [
-      { text: "Done", onPress: () => navigation.goBack() },
-    ]);
+    Alert.alert(title, message);
   };
 
-  const handleAccountVisibilityChange = (next: "private" | "public") => {
-    setAccountVisibility(next);
+  const handleAccountVisibilityChange = async (next: "private" | "public") => {
+    const nextValues =
+      next === "public"
+        ? {
+            accountVisibility: next,
+            socialEnabled: true,
+            weighInShareVisibility: "followers" as const,
+            gymEventShareVisibility: "followers" as const,
+            postShareVisibility: "followers" as const,
+          }
+        : {
+            accountVisibility: next,
+            socialEnabled: false,
+            weighInShareVisibility: "private" as const,
+            gymEventShareVisibility: "private" as const,
+            postShareVisibility: "private" as const,
+          };
 
-    if (next === "public") {
-      setSocialEnabled(true);
-      setWeighInShareVisibility("followers");
-      setGymEventShareVisibility("followers");
-      setPostShareVisibility("followers");
-      return;
+    if (next === "private") {
+      setShowAdvancedPrivacy(false);
     }
 
-    setSocialEnabled(false);
-    setWeighInShareVisibility("private");
-    setGymEventShareVisibility("private");
-    setPostShareVisibility("private");
-    setShowAdvancedPrivacy(false);
+    const result = await updateProfileValues(nextValues);
+    handleImmediateSaveError("Couldn't update profile visibility", result.error);
   };
 
-  const handleWeighInShareToggle = (enabled: boolean) => {
-    setWeighInShareVisibility(enabled ? "followers" : "private");
+  const handleSocialEnabledToggle = async (enabled: boolean) => {
+    const result = await updateProfileValues({ socialEnabled: enabled });
+    handleImmediateSaveError("Couldn't update social features", result.error);
   };
 
-  const handleGymEventShareToggle = (enabled: boolean) => {
-    setGymEventShareVisibility(enabled ? "followers" : "private");
+  const handleWeighInShareToggle = async (enabled: boolean) => {
+    const result = await updateProfileValues({
+      weighInShareVisibility: enabled ? "followers" : "private",
+    });
+    handleImmediateSaveError("Couldn't update weigh-in sharing", result.error);
   };
 
-  const handlePostShareToggle = (enabled: boolean) => {
-    setPostShareVisibility(enabled ? "followers" : "private");
+  const handleGymEventShareToggle = async (enabled: boolean) => {
+    const result = await updateProfileValues({
+      gymEventShareVisibility: enabled ? "followers" : "private",
+    });
+    handleImmediateSaveError("Couldn't update gym sharing", result.error);
   };
 
-  const handleProgressVisibilityToggle = (enabled: boolean) => {
-    setProgressVisibility(enabled ? "public" : "private");
+  const handlePostShareToggle = async (enabled: boolean) => {
+    const result = await updateProfileValues({
+      postShareVisibility: enabled ? "followers" : "private",
+    });
+    handleImmediateSaveError("Couldn't update post sharing", result.error);
+  };
+
+  const handleProgressVisibilityToggle = async (enabled: boolean) => {
+    const result = await updateProfileValues({
+      progressVisibility: enabled ? "public" : "private",
+    });
+    handleImmediateSaveError("Couldn't update progress visibility", result.error);
+  };
+
+  const handlePreferredUnitChange = async (nextUnit: "lb" | "kg") => {
+    const result = await updateProfileValues({ preferredUnit: nextUnit });
+    handleImmediateSaveError("Couldn't update preferred unit", result.error);
   };
 
   const handleSetPhoneNudgesEnabled = async (enabled: boolean) => {
@@ -196,28 +413,12 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     );
   };
 
-  const handleDailyStepGoalTextChange = (value: string) => {
-    const digitsOnly = value.replace(/[^0-9]/g, "");
-    setDailyStepGoalInput(digitsOnly);
-    if (!digitsOnly) {
-      return;
-    }
-
-    setDailyStepGoal(Number(digitsOnly));
-  };
-
-  const handleDailyStepGoalInputBlur = () => {
-    if (dailyStepGoalInput) {
-      return;
-    }
-
-    setDailyStepGoal(10000);
-    setDailyStepGoalInput("10000");
-  };
-
   const handleAutoSupportToggle = (enabled: boolean) => {
     if (!enabled) {
-      setAutoSupportEnabled(false);
+      void (async () => {
+        const result = await updateProfileValues({ autoSupportEnabled: false });
+        handleImmediateSaveError("Couldn't disable auto support", result.error);
+      })();
       return;
     }
 
@@ -385,380 +586,284 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
 
   return (
     <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
-      <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-6">
-        <AuthHeader title="Profile settings" onBack={navigation.goBack} />
-
-        <Card className="mb-6 p-5">
-          <View className="mb-5">
-            <FormLabel>Display Name</FormLabel>
-            <Input
-              value={displayName}
-              onChangeText={setDisplayName}
-              placeholder="Jordan"
-              autoCapitalize="words"
-              editable={!loading && !saving}
-            />
-          </View>
-
-          <View className="mb-5">
-            <FormLabel>Bio</FormLabel>
-            <Input
-              value={bio}
-              onChangeText={setBio}
-              placeholder="A short line about yourself"
-              maxLength={160}
-              editable={!loading && !saving}
-            />
-            <HelperText className="mt-2">
-              {bio.length}/160 characters
-            </HelperText>
-          </View>
-
-          <View className="mb-5">
-            <FormLabel>Username</FormLabel>
-            <Input
-              value={username}
-              onChangeText={(value) => setUsername(sanitizeUsername(value))}
-              placeholder="jordan_fit"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading && !saving}
-            />
-            <HelperText className="mt-2">
-              Lowercase letters, numbers, and underscores only.
-            </HelperText>
-          </View>
-
-          <View className="mb-5">
-            <FormLabel className="mb-3">Preferred Unit</FormLabel>
-            <View className="flex-row gap-3">
-              <OptionPill
-                label="Pounds (lb)"
-                selected={preferredUnit === "lb"}
-                onPress={() => setPreferredUnit("lb")}
-              />
-              <OptionPill
-                label="Kilograms (kg)"
-                selected={preferredUnit === "kg"}
-                onPress={() => setPreferredUnit("kg")}
-              />
-            </View>
-          </View>
-
+      <View className="flex-1">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="pb-10 pt-2"
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) + 24 }}
+          automaticallyAdjustContentInsets={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        >
           <View>
-            <FormLabel>Timezone</FormLabel>
-            <Input
-              value={timezone}
-              onChangeText={setTimezone}
-              placeholder="America/Los_Angeles"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!loading && !saving}
-            />
-            <HelperText className="mt-2">
-              Use an IANA timezone like America/Los_Angeles.
-            </HelperText>
-          </View>
-        </Card>
+              <View className="px-5 pb-5 pt-4">
+                <View className="relative items-center justify-center py-2">
+                  <TouchableOpacity
+                    onPress={navigation.goBack}
+                    className="absolute left-0 top-0 h-11 w-11 items-center justify-center rounded-full"
+                    activeOpacity={0.75}
+                  >
+                    <Ionicons name="chevron-back" size={28} color="#fafafa" />
+                  </TouchableOpacity>
+                  <Text className="text-[22px] font-semibold text-white">Edit profile</Text>
+                </View>
+              </View>
 
-        <Card className="mb-6 p-5">
-          <View>
-            <FormLabel className="mb-3">Profile Visibility</FormLabel>
-            <View className="flex-row gap-3">
-              <OptionPill
-                label="Private"
-                selected={accountVisibility === "private"}
-                onPress={() => handleAccountVisibilityChange("private")}
-              />
-              <OptionPill
-                label="Public"
-                selected={accountVisibility === "public"}
-                onPress={() => handleAccountVisibilityChange("public")}
-              />
-            </View>
-            <HelperText className="mt-2">
-              Public makes your profile visible and defaults sharing to followers.
-            </HelperText>
-          </View>
-
-          <View className="mt-5">
-            <View className="flex-row items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3">
-              <View className="mr-3 flex-1">
-                <Text className="text-sm font-semibold text-white">
-                  Show Progress on public profile
+              <View className="items-center border-y border-neutral-900 px-5 py-8">
+                <TouchableOpacity
+                  onPress={openPhotoActions}
+                  activeOpacity={0.85}
+                  disabled={photoLoading}
+                  className="items-center"
+                >
+                  <ProfileAvatar
+                    displayName={displayName}
+                    photoUrl={photoUrl}
+                    size={96}
+                    className="border-neutral-800 bg-neutral-900"
+                  />
+                  <Text className="mt-4 text-sm font-medium text-violet-300">
+                    {photoLoading ? "Updating picture..." : "Edit picture"}
+                  </Text>
+                </TouchableOpacity>
+                <Text className="mt-4 text-lg font-medium text-white">
+                  {displayName || "Your profile"}
                 </Text>
-                <HelperText className="mt-1">
-                  Turn off to hide your Progress tab from other users.
-                </HelperText>
+                <Text className="mt-2 text-sm text-neutral-500">
+                  Tap a text field to edit it. Preference changes still save automatically.
+                </Text>
               </View>
-              <Switch
-                value={progressVisibility === "public"}
-                onValueChange={handleProgressVisibilityToggle}
-                trackColor={{ false: "#262626", true: "#7c3aed" }}
-                thumbColor="#f5f3ff"
-              />
-            </View>
-          </View>
 
-          {accountVisibility === "public" ? (
-            <TouchableOpacity
-              onPress={() => setShowAdvancedPrivacy((value) => !value)}
-              className="mt-5 rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3"
-              activeOpacity={0.85}
-            >
-              <Text className="text-sm font-semibold text-neutral-200">
-                {showAdvancedPrivacy ? "Hide advanced settings" : "Show advanced settings"}
+              <View className="mt-6 border-y border-neutral-900 bg-black">
+                {renderEditableFieldRow("displayName")}
+                {renderEditableFieldRow("username")}
+                {renderEditableFieldRow("bio")}
+                <View className="border-b border-neutral-900 px-5 py-4">
+                  <View className="flex-row">
+                    <View className="w-28 pr-4">
+                      <Text className="text-[16px] text-neutral-200">Unit</Text>
+                    </View>
+                    <View className="flex-1 flex-row flex-wrap gap-2">
+                      <OptionPill
+                        label="Pounds (lb)"
+                        selected={preferredUnit === "lb"}
+                        disabled={loading || saving}
+                        onPress={() => {
+                          void handlePreferredUnitChange("lb");
+                        }}
+                      />
+                      <OptionPill
+                        label="Kilograms (kg)"
+                        selected={preferredUnit === "kg"}
+                        disabled={loading || saving}
+                        onPress={() => {
+                          void handlePreferredUnitChange("kg");
+                        }}
+                      />
+                    </View>
+                  </View>
+                </View>
+                {renderEditableFieldRow("timezone")}
+                {renderEditableFieldRow("dailyStepGoal", true)}
+              </View>
+
+              <Text className="px-5 pb-2 pt-8 text-xs font-semibold uppercase tracking-[1.8px] text-neutral-500">
+                Privacy
               </Text>
-            </TouchableOpacity>
-          ) : (
-            <HelperText className="mt-4">
-              Advanced privacy is only available for public profiles.
-            </HelperText>
-          )}
-
-          {accountVisibility === "public" && showAdvancedPrivacy ? (
-            <View className="mt-5">
-              <View className="mb-5">
-                <View className="flex-row items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3">
-                  <View className="mr-3 flex-1">
-                    <Text className="text-sm font-semibold text-white">Social features</Text>
-                    <HelperText className="mt-1">Enable social surfaces and sharing defaults.</HelperText>
+              <View className="border-y border-neutral-900 bg-black">
+                <View className="border-b border-neutral-900 px-5 py-4">
+                  <View className="flex-row">
+                    <View className="w-28 pr-4">
+                      <Text className="text-[16px] text-neutral-200">Profile</Text>
+                    </View>
+                    <View className="flex-1">
+                      <View className="flex-row flex-wrap gap-2">
+                        <OptionPill
+                          label="Private"
+                          selected={accountVisibility === "private"}
+                          disabled={loading || saving}
+                          onPress={() => {
+                            void handleAccountVisibilityChange("private");
+                          }}
+                        />
+                        <OptionPill
+                          label="Public"
+                          selected={accountVisibility === "public"}
+                          disabled={loading || saving}
+                          onPress={() => {
+                            void handleAccountVisibilityChange("public");
+                          }}
+                        />
+                      </View>
+                      <HelperText className="mt-2">
+                        Public makes your profile visible and defaults sharing to followers.
+                      </HelperText>
+                    </View>
                   </View>
-                  <Switch
-                    value={socialEnabled}
-                    onValueChange={setSocialEnabled}
-                    trackColor={{ false: "#262626", true: "#7c3aed" }}
-                    thumbColor="#f5f3ff"
-                  />
                 </View>
-              </View>
-
-              <View className="mb-5">
-                <View className="flex-row items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3">
-                  <View className="mr-3 flex-1">
-                    <Text className="text-sm font-semibold text-white">
-                      Share weigh-ins by default
-                    </Text>
-                    <HelperText className="mt-1">Off keeps weigh-ins private by default.</HelperText>
-                  </View>
-                  <Switch
-                    value={weighInShareVisibility !== "private"}
-                    onValueChange={handleWeighInShareToggle}
-                    trackColor={{ false: "#262626", true: "#7c3aed" }}
-                    thumbColor="#f5f3ff"
-                  />
-                </View>
-              </View>
-
-              <View className="mb-5">
-                <View className="flex-row items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3">
-                  <View className="mr-3 flex-1">
-                    <Text className="text-sm font-semibold text-white">
-                      Share gym events by default
-                    </Text>
+                <SettingsToggleRow
+                  title="Show Progress on public profile"
+                  description="Turn off to hide your Progress tab from other users."
+                  value={progressVisibility === "public"}
+                  onValueChange={handleProgressVisibilityToggle}
+                  disabled={loading || saving}
+                />
+                {accountVisibility === "public" ? (
+                  <TouchableOpacity
+                    onPress={() => setShowAdvancedPrivacy((value) => !value)}
+                    activeOpacity={0.8}
+                    className="border-b border-neutral-900 px-5 py-4"
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <View className="mr-4 flex-1">
+                        <Text className="text-[16px] text-white">Advanced privacy</Text>
+                        <HelperText className="mt-1">
+                          Fine-tune social defaults for posts, gym events, and weigh-ins.
+                        </HelperText>
+                      </View>
+                      <Ionicons
+                        name={showAdvancedPrivacy ? "chevron-up" : "chevron-down"}
+                        size={18}
+                        color="#737373"
+                      />
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <View className="border-b border-neutral-900 px-5 py-4">
+                    <Text className="text-[16px] text-white">Advanced privacy</Text>
                     <HelperText className="mt-1">
-                      Off keeps gym events private by default.
+                      Available once your profile is public.
                     </HelperText>
                   </View>
-                  <Switch
-                    value={gymEventShareVisibility !== "private"}
-                    onValueChange={handleGymEventShareToggle}
-                    trackColor={{ false: "#262626", true: "#7c3aed" }}
-                    thumbColor="#f5f3ff"
-                  />
-                </View>
+                )}
+
+                {accountVisibility === "public" && showAdvancedPrivacy ? (
+                  <>
+                    <SettingsToggleRow
+                      title="Social features"
+                      description="Enable social surfaces and sharing defaults."
+                      value={socialEnabled}
+                      onValueChange={(value) => {
+                        void handleSocialEnabledToggle(value);
+                      }}
+                      disabled={loading || saving}
+                    />
+                    <SettingsToggleRow
+                      title="Share weigh-ins by default"
+                      description="Off keeps weigh-ins private by default."
+                      value={weighInShareVisibility !== "private"}
+                      onValueChange={handleWeighInShareToggle}
+                    />
+                    <SettingsToggleRow
+                      title="Share gym events by default"
+                      description="Off keeps gym events private by default."
+                      value={gymEventShareVisibility !== "private"}
+                      onValueChange={handleGymEventShareToggle}
+                    />
+                    <SettingsToggleRow
+                      title="Share posts by default"
+                      description="Off keeps posts private by default."
+                      value={postShareVisibility !== "private"}
+                      onValueChange={handlePostShareToggle}
+                      isLast
+                    />
+                  </>
+                ) : null}
               </View>
 
-              <View>
-                <View className="flex-row items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3">
-                  <View className="mr-3 flex-1">
-                    <Text className="text-sm font-semibold text-white">Share posts by default</Text>
-                    <HelperText className="mt-1">Off keeps posts private by default.</HelperText>
-                  </View>
-                  <Switch
-                    value={postShareVisibility !== "private"}
-                    onValueChange={handlePostShareToggle}
-                    trackColor={{ false: "#262626", true: "#7c3aed" }}
-                    thumbColor="#f5f3ff"
-                  />
-                </View>
-              </View>
-            </View>
-          ) : null}
-        </Card>
-
-        <Card className="mb-6 p-5">
-          <View className="mb-5 flex-row items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3">
-            <View className="mr-3 flex-1">
-              <Text className="text-sm font-semibold text-white">Auto support post</Text>
-              <HelperText className="mt-1">
-                Allow close-friends support posts when you are behind this week.
-              </HelperText>
-            </View>
-            <Switch
-              value={autoSupportEnabled}
-              onValueChange={handleAutoSupportToggle}
-              trackColor={{ false: "#262626", true: "#7c3aed" }}
-              thumbColor="#f5f3ff"
-              disabled={loading || saving || grantingAutoSupportConsent}
-            />
-          </View>
-
-          <View className="mt-4 rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3">
-            <View className="flex-row items-center justify-between">
-              <View className="mr-3 flex-1">
-                <Text className="text-xs font-semibold uppercase text-neutral-500">
-                  Phone notifications
-                </Text>
-                <Text className="mt-1 text-sm text-neutral-200">
-                  {phoneNudgesEnabled ? "Enabled" : "Disabled"}
-                </Text>
-                <HelperText className="mt-1">
-                  Turn on to receive private behind-goal reminders on this device.
-                </HelperText>
-              </View>
-              <Switch
-                value={phoneNudgesEnabled}
-                onValueChange={(value) => {
-                  void handleSetPhoneNudgesEnabled(value);
-                }}
-                trackColor={{ false: "#262626", true: "#7c3aed" }}
-                thumbColor="#f5f3ff"
-                disabled={loading || saving || updatingPhoneNudges}
-              />
-            </View>
-          </View>
-
-          <View className="mt-4 rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3">
-            <View className="flex-row items-center justify-between">
-              <View className="mr-3 flex-1">
-                <Text className="text-xs font-semibold uppercase text-neutral-500">
-                  Track steps
-                </Text>
-                <Text className="mt-1 text-sm text-neutral-200">
-                  {appleHealthStepsEnabled ? "Enabled" : "Disabled"}
-                </Text>
-                <HelperText className="mt-1">
-                  {Platform.OS === "ios"
-                    ? "Sync today's steps from Apple Health into your Home progress card."
-                    : "Apple Health sync is available on iPhone only."}
-                </HelperText>
-              </View>
-              <Switch
-                value={appleHealthStepsEnabled}
-                onValueChange={(value) => {
-                  void handleAppleHealthStepsToggle(value);
-                }}
-                trackColor={{ false: "#262626", true: "#7c3aed" }}
-                thumbColor="#f5f3ff"
-                disabled={loading || saving || updatingAppleHealthSteps || Platform.OS !== "ios"}
-              />
-            </View>
-
-            <View className="mt-4 border-t border-neutral-800 pt-4">
-              <Text className="text-xs font-semibold uppercase text-neutral-500">
-                Daily step goal
+              <Text className="px-5 pb-2 pt-8 text-xs font-semibold uppercase tracking-[1.8px] text-neutral-500">
+                Support
               </Text>
-              <Text className="mt-1 text-sm text-neutral-200">{dailyStepGoal.toLocaleString()} steps</Text>
-              <HelperText className="mt-1">
-                Home uses this target for the Steps ring after you connect Apple Health.
-              </HelperText>
-              <View className="mt-3 flex-row gap-2">
-                {[6000, 8000, 10000, 12000].map((goal) => (
-                  <OptionPill
-                    key={goal}
-                    label={`${goal / 1000}k`}
-                    selected={dailyStepGoal === goal}
-                    onPress={() => {
-                      setDailyStepGoal(goal);
-                      setDailyStepGoalInput(String(goal));
-                    }}
-                  />
-                ))}
-              </View>
-              <View className="mt-3">
-                <Input
-                  value={dailyStepGoalInput}
-                  onChangeText={handleDailyStepGoalTextChange}
-                  onBlur={handleDailyStepGoalInputBlur}
-                  keyboardType="number-pad"
-                  inputMode="numeric"
-                  placeholder="Custom step goal"
-                  maxLength={5}
+              <View className="border-y border-neutral-900 bg-black">
+                <SettingsToggleRow
+                  title="Auto support post"
+                  description="Allow close-friends support posts when you are behind this week."
+                  value={autoSupportEnabled}
+                  onValueChange={handleAutoSupportToggle}
+                  disabled={loading || saving || grantingAutoSupportConsent}
+                />
+                <SettingsToggleRow
+                  title="Phone notifications"
+                  description="Turn on to receive private behind-goal reminders on this device."
+                  value={phoneNudgesEnabled}
+                  onValueChange={(value) => {
+                    void handleSetPhoneNudgesEnabled(value);
+                  }}
+                  disabled={loading || saving || updatingPhoneNudges}
+                />
+                <SettingsToggleRow
+                  title="Track steps"
+                  description={
+                    Platform.OS === "ios"
+                      ? "Sync today's steps from Apple Health into your Home progress card."
+                      : "Apple Health sync is available on iPhone only."
+                  }
+                  value={appleHealthStepsEnabled}
+                  onValueChange={(value) => {
+                    void handleAppleHealthStepsToggle(value);
+                  }}
+                  disabled={loading || saving || updatingAppleHealthSteps || Platform.OS !== "ios"}
+                  isLast
                 />
               </View>
-            </View>
+
+              <Text className="px-5 pb-2 pt-8 text-xs font-semibold uppercase tracking-[1.8px] text-neutral-500">
+                Verification
+              </Text>
+              <View className="border-y border-neutral-900 bg-black">
+                <SettingsLinkRow
+                  title="Gym verification location"
+                  description="Update your saved gym to control gym session verification."
+                  onPress={() => navigation.navigate("GymSettings")}
+                  isLast
+                />
+              </View>
+
+              {__DEV__ ? (
+                <Card className="mx-5 mb-6 mt-8 p-5">
+                  <Text className="text-sm font-semibold text-white">Developer tools</Text>
+                  <HelperText className="mt-1">
+                    Send a local notification from this screen to verify notification presentation in the dev build.
+                  </HelperText>
+                  <View className="mt-4">
+                    <Button
+                      title={sendingTestNotification ? "Sending test notification..." : "Send test notification"}
+                      loading={sendingTestNotification}
+                      disabled={sendingTestNotification}
+                      onPress={() => {
+                        void handleSendTestNotification();
+                      }}
+                    />
+                  </View>
+                  <View className="mt-3">
+                    <Button
+                      title={
+                        sendingDelayedTestNotification
+                          ? "Scheduling delayed notification..."
+                          : "Send delayed notification (5s)"
+                      }
+                      loading={sendingDelayedTestNotification}
+                      disabled={sendingDelayedTestNotification}
+                      onPress={() => {
+                        void handleSendDelayedTestNotification();
+                      }}
+                    />
+                  </View>
+                  <View className="mt-3">
+                    <Button
+                      title={loadingPushDebugInfo ? "Loading push info..." : "Show push registration info"}
+                      loading={loadingPushDebugInfo}
+                      disabled={loadingPushDebugInfo}
+                      onPress={() => {
+                        void handleShowPushDebugInfo();
+                      }}
+                    />
+                  </View>
+                </Card>
+              ) : null}
           </View>
-        </Card>
-
-        <Card className="mb-6 p-5">
-          <View className="flex-row items-center justify-between">
-            <View className="mr-3 flex-1">
-              <Text className="text-sm font-semibold text-white">Gym verification location</Text>
-              <HelperText className="mt-1">
-                Update your saved gym to control gym session verification.
-              </HelperText>
-            </View>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("GymSettings")}
-              className="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2"
-              activeOpacity={0.8}
-            >
-              <Text className="text-xs font-semibold text-neutral-200">Manage gym</Text>
-            </TouchableOpacity>
-          </View>
-        </Card>
-
-        {__DEV__ ? (
-          <Card className="mb-6 p-5">
-            <Text className="text-sm font-semibold text-white">Developer tools</Text>
-            <HelperText className="mt-1">
-              Send a local notification from this screen to verify notification presentation in the dev build.
-            </HelperText>
-            <View className="mt-4">
-              <Button
-                title={sendingTestNotification ? "Sending test notification..." : "Send test notification"}
-                loading={sendingTestNotification}
-                disabled={sendingTestNotification}
-                onPress={() => {
-                  void handleSendTestNotification();
-                }}
-              />
-            </View>
-            <View className="mt-3">
-              <Button
-                title={
-                  sendingDelayedTestNotification
-                    ? "Scheduling delayed notification..."
-                    : "Send delayed notification (5s)"
-                }
-                loading={sendingDelayedTestNotification}
-                disabled={sendingDelayedTestNotification}
-                onPress={() => {
-                  void handleSendDelayedTestNotification();
-                }}
-              />
-            </View>
-            <View className="mt-3">
-              <Button
-                title={loadingPushDebugInfo ? "Loading push info..." : "Show push registration info"}
-                loading={loadingPushDebugInfo}
-                disabled={loadingPushDebugInfo}
-                onPress={() => {
-                  void handleShowPushDebugInfo();
-                }}
-              />
-            </View>
-          </Card>
-        ) : null}
-
-        <Button
-          title={saving ? "Saving..." : "Save settings"}
-          loading={saving}
-          disabled={loading}
-          onPress={handleSave}
-        />
-      </ScrollView>
+        </ScrollView>
+      </View>
     </AppScreen>
   );
 }

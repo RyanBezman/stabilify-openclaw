@@ -18,6 +18,7 @@ import Onboarding from "./screens/Onboarding";
 import LogWeighIn from "./screens/LogWeighIn";
 import GymSettings from "./screens/GymSettings";
 import ProfileSettings from "./screens/ProfileSettings";
+import ProfileSettingsTextEdit from "./screens/ProfileSettingsTextEdit";
 import BillingPlans from "./screens/BillingPlans";
 import CreatePost from "./screens/CreatePost";
 import CoachWorkspace from "./screens/CoachWorkspace";
@@ -133,6 +134,10 @@ export default function App() {
               <Stack.Screen name="LogWeighIn" component={LogWeighIn} />
               <Stack.Screen name="GymSettings" component={GymSettings} />
               <Stack.Screen name="ProfileSettings" component={ProfileSettings} />
+              <Stack.Screen
+                name="ProfileSettingsTextEdit"
+                component={ProfileSettingsTextEdit}
+              />
               <Stack.Screen name="UserProfile" component={UserProfile} />
               <Stack.Screen name="FollowRequests" component={FollowRequests} />
               <Stack.Screen

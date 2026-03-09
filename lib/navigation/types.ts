@@ -5,6 +5,7 @@ import type {
   CoachPersonality,
   CoachSpecialization,
 } from "../features/coaches";
+import type { EditableProfileSettingsFieldKey } from "../features/profile-settings/editableFields";
 import type { PostRow } from "../data/types";
 
 export type AuthedTabParamList = {
@@ -31,6 +32,7 @@ export type RootStackParamList = {
   LogWeighIn: undefined;
   GymSettings: undefined;
   ProfileSettings: undefined;
+  ProfileSettingsTextEdit: { fieldKey: EditableProfileSettingsFieldKey };
   UserProfile: { userId: string };
   FollowRequests: undefined;
   GymValidationRequestDetail: { requestId: string };

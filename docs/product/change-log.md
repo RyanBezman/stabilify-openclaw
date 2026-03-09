@@ -1,5 +1,29 @@
 # Product Policy Change Log
 
+## 2026-03-09 - Social/account surface visual consistency
+
+### Added
+
+- Shared social/account surface visual policy:
+  - `Feed`, `Profile`, and `Profile settings` should use a cohesive dark, minimal visual family.
+- Profile settings presentation policy:
+  - use full-width grouped rows with subtle dividers,
+  - keep basic identity fields inline on the main edit surface,
+  - avoid deeply nested card stacks for straightforward profile editing.
+
+### Changed
+
+- Profile settings visual direction:
+  - moved closer to a native social-product edit screen instead of a dashboard/settings-card layout.
+
+### Removed
+
+- Implicit acceptance of deeply nested edit UI for top-level profile fields.
+
+### Notes
+
+- This is a presentation and consistency policy update; data contracts and save behavior remain immediate-save and unchanged.
+
 ## 2026-03-05 - Coach onboarding body profile + dual-track results review
 
 ### Added

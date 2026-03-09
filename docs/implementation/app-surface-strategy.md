@@ -1,6 +1,6 @@
 # App Surface Implementation Strategy (Home, Feed, Profile)
 
-Last updated: 2026-03-04
+Last updated: 2026-03-09
 
 ## Goal
 
@@ -12,6 +12,7 @@ Policy source-of-truth:
 
 - `docs/product/app-overview.md`
 - `docs/product/accountability-and-social.md`
+- `docs/product/builder-context.md`
 - `docs/product/roadmap-and-governance.md`
 
 ## Surface Contracts
@@ -135,6 +136,13 @@ Do not include:
 - Home answers daily execution needs.
 - Feed answers social support/visibility needs.
 - Profile answers identity/archive/settings needs.
+- Feed, Profile, and Profile settings should share one visual family for social/account surfaces:
+  - dark, minimal presentation with restrained chrome,
+  - full-width section groups separated by subtle dividers,
+  - limited nested card usage on identity/settings surfaces,
+  - inline text editing and row-based settings where the task is simple,
+  - simple, calm headers and spacing that feel closer to a native social product than a dashboard.
+- When in doubt, Feed and Profile should feel like adjacent surfaces from the same product, and Profile settings should look like an edit extension of Profile rather than a separate admin tool.
 
 ## Analytics
 
@@ -147,3 +155,4 @@ Do not include:
 2. No heavy analytics duplication across tabs.
 3. Accountability events can flow to Feed/Profile without exposing sensitive defaults.
 4. Surface behavior remains consistent with product policy docs.
+5. Feed, Profile, and Profile settings stay visually aligned with the shared full-width dark social-surface treatment.

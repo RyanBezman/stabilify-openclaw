@@ -1,6 +1,6 @@
 # Builder Context (Persistent)
 
-Last updated: 2026-03-02
+Last updated: 2026-03-09
 
 ## Goal
 
@@ -51,6 +51,12 @@ Capture durable product and collaboration defaults so implementation decisions s
 - Release mode: small beta cohort first.
 - Platform quality bar: iOS first, Android parity immediately after stabilization.
 - Offline mode: not in current scope (online-first).
+- Visual language for social/account surfaces (`Feed`, `Profile`, `Profile settings`):
+  - use a clean dark system with full-width rows and subtle dividers instead of stacked nested cards,
+  - prefer edge-to-edge grouped sections over heavily boxed subcomponents,
+  - keep headers simple and centered when the surface is primarily edit/settings-focused,
+  - keep inline editing direct and visible instead of routing basic profile text fields into deeper drill-in screens,
+  - preserve this visual family across adjacent identity/social surfaces so the app feels cohesive.
 
 ## Analytics
 

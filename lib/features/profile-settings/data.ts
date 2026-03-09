@@ -17,6 +17,7 @@ export type ProfileSettingsValues = {
   displayName: string;
   username: string;
   bio: string;
+  avatarPath: string | null;
   preferredUnit: WeightUnit;
   timezone: string;
   accountVisibility: AccountVisibility;
@@ -78,7 +79,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "display_name, username, bio, preferred_unit, timezone, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at, apple_health_steps_enabled, daily_step_goal",
+      "display_name, username, bio, avatar_path, preferred_unit, timezone, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at, apple_health_steps_enabled, daily_step_goal",
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -92,6 +93,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
       displayName: fallbackDisplayName(user),
       username: createUsernameCandidate(fallbackDisplayName(user), user.id),
       bio: "",
+      avatarPath: null,
       preferredUnit: "lb",
       timezone: getLocalTimeZone(),
       accountVisibility: "private",
@@ -111,6 +113,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
     display_name: string;
     username: string | null;
     bio: string | null;
+    avatar_path: string | null;
     preferred_unit: WeightUnit;
     timezone: string;
     account_visibility: string | null;
@@ -129,6 +132,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
     displayName: row.display_name,
     username: row.username?.trim() || createUsernameCandidate(row.display_name, user.id),
     bio: row.bio ?? "",
+    avatarPath: row.avatar_path ?? null,
     preferredUnit: row.preferred_unit,
     timezone: row.timezone,
     accountVisibility: normalizeAccountVisibility(row.account_visibility),
