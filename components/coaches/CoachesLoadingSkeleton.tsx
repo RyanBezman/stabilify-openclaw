@@ -4,7 +4,7 @@ import AppScreen from "../ui/AppScreen";
 
 export default function CoachesLoadingSkeleton() {
   return (
-    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={860}>
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={960}>
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-32 pt-6"

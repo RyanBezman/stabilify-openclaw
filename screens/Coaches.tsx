@@ -8,6 +8,7 @@ import CoachesLoadingSkeleton from "../components/coaches/CoachesLoadingSkeleton
 import CoachDashboardSkeleton from "../components/coaches/CoachDashboardSkeleton";
 import CoachWorkspaceLocked from "../components/coaches/CoachWorkspaceLocked";
 import CoachChatCard from "../components/coaches/dashboard/CoachChatCard";
+import CoachPlansSection from "../components/coaches/dashboard/CoachPlansSection";
 import CoachTodayCard from "../components/coaches/dashboard/CoachTodayCard";
 import TrackCard from "../components/coaches/dashboard/TrackCard";
 import WeeklyCheckinCard from "../components/coaches/dashboard/WeeklyCheckinCard";
@@ -340,7 +341,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
       <AppScreen
         className="flex-1 bg-neutral-950"
         edges={FLOATING_TAB_SCREEN_SAFE_AREA_EDGES}
-        maxContentWidth={860}
+        maxContentWidth={960}
       >
         <ScrollView
           className="flex-1"
@@ -380,7 +381,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
                 statusIndicators={dashboard.snapshot.today.statusIndicators}
               />
 
-              <View className="mb-6 flex-row gap-3">
+              <CoachPlansSection>
                 <TrackCard
                   title="Training"
                   subtitle={dashboard.snapshot.training.preview}
@@ -417,7 +418,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
                     })
                   }
                 />
-              </View>
+              </CoachPlansSection>
 
               <WeeklyCheckinCard
                 nextDueLabel={dashboard.weeklyRecap.nextDueLabel}
@@ -483,7 +484,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
     <AppScreen
       className="flex-1 bg-neutral-950"
       edges={FLOATING_TAB_SCREEN_SAFE_AREA_EDGES}
-      maxContentWidth={860}
+      maxContentWidth={960}
     >
       <ScrollView
         className="flex-1"
