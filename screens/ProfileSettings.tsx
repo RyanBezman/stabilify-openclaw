@@ -19,7 +19,9 @@ import OptionPill from "../components/ui/OptionPill";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { useProfileSettings } from "../lib/features/profile-settings";
+import { fetchHasActivePushNotificationDevice } from "../lib/data/supportAutomation";
 import type { RootStackParamList } from "../lib/navigation/types";
+import { getExpoProjectId } from "../lib/utils/expo";
 import { sanitizeUsername } from "../lib/utils/username";
 import AppScreen from "../components/ui/AppScreen";
 
@@ -75,6 +77,8 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
   const [showAdvancedPrivacy, setShowAdvancedPrivacy] = useState(false);
   const [dailyStepGoalInput, setDailyStepGoalInput] = useState("10000");
   const [sendingTestNotification, setSendingTestNotification] = useState(false);
+  const [sendingDelayedTestNotification, setSendingDelayedTestNotification] = useState(false);
+  const [loadingPushDebugInfo, setLoadingPushDebugInfo] = useState(false);
 
   useEffect(() => {
     if (!loadError) return;
@@ -244,6 +248,25 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     );
   };
 
+  const ensureNotificationPermission = async () => {
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.AndroidImportance.HIGH,
+        sound: "default",
+      });
+    }
+
+    const existingPermission = await Notifications.getPermissionsAsync();
+    let notificationStatus = existingPermission.status;
+    if (notificationStatus !== "granted") {
+      const requestedPermission = await Notifications.requestPermissionsAsync();
+      notificationStatus = requestedPermission.status;
+    }
+
+    return notificationStatus;
+  };
+
   const handleSendTestNotification = async () => {
     if (sendingTestNotification) {
       return;
@@ -251,20 +274,7 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
 
     setSendingTestNotification(true);
     try {
-      if (Platform.OS === "android") {
-        await Notifications.setNotificationChannelAsync("default", {
-          name: "default",
-          importance: Notifications.AndroidImportance.HIGH,
-          sound: "default",
-        });
-      }
-
-      const existingPermission = await Notifications.getPermissionsAsync();
-      let notificationStatus = existingPermission.status;
-      if (notificationStatus !== "granted") {
-        const requestedPermission = await Notifications.requestPermissionsAsync();
-        notificationStatus = requestedPermission.status;
-      }
+      const notificationStatus = await ensureNotificationPermission();
 
       if (notificationStatus !== "granted") {
         Alert.alert(
@@ -288,6 +298,88 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
       Alert.alert("Test notification failed", message);
     } finally {
       setSendingTestNotification(false);
+    }
+  };
+
+  const handleSendDelayedTestNotification = async () => {
+    if (sendingDelayedTestNotification) {
+      return;
+    }
+
+    setSendingDelayedTestNotification(true);
+    try {
+      const notificationStatus = await ensureNotificationPermission();
+      if (notificationStatus !== "granted") {
+        Alert.alert(
+          "Notifications not enabled",
+          "Allow notifications for Stabilify to test them from this screen.",
+        );
+        return;
+      }
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Stabilify delayed test",
+          body: "This notification was scheduled 5 seconds ago.",
+          sound: "default",
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: new Date(Date.now() + 5000),
+        },
+      });
+
+      Alert.alert("Scheduled", "A test notification will fire in 5 seconds.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Couldn't schedule a delayed test notification.";
+      Alert.alert("Delayed test failed", message);
+    } finally {
+      setSendingDelayedTestNotification(false);
+    }
+  };
+
+  const handleShowPushDebugInfo = async () => {
+    if (loadingPushDebugInfo) {
+      return;
+    }
+
+    setLoadingPushDebugInfo(true);
+    try {
+      const permission = await Notifications.getPermissionsAsync();
+      const projectId = getExpoProjectId();
+      const registrationResult = await fetchHasActivePushNotificationDevice();
+      let tokenDetails = "Not requested";
+
+      if (permission.status === "granted") {
+        try {
+          const tokenResult = projectId
+            ? await Notifications.getExpoPushTokenAsync({ projectId })
+            : await Notifications.getExpoPushTokenAsync();
+          tokenDetails = tokenResult.data?.trim() || "Missing token";
+        } catch (error) {
+          tokenDetails =
+            error instanceof Error ? `Error: ${error.message}` : "Error reading Expo token";
+        }
+      }
+
+      Alert.alert(
+        "Push debug info",
+        [
+          `Permission: ${permission.status}`,
+          `Project ID: ${projectId ?? "Missing"}`,
+          `Server registered: ${
+            registrationResult.error
+              ? `Error: ${registrationResult.error}`
+              : registrationResult.data?.hasActiveDevice
+                ? "Yes"
+                : "No"
+          }`,
+          `Expo token: ${tokenDetails}`,
+        ].join("\n"),
+      );
+    } finally {
+      setLoadingPushDebugInfo(false);
     }
   };
 
@@ -630,6 +722,30 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
                 disabled={sendingTestNotification}
                 onPress={() => {
                   void handleSendTestNotification();
+                }}
+              />
+            </View>
+            <View className="mt-3">
+              <Button
+                title={
+                  sendingDelayedTestNotification
+                    ? "Scheduling delayed notification..."
+                    : "Send delayed notification (5s)"
+                }
+                loading={sendingDelayedTestNotification}
+                disabled={sendingDelayedTestNotification}
+                onPress={() => {
+                  void handleSendDelayedTestNotification();
+                }}
+              />
+            </View>
+            <View className="mt-3">
+              <Button
+                title={loadingPushDebugInfo ? "Loading push info..." : "Show push registration info"}
+                loading={loadingPushDebugInfo}
+                disabled={loadingPushDebugInfo}
+                onPress={() => {
+                  void handleShowPushDebugInfo();
                 }}
               />
             </View>
