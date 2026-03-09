@@ -32,8 +32,8 @@ Verify behind-goal support automation trigger evaluation, consent gating, outcom
 - `suppressed_acknowledged` state confirms consent saved for future triggers (no same-week backfill).
 - `disabled` state shows re-enable CTA.
 - `published` state shows confirmation guidance.
-- Home nudge card supports explicit `Enable phone nudges` flow.
-- Profile settings support card exposes phone nudges as a toggle.
+- Home nudge card supports explicit `Enable phone notifications` flow.
+- Profile settings support card exposes phone notifications as a toggle.
 - Profile settings auto-support flow uses one switch and consent confirmation every time toggling `ON`.
 
 ## Analytics
@@ -60,8 +60,8 @@ Validate events:
 9. After local-day rollover, confirm same-week suppressed nudge can reappear.
 10. In Profile settings, toggling Auto support `ON` must show explicit consent confirmation; cancel keeps it off.
 11. In Profile settings, toggle Auto support `OFF` then back `ON`, tap agree, and confirm `profiles.auto_support_consent_at` updates to a newer timestamp.
-12. Toggle Phone nudges `ON` in Profile settings and confirm push token registration row is active.
-13. Toggle Phone nudges `OFF` in Profile settings and confirm active push device rows become inactive.
+12. Toggle Phone notifications `ON` in Profile settings and confirm push token registration row is active.
+13. Toggle Phone notifications `OFF` in Profile settings and confirm active push device rows become inactive.
 14. Create queued push deliveries and run dispatch function:
    - successful send marks `sent`,
    - failed send schedules retries,

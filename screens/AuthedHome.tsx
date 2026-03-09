@@ -372,14 +372,14 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
   const handleEnablePhoneNudges = async () => {
     const result = await enablePhoneNudges();
     if (!result.success && result.error) {
-      Alert.alert("Couldn't enable phone nudges", result.error);
+      Alert.alert("Couldn't enable phone notifications", result.error);
       return;
     }
     if (!result.success) {
       return;
     }
 
-    Alert.alert("Phone nudges enabled", "You'll receive private behind-goal reminders.");
+    Alert.alert("Phone notifications enabled", "You'll receive private behind-goal reminders.");
   };
 
   const handleNotNowAutoSupport = async () => {

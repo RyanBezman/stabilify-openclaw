@@ -100,16 +100,16 @@ Implement behind-goal support automation end-to-end with canonical trigger evalu
   - each accepted confirmation refreshes `auto_support_consent_at` to `now()`,
   - cancel keeps switch `OFF`.
 - Settings save never grants consent implicitly.
-- Phone nudges are exposed as a settings switch.
-- Turning phone nudges `OFF` deactivates active push-device rows via `set_phone_nudges_enabled(false)`.
+- Phone notifications are exposed as a settings switch.
+- Turning phone notifications `OFF` deactivates active push-device rows via `set_phone_nudges_enabled(false)`.
 - Setting save path uses server RPC to preserve analytics logging.
 
-### Phone nudges
+### Phone notifications
 
-- Home nudge card keeps explicit `Enable phone nudges` action.
-- Profile settings uses a phone-nudges switch.
-- Turning phone nudges `ON` requests notification permission + Expo token and registers device via RPC.
-- Turning phone nudges `OFF` deactivates active push-device rows for the signed-in user.
+- Home nudge card keeps explicit `Enable phone notifications` action.
+- Profile settings uses a phone-notifications switch.
+- Turning phone notifications `ON` requests notification permission + Expo token and registers device via RPC.
+- Turning phone notifications `OFF` deactivates active push-device rows for the signed-in user.
 
 ## Analytics
 
@@ -147,4 +147,4 @@ Attribution defaults:
 11. Confirm invalid Expo token deactivates device row.
 12. Confirm `Not now` emits `support_nudge_deferred` with surface + defer-date metadata.
 13. Confirm analytics event names align with event registry exactly.
-14. Confirm turning phone nudges off from Profile settings deactivates active push-device rows.
+14. Confirm turning phone notifications off from Profile settings deactivates active push-device rows.

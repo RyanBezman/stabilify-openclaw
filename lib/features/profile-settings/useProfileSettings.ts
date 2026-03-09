@@ -43,7 +43,7 @@ async function requestExpoPushToken(): Promise<{ token?: string; error?: string 
 
   if (finalStatus !== "granted") {
     return {
-      error: "Phone notification permission is required to enable phone nudges.",
+      error: "Phone notification permission is required to enable phone notifications.",
     };
   }
 

@@ -144,7 +144,7 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     if (enabled && isPhoneNudgesPermissionError(result.error)) {
       Alert.alert(
         "Enable notifications in Settings",
-        "To turn on phone nudges, allow notifications for Stabilify in your device settings.",
+        "To turn on phone notifications, allow notifications for Stabilify in your device settings.",
         [
           { text: "Not now", style: "cancel" },
           {
@@ -608,13 +608,13 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
             <View className="flex-row items-center justify-between">
               <View className="mr-3 flex-1">
                 <Text className="text-xs font-semibold uppercase text-neutral-500">
-                  Phone nudges
+                  Phone notifications
                 </Text>
                 <Text className="mt-1 text-sm text-neutral-200">
                   {phoneNudgesEnabled ? "Enabled" : "Disabled"}
                 </Text>
                 <HelperText className="mt-1">
-                  Turn on to register this device for private behind-goal reminders.
+                  Turn on to receive private behind-goal reminders on this device.
                 </HelperText>
               </View>
               <Switch

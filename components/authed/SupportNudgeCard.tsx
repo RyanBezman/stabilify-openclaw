@@ -123,11 +123,11 @@ export default function SupportNudgeCard({
           disabled={enablePhoneNudgesBusy}
         >
           <Text className="text-sm font-semibold text-violet-100">
-            {enablePhoneNudgesBusy ? "Enabling phone nudges..." : "Enable phone nudges"}
+            {enablePhoneNudgesBusy ? "Enabling phone notifications..." : "Enable phone notifications"}
           </Text>
         </TouchableOpacity>
       ) : (
-        <Text className="mt-4 text-xs font-medium text-violet-200/80">Phone nudges enabled.</Text>
+        <Text className="mt-4 text-xs font-medium text-violet-200/80">Phone notifications enabled.</Text>
       )}
     </Card>
   );
