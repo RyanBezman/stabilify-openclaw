@@ -19,6 +19,7 @@ import {
   getConsistencyWindow,
   getCurrentStreak,
 } from "../../utils/metrics";
+import { getExpoProjectId } from "../../utils/expo";
 import type { ProfileSummary } from "../profile";
 import {
   allowAutoSupportWithConsent,
@@ -87,7 +88,7 @@ async function requestExpoPushToken(): Promise<{ token?: string; error?: string 
   }
 
   try {
-    const configuredProjectId = process.env.EXPO_PUBLIC_EXPO_PROJECT_ID?.trim();
+    const configuredProjectId = getExpoProjectId();
     const tokenResult = configuredProjectId
       ? await Notifications.getExpoPushTokenAsync({ projectId: configuredProjectId })
       : await Notifications.getExpoPushTokenAsync();

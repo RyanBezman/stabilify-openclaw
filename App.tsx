@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LogBox } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as Notifications from "expo-notifications";
 import AuthedTabs from "./screens/AuthedTabs";
 import GuestHome from "./screens/GuestHome";
 import SignIn from "./screens/SignIn";
@@ -44,6 +45,15 @@ if (__DEV__) {
     "`expo-notifications` functionality is not fully supported in Expo Go",
     "[expo-av]: Expo AV has been deprecated and will be removed in SDK 54.",
   ]);
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
 }
 
 export default function App() {

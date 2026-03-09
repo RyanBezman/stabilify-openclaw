@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import * as Notifications from "expo-notifications";
 import AuthHeader from "../components/auth/AuthHeader";
 import FormLabel from "../components/ui/FormLabel";
 import HelperText from "../components/ui/HelperText";
@@ -73,6 +74,7 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
   } = useProfileSettings();
   const [showAdvancedPrivacy, setShowAdvancedPrivacy] = useState(false);
   const [dailyStepGoalInput, setDailyStepGoalInput] = useState("10000");
+  const [sendingTestNotification, setSendingTestNotification] = useState(false);
 
   useEffect(() => {
     if (!loadError) return;
@@ -240,6 +242,53 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
         },
       ],
     );
+  };
+
+  const handleSendTestNotification = async () => {
+    if (sendingTestNotification) {
+      return;
+    }
+
+    setSendingTestNotification(true);
+    try {
+      if (Platform.OS === "android") {
+        await Notifications.setNotificationChannelAsync("default", {
+          name: "default",
+          importance: Notifications.AndroidImportance.HIGH,
+          sound: "default",
+        });
+      }
+
+      const existingPermission = await Notifications.getPermissionsAsync();
+      let notificationStatus = existingPermission.status;
+      if (notificationStatus !== "granted") {
+        const requestedPermission = await Notifications.requestPermissionsAsync();
+        notificationStatus = requestedPermission.status;
+      }
+
+      if (notificationStatus !== "granted") {
+        Alert.alert(
+          "Notifications not enabled",
+          "Allow notifications for Stabilify to test them from this screen.",
+        );
+        return;
+      }
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Stabilify test notification",
+          body: "Notifications are working in this dev build.",
+          sound: "default",
+        },
+        trigger: null,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Couldn't schedule a local test notification.";
+      Alert.alert("Test notification failed", message);
+    } finally {
+      setSendingTestNotification(false);
+    }
   };
 
   return (
@@ -567,6 +616,25 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
             </TouchableOpacity>
           </View>
         </Card>
+
+        {__DEV__ ? (
+          <Card className="mb-6 p-5">
+            <Text className="text-sm font-semibold text-white">Developer tools</Text>
+            <HelperText className="mt-1">
+              Send a local notification from this screen to verify notification presentation in the dev build.
+            </HelperText>
+            <View className="mt-4">
+              <Button
+                title={sendingTestNotification ? "Sending test notification..." : "Send test notification"}
+                loading={sendingTestNotification}
+                disabled={sendingTestNotification}
+                onPress={() => {
+                  void handleSendTestNotification();
+                }}
+              />
+            </View>
+          </Card>
+        ) : null}
 
         <Button
           title={saving ? "Saving..." : "Save settings"}
