@@ -1,6 +1,6 @@
 # Coach UI Manual QA Checklist (v1)
 
-Last updated: 2026-03-03
+Last updated: 2026-03-09
 
 ## Canonical References
 - Product policy:
@@ -54,10 +54,11 @@ Expected:
 - Dashboard root loads (not coach workspace hub).
 - For Pro users, no `Pro required` / `Upgrade to Pro` lock card flashes during initial tier check.
 - When loading dashboard data for an already-selected coach, `Coach Dashboard` header + avatar stay anchored at top while body cards skeletonize.
-- Cards appear in order: `Today`, `Training`, `Nutrition`, `Weekly recap`.
-- `Today` card CTA reads `Chat with Coach`.
+- Dashboard stays centered in a wider coach shell and does not stretch edge-to-edge on wide devices.
+- Sections appear in order: `Coach Chat`, `Today`, `Plans`, `Weekly recap`.
+- `Plans` renders `Training` and `Nutrition` as paired sibling cards inside one full-width section.
 
-2. Tap `Chat with Coach` from `Today`.
+2. Tap `Coach Chat`.
 Expected:
 - Opens `CoachWorkspace` with `Chat` tab selected.
 - Compatibility route `CoachChat` (if invoked by stale deep link) redirects to the same workspace chat tab.
@@ -67,6 +68,7 @@ Expected:
 3. Return to dashboard and inspect track cards.
 Expected:
 - Track labels are exactly `Training` and `Nutrition`.
+- Track cards appear inside the shared `Plans` section instead of as a standalone dashboard row.
 - Training CTA is `Start workout` or `View plan`.
 - Nutrition card shows targets summary and valid CTA text.
 
@@ -108,6 +110,7 @@ Expected:
   - `Plan accepted?` (Yes/No/Pending)
   - `Adherence trend` (Up/Down/Flat/No trend yet)
 - CTA text is `Do weekly check-in` or `Preview last check-in` based on due state.
+- Skeleton state mirrors the final hierarchy: header remains anchored, and the body skeleton shows `Coach Chat`, `Today`, grouped `Plans`, and `Weekly recap`.
 
 ## Regression checks
 1. Membership lock path still routes to Billing screen.

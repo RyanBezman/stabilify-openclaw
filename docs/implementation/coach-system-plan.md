@@ -1,6 +1,6 @@
 # Coach System Implementation Plan (One Coach + Dashboard + Weekly Check-ins)
 
-Last updated: 2026-03-04
+Last updated: 2026-03-09
 
 ## Goal
 - This file is implementation-focused: architecture, contracts, persistence, workflows, and testing.
@@ -21,16 +21,20 @@ Last updated: 2026-03-04
 - Only `Weekly Check-in` naming is used; no daily check-in terms in coach UI copy.
 
 ### Dashboard layout
+- Dashboard uses a wider centered coach shell aligned with `CoachWorkspace`, while remaining constrained on large screens instead of stretching edge-to-edge.
+- Header row shows `Coach Dashboard` with the unified coach avatar anchored while dashboard body content loads.
+- `Coach Chat` card appears first as the unified conversation entry point.
 - Top `Today` card.
 - Today directive text is 1-2 sentences in unified coach voice.
 - Today card shows 2-4 status pills: scheduled workout, macro progress, hydration reminder, recovery note.
-- Today card primary CTA is `Chat with Coach`.
+- One full-width `Plans` section groups the paired `Training` and `Nutrition` cards.
 - `Training` card.
 - Shows next session preview (example: `Upper A - 45 min`).
 - CTA: `Start workout` if session exists, else `View plan`.
 - `Nutrition` card.
 - Shows calories/macros target and daily progress summary.
 - CTA priority: `Log meal`, `View meal plan`, `Adjust targets`.
+- Track cards are the only paired row in the dashboard; the rest of the surface stays in a single wide column.
 - `Weekly Check-in` card.
 - Shows next due date (`Sunday` in user timezone).
 - Shows streak and adherence score.

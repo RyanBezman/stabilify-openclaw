@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import Card from "../../ui/Card";
-import SectionTitle from "../../ui/SectionTitle";
 
 export default function TrackCard({
   title,
@@ -22,10 +21,10 @@ export default function TrackCard({
 }) {
   return (
     <TouchableOpacity activeOpacity={0.8} onPress={onPress} className="flex-1">
-      <Card className="h-40 justify-between p-5">
+      <Card variant="subtle" className="h-40 justify-between p-5">
         <View>
           <View className="flex-row items-center justify-between">
-            <SectionTitle>{title}</SectionTitle>
+            <Text className="text-base font-semibold text-white">{title}</Text>
             <Ionicons name={icon} size={16} color="#737373" />
           </View>
           <Text
