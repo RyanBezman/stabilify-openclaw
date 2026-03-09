@@ -139,6 +139,7 @@ function renderCard(overrides?: Partial<ProgressOverviewCardProps>) {
   const onSetupGym = vi.fn();
   const onRetry = vi.fn();
   const onRequestValidation = vi.fn();
+  const onPressSteps = vi.fn();
 
   const props: ProgressOverviewCardProps = {
     consistencyOptions: CONSISTENCY_OPTIONS,
@@ -158,6 +159,7 @@ function renderCard(overrides?: Partial<ProgressOverviewCardProps>) {
     logSessionEnabled: true,
     onRetry,
     onRequestValidation,
+    onPressSteps,
     requestValidationLoading: false,
     validationRequestStatus: null,
     gymLastStatus: "partial",
@@ -182,6 +184,7 @@ function renderCard(overrides?: Partial<ProgressOverviewCardProps>) {
     onSetupGym,
     onRetry,
     onRequestValidation,
+    onPressSteps,
   };
 }
 
@@ -228,6 +231,35 @@ describe("ProgressOverviewCard", () => {
     expect(textValues).toContain("Last 7 days");
     expect(textValues).toContain("Last month");
     expect(textValues).toContain("Last 3 months");
+  });
+
+  it("renders tap-to-enable copy for disabled steps and forwards presses", () => {
+    const { root, onPressSteps } = renderCard({
+      stepsEnabled: false,
+      steps: null,
+    });
+    const textValues = getTextValues(root);
+
+    expect(textValues).toContain("Off");
+    expect(textValues).toContain("Enable");
+
+    act(() => {
+      press(root.findByProps({ testID: "progress-overview-steps-ring" }));
+    });
+
+    expect(onPressSteps).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the configured step target when enabled", () => {
+    const { root } = renderCard({
+      stepsEnabled: true,
+      steps: 8400,
+      stepsTarget: 12000,
+    });
+    const textValues = getTextValues(root);
+
+    expect(textValues).toContain("8.4k");
+    expect(textValues).toContain("8.4k/12.0k");
   });
 
 });

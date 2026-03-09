@@ -28,6 +28,7 @@ export type ProfileSettingsValues = {
   autoSupportEnabled: boolean;
   autoSupportConsentedAt: string | null;
   appleHealthStepsEnabled: boolean;
+  dailyStepGoal: number;
 };
 
 type AuthedUser = {
@@ -59,6 +60,14 @@ async function getAuthedUser(): Promise<Result<{ user?: AuthedUser }>> {
   return ok({ user: data.user as AuthedUser });
 }
 
+function normalizeDailyStepGoal(value: number | null | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 10000;
+  }
+  const roundedValue = Math.round(value);
+  return Math.min(Math.max(roundedValue, 1000), 50000);
+}
+
 export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettingsValues>> {
   const { data: authData } = await getAuthedUser();
   if (!authData?.user) {
@@ -69,7 +78,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "display_name, username, bio, preferred_unit, timezone, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at, apple_health_steps_enabled",
+      "display_name, username, bio, preferred_unit, timezone, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at, apple_health_steps_enabled, daily_step_goal",
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -94,6 +103,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
       autoSupportEnabled: true,
       autoSupportConsentedAt: null,
       appleHealthStepsEnabled: false,
+      dailyStepGoal: 10000,
     });
   }
 
@@ -112,6 +122,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
     auto_support_enabled: boolean | null;
     auto_support_consent_at: string | null;
     apple_health_steps_enabled: boolean | null;
+    daily_step_goal: number | null;
   };
 
   return ok({
@@ -129,6 +140,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
     autoSupportEnabled: row.auto_support_enabled ?? true,
     autoSupportConsentedAt: row.auto_support_consent_at ?? null,
     appleHealthStepsEnabled: row.apple_health_steps_enabled ?? false,
+    dailyStepGoal: normalizeDailyStepGoal(row.daily_step_goal),
   });
 }
 
@@ -152,6 +164,7 @@ export async function saveProfileSettingsValues(
   }
 
   const timezone = values.timezone.trim() || getLocalTimeZone();
+  const dailyStepGoal = normalizeDailyStepGoal(values.dailyStepGoal);
   const isPrivateAccount = values.accountVisibility === "private";
   const socialEnabled = isPrivateAccount ? false : values.socialEnabled;
   const weighInShareVisibility = isPrivateAccount
@@ -188,6 +201,7 @@ export async function saveProfileSettingsValues(
         gym_event_share_visibility: gymEventShareVisibility,
         post_share_visibility: postShareVisibility,
         apple_health_steps_enabled: values.appleHealthStepsEnabled,
+        daily_step_goal: dailyStepGoal,
       },
       { onConflict: "id" },
     );

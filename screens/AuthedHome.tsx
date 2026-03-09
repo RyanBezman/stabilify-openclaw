@@ -474,6 +474,11 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
               stepsLoading={loadingTodaySteps}
               stepsTarget={stepTarget}
               stepsEnabled={appleHealthStepsEnabled}
+              onPressSteps={
+                !appleHealthStepsEnabled
+                  ? () => navigation.navigate("ProfileSettings")
+                  : undefined
+              }
               onRequestValidation={
                 todayGymSession?.status === "provisional"
                   ? () => setShowValidationNoteModal(true)

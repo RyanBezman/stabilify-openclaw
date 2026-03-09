@@ -97,6 +97,7 @@ export function useProfileSettings() {
   const [autoSupportConsentedAt, setAutoSupportConsentedAt] = useState<string | null>(null);
   const [phoneNudgesEnabled, setPhoneNudgesEnabledState] = useState(false);
   const [appleHealthStepsEnabled, setAppleHealthStepsEnabledState] = useState(false);
+  const [dailyStepGoal, setDailyStepGoal] = useState(10000);
   const [updatingAppleHealthSteps, setUpdatingAppleHealthSteps] = useState(false);
 
   useEffect(() => {
@@ -134,6 +135,7 @@ export function useProfileSettings() {
         setAutoSupportEnabled(data.autoSupportEnabled && Boolean(data.autoSupportConsentedAt));
         setAutoSupportConsentedAt(data.autoSupportConsentedAt);
         setAppleHealthStepsEnabledState(data.appleHealthStepsEnabled);
+        setDailyStepGoal(data.dailyStepGoal);
       }
 
       if (!pushDeviceResult.error) {
@@ -172,6 +174,7 @@ export function useProfileSettings() {
       autoSupportEnabled,
       autoSupportConsentedAt,
       appleHealthStepsEnabled,
+      dailyStepGoal,
     });
     setSaving(false);
 
@@ -203,6 +206,7 @@ export function useProfileSettings() {
     autoSupportConsentedAt,
     autoSupportEnabled,
     appleHealthStepsEnabled,
+    dailyStepGoal,
   ]);
 
   const grantAutoSupportConsent = useCallback(async (): Promise<ProfileSettingsActionResult> => {
@@ -350,6 +354,8 @@ export function useProfileSettings() {
     setPhoneNudgesEnabled,
     appleHealthStepsEnabled,
     setAppleHealthStepsEnabled,
+    dailyStepGoal,
+    setDailyStepGoal,
     grantAutoSupportConsent,
     save,
   };

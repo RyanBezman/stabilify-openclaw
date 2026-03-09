@@ -37,6 +37,7 @@ function buildValues(overrides?: Partial<ProfileSettingsValues>): ProfileSetting
     autoSupportEnabled: false,
     autoSupportConsentedAt: null,
     appleHealthStepsEnabled: false,
+    dailyStepGoal: 10000,
     ...overrides,
   };
 }
@@ -90,6 +91,12 @@ describe("profile settings save consent gating", () => {
     );
 
     expect(mocks.upsert).toHaveBeenCalledTimes(1);
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        daily_step_goal: 10000,
+      }),
+      { onConflict: "id" },
+    );
     expect(mocks.rpc).toHaveBeenCalledWith("set_auto_support_enabled", {
       enabled: true,
     });
@@ -123,5 +130,25 @@ describe("profile settings save consent gating", () => {
         autoSupportConsentedAt: "2026-03-03T18:00:00.000Z",
       },
     });
+  });
+
+  it("clamps custom daily step goals before saving", async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{ auto_support_enabled: false, changed: true }],
+      error: null,
+    });
+
+    await saveProfileSettingsValues(
+      buildValues({
+        dailyStepGoal: 999999,
+      }),
+    );
+
+    expect(mocks.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        daily_step_goal: 50000,
+      }),
+      { onConflict: "id" },
+    );
   });
 });

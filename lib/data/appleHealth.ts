@@ -1,19 +1,53 @@
 import { Platform } from "react-native";
-import AppleHealthKit, { type HealthKitPermissions } from "react-native-health";
 import { fail, ok, type Result } from "../features/shared";
 
-const HEALTHKIT_STEP_PERMISSIONS: HealthKitPermissions = {
+type AppleHealthKitPermission = "StepCount";
+
+type AppleHealthKitPermissions = {
   permissions: {
-    read: [AppleHealthKit.Constants.Permissions.StepCount],
+    read: AppleHealthKitPermission[];
+    write: AppleHealthKitPermission[];
+  };
+};
+
+type AppleHealthKitStepCountOptions = {
+  date: string;
+  includeManuallyAdded: boolean;
+};
+
+type AppleHealthKitValue = {
+  value: number;
+};
+
+type AppleHealthKitNativeModule = {
+  isAvailable: (
+    callback: (error: object | null, results: boolean) => void,
+  ) => void;
+  initHealthKit: (
+    permissions: AppleHealthKitPermissions,
+    callback: (error: string | null, result: number) => void,
+  ) => void;
+  getStepCount: (
+    options: AppleHealthKitStepCountOptions,
+    callback: (error: string | null, results: AppleHealthKitValue) => void,
+  ) => void;
+};
+
+const HEALTHKIT_STEP_PERMISSIONS: AppleHealthKitPermissions = {
+  permissions: {
+    read: ["StepCount"],
     write: [],
   },
 };
 
-function hasHealthKitMethod(
-  method: "isAvailable" | "initHealthKit" | "getStepCount",
-): boolean {
-  const candidate = AppleHealthKit[method];
-  return typeof candidate === "function";
+function getAppleHealthNativeModule(): AppleHealthKitNativeModule | null {
+  const reactNative = require("react-native") as {
+    NativeModules?: {
+      AppleHealthKit?: AppleHealthKitNativeModule;
+    };
+  };
+
+  return reactNative.NativeModules?.AppleHealthKit ?? null;
 }
 
 function normalizeHealthErrorMessage(
@@ -34,17 +68,26 @@ function ensureIosSupport(): Result<{ supported: true }> {
   return ok({ supported: true });
 }
 
+function getNativeModuleOrFail(): Result<{ module: AppleHealthKitNativeModule }> {
+  const module = getAppleHealthNativeModule();
+  if (!module) {
+    return fail(
+      "Apple Health is unavailable in this build. Reinstall the latest iOS dev client or production build.",
+    );
+  }
+
+  return ok({ module });
+}
+
 function checkHealthKitAvailability(): Promise<Result<{ available: true }>> {
   return new Promise((resolve) => {
-    if (!hasHealthKitMethod("isAvailable")) {
-      resolve(
-        fail(
-          "Apple Health is unavailable in this build. Use an iOS custom dev client or production build.",
-        ),
-      );
+    const moduleResult = getNativeModuleOrFail();
+    if (moduleResult.error || !moduleResult.data) {
+      resolve(moduleResult);
       return;
     }
-    AppleHealthKit.isAvailable((_error, results) => {
+
+    moduleResult.data.module.isAvailable((_error, results) => {
       if (!results) {
         resolve(fail("Apple Health is not available on this device."));
         return;
@@ -56,15 +99,13 @@ function checkHealthKitAvailability(): Promise<Result<{ available: true }>> {
 
 function initializeHealthKitStepRead(): Promise<Result<{ initialized: true }>> {
   return new Promise((resolve) => {
-    if (!hasHealthKitMethod("initHealthKit")) {
-      resolve(
-        fail(
-          "Apple Health permissions are unavailable in this build. Use an iOS custom dev client or production build.",
-        ),
-      );
+    const moduleResult = getNativeModuleOrFail();
+    if (moduleResult.error || !moduleResult.data) {
+      resolve(moduleResult);
       return;
     }
-    AppleHealthKit.initHealthKit(HEALTHKIT_STEP_PERMISSIONS, (error) => {
+
+    moduleResult.data.module.initHealthKit(HEALTHKIT_STEP_PERMISSIONS, (error) => {
       if (error) {
         resolve(
           fail(
@@ -101,21 +142,23 @@ export async function requestAppleHealthStepReadAccess(): Promise<Result<{ grant
 }
 
 export async function fetchAppleHealthTodayStepCount(): Promise<Result<{ steps: number }>> {
+  const supportResult = ensureIosSupport();
+  if (supportResult.error) {
+    return supportResult;
+  }
+
+  const moduleResult = getNativeModuleOrFail();
+  if (moduleResult.error || !moduleResult.data) {
+    return moduleResult;
+  }
+
   const accessResult = await requestAppleHealthStepReadAccess();
   if (accessResult.error) {
     return accessResult;
   }
 
   return new Promise((resolve) => {
-    if (!hasHealthKitMethod("getStepCount")) {
-      resolve(
-        fail(
-          "Apple Health step reads are unavailable in this build. Use an iOS custom dev client or production build.",
-        ),
-      );
-      return;
-    }
-    AppleHealthKit.getStepCount(
+    moduleResult.data.module.getStepCount(
       {
         date: new Date().toISOString(),
         includeManuallyAdded: false,

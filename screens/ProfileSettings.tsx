@@ -66,15 +66,22 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     setPhoneNudgesEnabled,
     appleHealthStepsEnabled,
     setAppleHealthStepsEnabled,
+    dailyStepGoal,
+    setDailyStepGoal,
     grantAutoSupportConsent,
     save,
   } = useProfileSettings();
   const [showAdvancedPrivacy, setShowAdvancedPrivacy] = useState(false);
+  const [dailyStepGoalInput, setDailyStepGoalInput] = useState("10000");
 
   useEffect(() => {
     if (!loadError) return;
     Alert.alert("Couldn't load profile settings", loadError);
   }, [loadError]);
+
+  useEffect(() => {
+    setDailyStepGoalInput(String(dailyStepGoal));
+  }, [dailyStepGoal]);
 
   const handleSave = async () => {
     const result = await save();
@@ -181,6 +188,25 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
         },
       ],
     );
+  };
+
+  const handleDailyStepGoalTextChange = (value: string) => {
+    const digitsOnly = value.replace(/[^0-9]/g, "");
+    setDailyStepGoalInput(digitsOnly);
+    if (!digitsOnly) {
+      return;
+    }
+
+    setDailyStepGoal(Number(digitsOnly));
+  };
+
+  const handleDailyStepGoalInputBlur = () => {
+    if (dailyStepGoalInput) {
+      return;
+    }
+
+    setDailyStepGoal(10000);
+    setDailyStepGoalInput("10000");
   };
 
   const handleAutoSupportToggle = (enabled: boolean) => {
@@ -486,6 +512,40 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
                 thumbColor="#f5f3ff"
                 disabled={loading || saving || updatingAppleHealthSteps || Platform.OS !== "ios"}
               />
+            </View>
+
+            <View className="mt-4 border-t border-neutral-800 pt-4">
+              <Text className="text-xs font-semibold uppercase text-neutral-500">
+                Daily step goal
+              </Text>
+              <Text className="mt-1 text-sm text-neutral-200">{dailyStepGoal.toLocaleString()} steps</Text>
+              <HelperText className="mt-1">
+                Home uses this target for the Steps ring after you connect Apple Health.
+              </HelperText>
+              <View className="mt-3 flex-row gap-2">
+                {[6000, 8000, 10000, 12000].map((goal) => (
+                  <OptionPill
+                    key={goal}
+                    label={`${goal / 1000}k`}
+                    selected={dailyStepGoal === goal}
+                    onPress={() => {
+                      setDailyStepGoal(goal);
+                      setDailyStepGoalInput(String(goal));
+                    }}
+                  />
+                ))}
+              </View>
+              <View className="mt-3">
+                <Input
+                  value={dailyStepGoalInput}
+                  onChangeText={handleDailyStepGoalTextChange}
+                  onBlur={handleDailyStepGoalInputBlur}
+                  keyboardType="number-pad"
+                  inputMode="numeric"
+                  placeholder="Custom step goal"
+                  maxLength={5}
+                />
+              </View>
             </View>
           </View>
         </Card>

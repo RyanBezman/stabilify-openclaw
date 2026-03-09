@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Text, View } from "react-native";
+import { Animated, Easing, Text, TouchableOpacity, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
 export type CircularProgressRingTone = "neutral" | "violet" | "emerald" | "amber" | "rose";
@@ -13,6 +13,8 @@ export type CircularProgressRingProps = {
   size?: number;
   strokeWidth?: number;
   animateOnMount?: boolean;
+  onPress?: () => void;
+  testID?: string;
 };
 
 type TonePalette = {
@@ -67,6 +69,8 @@ export default function CircularProgressRing({
   size = 124,
   strokeWidth = 10,
   animateOnMount = true,
+  onPress,
+  testID,
 }: CircularProgressRingProps) {
   const clampedValue = clampProgress(value);
   const initialProgress = useRef(animateOnMount ? 0 : clampedValue).current;
@@ -114,7 +118,7 @@ export default function CircularProgressRing({
   const valueTextClassName = size <= 100 ? "text-xl" : "text-2xl";
   const subTextClassName = size <= 100 ? "text-[10px]" : "text-[11px]";
 
-  return (
+  const content = (
     <View className="items-center">
       <View className="items-center justify-center" style={{ width: size, height: size }}>
         <Svg width={size} height={size}>
@@ -146,5 +150,20 @@ export default function CircularProgressRing({
       </View>
       <Text className="mt-3 text-sm font-semibold text-white">{label}</Text>
     </View>
+  );
+
+  if (!onPress) {
+    return content;
+  }
+
+  return (
+    <TouchableOpacity
+      testID={testID}
+      onPress={onPress}
+      activeOpacity={0.8}
+      className="items-center"
+    >
+      {content}
+    </TouchableOpacity>
   );
 }

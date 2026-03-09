@@ -42,6 +42,7 @@ export type ProfileData = {
   autoSupportEnabled: boolean;
   autoSupportConsentAt: string | null;
   appleHealthStepsEnabled?: boolean;
+  dailyStepGoal?: number;
 };
 
 export type GoalData = {
@@ -109,7 +110,16 @@ type DashboardProfileRow = {
   auto_support_enabled: boolean | null;
   auto_support_consent_at: string | null;
   apple_health_steps_enabled: boolean | null;
+  daily_step_goal: number | null;
 };
+
+function normalizeDailyStepGoal(value: number | null | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 10000;
+  }
+  const roundedValue = Math.round(value);
+  return Math.min(Math.max(roundedValue, 1000), 50000);
+}
 
 export async function fetchDashboardData(userId?: string): Promise<Result<DashboardData>> {
   let resolvedUserId = userId;
@@ -130,7 +140,7 @@ export async function fetchDashboardData(userId?: string): Promise<Result<Dashbo
     supabase
       .from("profiles")
       .select(
-        "username, display_name, bio, membership_tier, preferred_unit, timezone, avatar_path, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at, apple_health_steps_enabled",
+        "username, display_name, bio, membership_tier, preferred_unit, timezone, avatar_path, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at, apple_health_steps_enabled, daily_step_goal",
       )
       .eq("id", resolvedUserId)
       .maybeSingle(),
@@ -209,6 +219,7 @@ export async function fetchDashboardData(userId?: string): Promise<Result<Dashbo
         autoSupportEnabled: profileRow.auto_support_enabled ?? true,
         autoSupportConsentAt: profileRow.auto_support_consent_at ?? null,
         appleHealthStepsEnabled: profileRow.apple_health_steps_enabled ?? false,
+        dailyStepGoal: normalizeDailyStepGoal(profileRow.daily_step_goal),
       }
     : null;
 

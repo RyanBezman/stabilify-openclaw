@@ -38,6 +38,7 @@ export type ProgressOverviewCardProps = {
   stepsTarget?: number;
   stepsEnabled?: boolean;
   stepsLoading?: boolean;
+  onPressSteps?: () => void;
 };
 
 function clampProgress(value: number) {
@@ -90,6 +91,7 @@ export default function ProgressOverviewCard({
   stepsTarget = 10000,
   stepsEnabled = false,
   stepsLoading = false,
+  onPressSteps,
 }: ProgressOverviewCardProps) {
   const consistencyProgress = clampProgress(consistencyPercent);
   const consistencyPercentLabel = Math.round(consistencyProgress * 100);
@@ -113,7 +115,7 @@ export default function ProgressOverviewCard({
         ? "—"
         : formatStepValue(clampedSteps);
   const stepsSubText = !stepsEnabled
-    ? "Enable in settings"
+    ? "Enable"
     : hasStepTarget
       ? `${formatStepValue(clampedSteps)}/${formatStepValue(stepsTarget)}`
       : "No goal";
@@ -170,6 +172,8 @@ export default function ProgressOverviewCard({
             size={86}
             strokeWidth={7}
             animateOnMount
+            onPress={!stepsEnabled ? onPressSteps : undefined}
+            testID={!stepsEnabled ? "progress-overview-steps-ring" : undefined}
           />
         </View>
       </View>

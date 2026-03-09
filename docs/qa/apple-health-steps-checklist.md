@@ -15,11 +15,14 @@ Validate Apple Health step tracking opt-in and Home progress rendering.
 5. Tap `Save settings` and confirm save succeeds.
 6. Go to `Today` and verify `Progress` shows three rings: `Weigh-ins`, `Gym sessions`, and `Steps`.
 7. Confirm the `Steps` ring leaves loading state and displays a value for today.
-8. Disable `Track steps`, save settings, and confirm Home shows `Steps` ring in `Off` state.
-9. Re-enable `Track steps` after denying permission from iOS settings and confirm an error alert appears.
+8. Change `Daily step goal` in Profile Settings, save, and confirm Home reflects the new saved target in the Steps ring sublabel.
+9. Disable `Track steps`, save settings, and confirm Home shows `Steps` ring in `Off` state with `Enable`.
+10. Tap the disabled Steps ring on Home and confirm it opens Profile Settings.
+11. Re-enable `Track steps` after denying permission from iOS settings and confirm an error alert appears.
 
 ## Platform checks
 
 1. On Android, open `Profile settings`.
 2. Confirm `Track steps` helper text indicates iPhone-only support.
 3. Confirm the `Track steps` toggle is disabled.
+4. Confirm `Daily step goal` remains editable and saves without enabling Apple Health.

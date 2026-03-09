@@ -750,7 +750,7 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     unit,
     todaySteps,
     loadingTodaySteps,
-    stepTarget: DEFAULT_DAILY_STEP_TARGET,
+    stepTarget: dashboard?.profile?.dailyStepGoal ?? DEFAULT_DAILY_STEP_TARGET,
     appleHealthStepsEnabled,
     consistencyOptions: CONSISTENCY_OPTIONS,
     consistencyOption,
