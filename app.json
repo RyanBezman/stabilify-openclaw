@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/stabilifylogo.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/stabilifylogo.png",
       "resizeMode": "contain",
