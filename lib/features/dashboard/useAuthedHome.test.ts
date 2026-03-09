@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   fetchDashboardData: vi.fn(),
   fetchActionableNotificationCount: vi.fn(),
+  fetchAppleHealthTodayStepCount: vi.fn(),
   fetchGymSessionValidationRequestForSession: vi.fn(),
   requestGymSessionValidation: vi.fn(),
   getProfilePhotoSignedUrl: vi.fn(),
@@ -41,6 +42,10 @@ vi.mock("../../data/dashboard", () => ({
 
 vi.mock("../../data/notifications", () => ({
   fetchActionableNotificationCount: mocks.fetchActionableNotificationCount,
+}));
+
+vi.mock("../../data/appleHealth", () => ({
+  fetchAppleHealthTodayStepCount: mocks.fetchAppleHealthTodayStepCount,
 }));
 
 vi.mock("../../data/gymSessionValidation", () => ({
@@ -196,6 +201,7 @@ describe("useAuthedHome support nudge hardening", () => {
   beforeEach(() => {
     mocks.fetchDashboardData.mockReset();
     mocks.fetchActionableNotificationCount.mockReset();
+    mocks.fetchAppleHealthTodayStepCount.mockReset();
     mocks.fetchGymSessionValidationRequestForSession.mockReset();
     mocks.requestGymSessionValidation.mockReset();
     mocks.getProfilePhotoSignedUrl.mockReset();
@@ -216,6 +222,7 @@ describe("useAuthedHome support nudge hardening", () => {
 
     mocks.fetchDashboardData.mockResolvedValue({ data: buildDashboardData() });
     mocks.fetchActionableNotificationCount.mockResolvedValue({ data: { count: 0 } });
+    mocks.fetchAppleHealthTodayStepCount.mockResolvedValue({ data: { steps: 4200 } });
     mocks.fetchHasActivePushNotificationDevice.mockResolvedValue({
       data: { hasActiveDevice: false },
     });

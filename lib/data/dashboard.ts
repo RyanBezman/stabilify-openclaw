@@ -41,6 +41,7 @@ export type ProfileData = {
   postShareVisibility: ShareVisibility;
   autoSupportEnabled: boolean;
   autoSupportConsentAt: string | null;
+  appleHealthStepsEnabled?: boolean;
 };
 
 export type GoalData = {
@@ -107,6 +108,7 @@ type DashboardProfileRow = {
   post_share_visibility: ShareVisibility | null;
   auto_support_enabled: boolean | null;
   auto_support_consent_at: string | null;
+  apple_health_steps_enabled: boolean | null;
 };
 
 export async function fetchDashboardData(userId?: string): Promise<Result<DashboardData>> {
@@ -128,7 +130,7 @@ export async function fetchDashboardData(userId?: string): Promise<Result<Dashbo
     supabase
       .from("profiles")
       .select(
-        "username, display_name, bio, membership_tier, preferred_unit, timezone, avatar_path, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at",
+        "username, display_name, bio, membership_tier, preferred_unit, timezone, avatar_path, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at, apple_health_steps_enabled",
       )
       .eq("id", resolvedUserId)
       .maybeSingle(),
@@ -206,6 +208,7 @@ export async function fetchDashboardData(userId?: string): Promise<Result<Dashbo
         postShareVisibility: profileRow.post_share_visibility ?? "private",
         autoSupportEnabled: profileRow.auto_support_enabled ?? true,
         autoSupportConsentAt: profileRow.auto_support_consent_at ?? null,
+        appleHealthStepsEnabled: profileRow.apple_health_steps_enabled ?? false,
       }
     : null;
 

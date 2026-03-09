@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Alert, Linking, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Linking,
+  Platform,
+  ScrollView,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import AuthHeader from "../components/auth/AuthHeader";
 import FormLabel from "../components/ui/FormLabel";
@@ -26,6 +35,7 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     loading,
     saving,
     updatingPhoneNudges,
+    updatingAppleHealthSteps,
     grantingAutoSupportConsent,
     loadError,
     displayName,
@@ -54,6 +64,8 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     setAutoSupportEnabled,
     phoneNudgesEnabled,
     setPhoneNudgesEnabled,
+    appleHealthStepsEnabled,
+    setAppleHealthStepsEnabled,
     grantAutoSupportConsent,
     save,
   } = useProfileSettings();
@@ -148,6 +160,27 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
       "Future behind-goal triggers can auto-post to close friends. This week remains unchanged.",
     );
     return true;
+  };
+
+  const handleAppleHealthStepsToggle = async (enabled: boolean) => {
+    const result = await setAppleHealthStepsEnabled(enabled);
+    if (result.success || !result.error) {
+      return;
+    }
+
+    Alert.alert(
+      "Couldn't update Apple Health",
+      result.error,
+      [
+        { text: "OK", style: "cancel" },
+        {
+          text: "Open Settings",
+          onPress: () => {
+            void Linking.openSettings();
+          },
+        },
+      ],
+    );
   };
 
   const handleAutoSupportToggle = (enabled: boolean) => {
@@ -425,6 +458,33 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
                 trackColor={{ false: "#262626", true: "#7c3aed" }}
                 thumbColor="#f5f3ff"
                 disabled={loading || saving || updatingPhoneNudges}
+              />
+            </View>
+          </View>
+
+          <View className="mt-4 rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3">
+            <View className="flex-row items-center justify-between">
+              <View className="mr-3 flex-1">
+                <Text className="text-xs font-semibold uppercase text-neutral-500">
+                  Track steps
+                </Text>
+                <Text className="mt-1 text-sm text-neutral-200">
+                  {appleHealthStepsEnabled ? "Enabled" : "Disabled"}
+                </Text>
+                <HelperText className="mt-1">
+                  {Platform.OS === "ios"
+                    ? "Sync today's steps from Apple Health into your Home progress card."
+                    : "Apple Health sync is available on iPhone only."}
+                </HelperText>
+              </View>
+              <Switch
+                value={appleHealthStepsEnabled}
+                onValueChange={(value) => {
+                  void handleAppleHealthStepsToggle(value);
+                }}
+                trackColor={{ false: "#262626", true: "#7c3aed" }}
+                thumbColor="#f5f3ff"
+                disabled={loading || saving || updatingAppleHealthSteps || Platform.OS !== "ios"}
               />
             </View>
           </View>

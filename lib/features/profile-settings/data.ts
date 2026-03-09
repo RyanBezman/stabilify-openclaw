@@ -27,6 +27,7 @@ export type ProfileSettingsValues = {
   postShareVisibility: ShareVisibility;
   autoSupportEnabled: boolean;
   autoSupportConsentedAt: string | null;
+  appleHealthStepsEnabled: boolean;
 };
 
 type AuthedUser = {
@@ -68,7 +69,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
   const { data, error } = await supabase
     .from("profiles")
     .select(
-      "display_name, username, bio, preferred_unit, timezone, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at",
+      "display_name, username, bio, preferred_unit, timezone, account_visibility, progress_visibility, social_enabled, weigh_in_share_visibility, gym_event_share_visibility, post_share_visibility, auto_support_enabled, auto_support_consent_at, apple_health_steps_enabled",
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -92,6 +93,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
       postShareVisibility: "private",
       autoSupportEnabled: true,
       autoSupportConsentedAt: null,
+      appleHealthStepsEnabled: false,
     });
   }
 
@@ -109,6 +111,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
     post_share_visibility: ShareVisibility | null;
     auto_support_enabled: boolean | null;
     auto_support_consent_at: string | null;
+    apple_health_steps_enabled: boolean | null;
   };
 
   return ok({
@@ -125,6 +128,7 @@ export async function fetchProfileSettingsValues(): Promise<Result<ProfileSettin
     postShareVisibility: row.post_share_visibility ?? "private",
     autoSupportEnabled: row.auto_support_enabled ?? true,
     autoSupportConsentedAt: row.auto_support_consent_at ?? null,
+    appleHealthStepsEnabled: row.apple_health_steps_enabled ?? false,
   });
 }
 
@@ -183,6 +187,7 @@ export async function saveProfileSettingsValues(
         weigh_in_share_visibility: weighInShareVisibility,
         gym_event_share_visibility: gymEventShareVisibility,
         post_share_visibility: postShareVisibility,
+        apple_health_steps_enabled: values.appleHealthStepsEnabled,
       },
       { onConflict: "id" },
     );

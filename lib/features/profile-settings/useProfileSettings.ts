@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import { requestAppleHealthStepReadAccess } from "../../data/appleHealth";
 import type {
   AccountVisibility,
   ProgressVisibility,
@@ -95,6 +96,8 @@ export function useProfileSettings() {
   const [autoSupportEnabled, setAutoSupportEnabled] = useState(true);
   const [autoSupportConsentedAt, setAutoSupportConsentedAt] = useState<string | null>(null);
   const [phoneNudgesEnabled, setPhoneNudgesEnabledState] = useState(false);
+  const [appleHealthStepsEnabled, setAppleHealthStepsEnabledState] = useState(false);
+  const [updatingAppleHealthSteps, setUpdatingAppleHealthSteps] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -130,6 +133,7 @@ export function useProfileSettings() {
         setPostShareVisibility(data.postShareVisibility);
         setAutoSupportEnabled(data.autoSupportEnabled && Boolean(data.autoSupportConsentedAt));
         setAutoSupportConsentedAt(data.autoSupportConsentedAt);
+        setAppleHealthStepsEnabledState(data.appleHealthStepsEnabled);
       }
 
       if (!pushDeviceResult.error) {
@@ -167,6 +171,7 @@ export function useProfileSettings() {
       postShareVisibility,
       autoSupportEnabled,
       autoSupportConsentedAt,
+      appleHealthStepsEnabled,
     });
     setSaving(false);
 
@@ -197,6 +202,7 @@ export function useProfileSettings() {
     weighInShareVisibility,
     autoSupportConsentedAt,
     autoSupportEnabled,
+    appleHealthStepsEnabled,
   ]);
 
   const grantAutoSupportConsent = useCallback(async (): Promise<ProfileSettingsActionResult> => {
@@ -281,10 +287,38 @@ export function useProfileSettings() {
     [phoneNudgesEnabled, updatingPhoneNudges],
   );
 
+  const setAppleHealthStepsEnabled = useCallback(
+    async (enabled: boolean): Promise<ProfileSettingsActionResult> => {
+      if (updatingAppleHealthSteps) {
+        return { success: false };
+      }
+
+      if (!enabled) {
+        setAppleHealthStepsEnabledState(false);
+        return { success: true };
+      }
+
+      setUpdatingAppleHealthSteps(true);
+      try {
+        const accessResult = await requestAppleHealthStepReadAccess();
+        if (accessResult.error) {
+          return { success: false, error: accessResult.error };
+        }
+
+        setAppleHealthStepsEnabledState(true);
+        return { success: true };
+      } finally {
+        setUpdatingAppleHealthSteps(false);
+      }
+    },
+    [updatingAppleHealthSteps],
+  );
+
   return {
     loading,
     saving,
     updatingPhoneNudges,
+    updatingAppleHealthSteps,
     grantingAutoSupportConsent,
     loadError,
     displayName,
@@ -314,6 +348,8 @@ export function useProfileSettings() {
     autoSupportConsentedAt,
     phoneNudgesEnabled,
     setPhoneNudgesEnabled,
+    appleHealthStepsEnabled,
+    setAppleHealthStepsEnabled,
     grantAutoSupportConsent,
     save,
   };

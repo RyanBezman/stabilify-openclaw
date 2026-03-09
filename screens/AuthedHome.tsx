@@ -107,6 +107,10 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
     todayGymValidationStatus,
     requestingGymValidation,
     unit,
+    todaySteps,
+    loadingTodaySteps,
+    stepTarget,
+    appleHealthStepsEnabled,
     consistencyOptions,
     consistencyOption,
     showConsistencyMenu,
@@ -466,6 +470,10 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
               requestValidationLoading={requestingGymValidation}
               gymLastDistanceMeters={todayGymSession?.distanceMeters ?? null}
               preferredUnit={unit}
+              steps={todaySteps}
+              stepsLoading={loadingTodaySteps}
+              stepsTarget={stepTarget}
+              stepsEnabled={appleHealthStepsEnabled}
               onRequestValidation={
                 todayGymSession?.status === "provisional"
                   ? () => setShowValidationNoteModal(true)

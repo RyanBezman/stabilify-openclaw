@@ -63,6 +63,13 @@
           "sounds": []
         }
       ],
+      [
+        "react-native-health",
+        {
+          "healthSharePermission": "Allow Stabilify to read your Apple Health steps for progress tracking.",
+          "healthUpdatePermission": "Allow Stabilify to update Apple Health data when needed."
+        }
+      ],
       "expo-web-browser",
       "expo-font"
     ],

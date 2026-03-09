@@ -36,6 +36,7 @@ function buildValues(overrides?: Partial<ProfileSettingsValues>): ProfileSetting
     postShareVisibility: "private",
     autoSupportEnabled: false,
     autoSupportConsentedAt: null,
+    appleHealthStepsEnabled: false,
     ...overrides,
   };
 }

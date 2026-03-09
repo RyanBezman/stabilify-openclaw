@@ -34,6 +34,10 @@ export type ProgressOverviewCardProps = {
   gymLastStatusReason?: GymSessionStatusReason | null;
   gymLastDistanceMeters?: number | null;
   preferredUnit?: "lb" | "kg";
+  steps?: number | null;
+  stepsTarget?: number;
+  stepsEnabled?: boolean;
+  stepsLoading?: boolean;
 };
 
 function clampProgress(value: number) {
@@ -62,6 +66,13 @@ function resolveGymRingTone(status?: GymSessionStatus): CircularProgressRingTone
   return "emerald";
 }
 
+function formatStepValue(value: number): string {
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}k`;
+  }
+  return value.toString();
+}
+
 export default function ProgressOverviewCard({
   consistencyOptions,
   consistencyOption,
@@ -75,6 +86,10 @@ export default function ProgressOverviewCard({
   gymTarget,
   gymWeekLabel,
   gymLastStatus,
+  steps,
+  stepsTarget = 10000,
+  stepsEnabled = false,
+  stepsLoading = false,
 }: ProgressOverviewCardProps) {
   const consistencyProgress = clampProgress(consistencyPercent);
   const consistencyPercentLabel = Math.round(consistencyProgress * 100);
@@ -83,6 +98,26 @@ export default function ProgressOverviewCard({
   const gymProgress = hasGymTarget ? clampProgress(safeCompleted / gymTarget) : 0;
 
   const resolvedStatus = hasGymTarget ? gymLastStatus : undefined;
+  const hasStepTarget = stepsTarget > 0;
+  const resolvedStepValue = steps ?? 0;
+  const clampedSteps = Math.max(0, resolvedStepValue);
+  const stepsProgress =
+    stepsEnabled && hasStepTarget && !stepsLoading && steps !== null
+      ? clampProgress(clampedSteps / stepsTarget)
+      : 0;
+  const stepsValueText = !stepsEnabled
+    ? "Off"
+    : stepsLoading
+      ? "..."
+      : steps === null
+        ? "—"
+        : formatStepValue(clampedSteps);
+  const stepsSubText = !stepsEnabled
+    ? "Enable in settings"
+    : hasStepTarget
+      ? `${formatStepValue(clampedSteps)}/${formatStepValue(stepsTarget)}`
+      : "No goal";
+
   return (
     <Card className="mb-6 p-5">
       <View className="mb-3 flex-row items-center justify-between">
@@ -98,7 +133,7 @@ export default function ProgressOverviewCard({
         </TouchableOpacity>
       </View>
 
-      <View className="flex-row items-start gap-3">
+      <View className="flex-row items-start gap-2">
         <View className="flex-1 items-center">
           <CircularProgressRing
             label="Weigh-ins"
@@ -106,7 +141,7 @@ export default function ProgressOverviewCard({
             valueText={`${consistencyPercentLabel}%`}
             subText={`${consistencyDaysWithWeighIns}/${consistencyTotalDays}`}
             tone="violet"
-            size={96}
+            size={86}
             strokeWidth={7}
             animateOnMount
           />
@@ -119,7 +154,20 @@ export default function ProgressOverviewCard({
             valueText={hasGymTarget ? `${Math.round(gymProgress * 100)}%` : "—"}
             subText={hasGymTarget ? `${safeCompleted}/${gymTarget}` : "No goal"}
             tone={resolveGymRingTone(resolvedStatus)}
-            size={96}
+            size={86}
+            strokeWidth={7}
+            animateOnMount
+          />
+        </View>
+
+        <View className="flex-1 items-center">
+          <CircularProgressRing
+            label="Steps"
+            value={stepsProgress}
+            valueText={stepsValueText}
+            subText={stepsSubText}
+            tone="amber"
+            size={86}
             strokeWidth={7}
             animateOnMount
           />
