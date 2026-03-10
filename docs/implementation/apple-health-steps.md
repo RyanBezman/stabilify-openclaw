@@ -1,10 +1,10 @@
 # Apple Health Steps Integration
 
-Last updated: 2026-03-09
+Last updated: 2026-03-10
 
 ## Goal
 
-Allow users to opt into Apple Health step tracking from Profile Settings, then show today's step progress in `AuthedHome` alongside weigh-ins and gym sessions.
+Allow users to opt into Apple Health step tracking from Profile Settings, then show step progress in `AuthedHome` alongside weigh-ins and gym sessions.
 
 ## Policy Rules
 
@@ -13,6 +13,9 @@ Allow users to opt into Apple Health step tracking from Profile Settings, then s
 - `Track steps` remains iPhone-only (Apple Health / HealthKit).
 - When disabled, Home does not attempt Apple Health reads and the steps ring remains in the `Off` state.
 - Daily step goal is user-editable in Profile Settings and defaults to `10,000`.
+- In Home progress:
+  - `Last 7 days` continues to show today's live steps.
+  - Longer filters (`Last month`, `Last 3 months`, `Last 6 months`, `Last year`) show average daily steps for the selected window.
 
 ## Data Contracts
 
@@ -29,6 +32,7 @@ Allow users to opt into Apple Health step tracking from Profile Settings, then s
   - `fetchDashboardData` returns `profile.dailyStepGoal`
 - Device data contract:
   - `lib/data/appleHealth.ts` encapsulates HealthKit availability, permission initialization, and `getStepCount` reads for today's total.
+  - `lib/data/appleHealth.ts` also reads daily historical step samples to compute average daily steps for non-default Home filters.
 
 ## UX States
 
@@ -50,7 +54,8 @@ Allow users to opt into Apple Health step tracking from Profile Settings, then s
     - `Off` with `Enable` when tracking disabled; tapping navigates to Profile Settings
     - `...` while reading steps
     - `—` when enabled but no readable value
-    - compact count (for example `8.4k`) with progress vs the saved goal when available
+    - `Last 7 days`: compact count (for example `8.4k`) for today's steps with progress vs the saved goal
+    - longer filters: compact count for average daily steps across the selected window, with the ring still compared against the saved daily goal
   - Default target for ring progress: `10,000` daily steps until the user changes it.
 
 ## Analytics
@@ -62,7 +67,8 @@ Allow users to opt into Apple Health step tracking from Profile Settings, then s
 1. On iPhone build (custom dev client/EAS), open Profile Settings and enable `Track steps`.
 2. Confirm iOS Health permission prompt appears and enabling succeeds.
 3. Navigate to Home and confirm `Progress` shows a third `Steps` ring.
-4. Confirm ring updates from loading state to today's step value.
-5. Disable `Track steps` and confirm Home ring shows `Off` with `Tap to enable`, and tapping opens Profile Settings.
-6. Change the daily step goal in Profile Settings, save, then return Home and confirm the Steps ring sublabel uses the saved target.
-7. On Android, confirm `Track steps` shows iPhone-only copy and toggle is disabled.
+4. Leave Home on the default `Last 7 days` filter and confirm the Steps ring updates from loading state to today's step value.
+5. Switch Home to `Last 3 months` and confirm the Steps ring changes to average daily steps for that selected window.
+6. Disable `Track steps` and confirm Home ring shows `Off` with `Tap to enable`, and tapping opens Profile Settings.
+7. Change the daily step goal in Profile Settings, save, then return Home and confirm the Steps ring progress reflects the saved target.
+8. On Android, confirm `Track steps` shows iPhone-only copy and toggle is disabled.

@@ -1,8 +1,11 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
-import { fetchAppleHealthTodayStepCount } from "../../data/appleHealth";
+import {
+  fetchAppleHealthDailyStepAverage,
+  fetchAppleHealthTodayStepCount,
+} from "../../data/appleHealth";
 import { fetchDashboardData } from "../../data/dashboard";
 import { fetchActionableNotificationCount } from "../../data/notifications";
 import {
@@ -132,8 +135,8 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     CONSISTENCY_OPTIONS[0],
   );
   const [showConsistencyMenu, setShowConsistencyMenu] = useState(false);
-  const [todaySteps, setTodaySteps] = useState<number | null>(null);
-  const [loadingTodaySteps, setLoadingTodaySteps] = useState(false);
+  const [stepSummary, setStepSummary] = useState<number | null>(null);
+  const [loadingStepSummary, setLoadingStepSummary] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -177,22 +180,6 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
           setDashboardError(null);
           const nextDashboard = data ?? null;
           setDashboard(nextDashboard);
-          const stepsEnabled = nextDashboard?.profile?.appleHealthStepsEnabled ?? false;
-          if (!stepsEnabled || Platform.OS !== "ios") {
-            setTodaySteps(null);
-            setLoadingTodaySteps(false);
-          } else {
-            setLoadingTodaySteps(true);
-            const stepResult = await fetchAppleHealthTodayStepCount();
-            if (!active) return;
-            if (stepResult.error) {
-              setTodaySteps(null);
-            } else {
-              setTodaySteps(stepResult.data?.steps ?? null);
-            }
-            setLoadingTodaySteps(false);
-          }
-
           const avatarPath = nextDashboard?.profile?.avatarPath ?? null;
           if (!avatarPath) {
             setProfilePhotoUrl(null);
@@ -315,6 +302,47 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     ? `Reminds at ${routine.reminderTime}`
     : "No reminder";
   const appleHealthStepsEnabled = dashboard?.profile?.appleHealthStepsEnabled ?? false;
+  const stepSummaryMode = consistencyOption.id === "7d" ? "today" : "average";
+
+  useEffect(() => {
+    let active = true;
+
+    if (!appleHealthStepsEnabled || Platform.OS !== "ios") {
+      setStepSummary(null);
+      setLoadingStepSummary(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setLoadingStepSummary(true);
+
+    const loadStepSummary = async () => {
+      const stepResult =
+        stepSummaryMode === "today"
+          ? await fetchAppleHealthTodayStepCount()
+          : await fetchAppleHealthDailyStepAverage(consistencyOption.days);
+
+      if (!active) {
+        return;
+      }
+
+      if (stepResult.error) {
+        setStepSummary(null);
+      } else if (stepSummaryMode === "today") {
+        setStepSummary(stepResult.data?.steps ?? null);
+      } else {
+        setStepSummary(stepResult.data?.averageDailySteps ?? null);
+      }
+      setLoadingStepSummary(false);
+    };
+
+    void loadStepSummary();
+
+    return () => {
+      active = false;
+    };
+  }, [appleHealthStepsEnabled, consistencyOption.days, stepSummaryMode]);
 
   const showSkeleton = loading && !dashboard && !dashboardError;
 
@@ -677,21 +705,6 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
       setDashboardError(null);
       const nextDashboard = data ?? null;
       setDashboard(nextDashboard);
-      const stepsEnabled = nextDashboard?.profile?.appleHealthStepsEnabled ?? false;
-      if (!stepsEnabled || Platform.OS !== "ios") {
-        setTodaySteps(null);
-        setLoadingTodaySteps(false);
-      } else {
-        setLoadingTodaySteps(true);
-        const stepResult = await fetchAppleHealthTodayStepCount();
-        if (stepResult.error) {
-          setTodaySteps(null);
-        } else {
-          setTodaySteps(stepResult.data?.steps ?? null);
-        }
-        setLoadingTodaySteps(false);
-      }
-
       const avatarPath = nextDashboard?.profile?.avatarPath ?? null;
       if (!avatarPath) {
         setProfilePhotoUrl(null);
@@ -749,8 +762,9 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     todayGymValidationStatus,
     requestingGymValidation,
     unit,
-    todaySteps,
-    loadingTodaySteps,
+    stepSummary,
+    loadingStepSummary,
+    stepSummaryMode,
     stepTarget: dashboard?.profile?.dailyStepGoal ?? DEFAULT_DAILY_STEP_TARGET,
     appleHealthStepsEnabled,
     consistencyOptions: CONSISTENCY_OPTIONS,
