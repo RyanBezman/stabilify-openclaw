@@ -23,6 +23,7 @@ import PlanGenerationOverlay from "../components/coaches/PlanGenerationOverlay";
 import WorkspaceHeader from "../components/coaches/workspace/WorkspaceHeader";
 import PlanPane from "../components/coaches/workspace/PlanPane";
 import ChatPane from "../components/coaches/workspace/ChatPane";
+import PlanSurface from "../components/coaches/workspace/PlanSurface";
 import { useCoach, useCoachAccessGate } from "../lib/features/coaches";
 import type {
   CoachSpecialization,
@@ -525,14 +526,14 @@ export function CoachWorkspaceView({
                   </Card>
                 )
               ) : isWorkout ? (
-                <View className="mt-3 overflow-hidden">
+                <PlanSurface className="mt-3">
                   <View className="px-5 py-5">
                     <View className="flex-row items-start justify-between gap-3">
                       <View className="flex-1">
                         <Text className="text-lg font-bold text-white">
                           {displayedWorkoutPlan ? displayedWorkoutPlan.title : "No plan yet"}
                         </Text>
-                        <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
+                        <Text className="mt-2 text-sm leading-6 text-neutral-300">
                           {displayedWorkoutPlan
                             ? `${displayedWorkoutPlan.daysPerWeek} days/week · ${
                                 displayedPlanKind === "current"
@@ -570,7 +571,7 @@ export function CoachWorkspaceView({
                       <>
                         <View className="mt-5 flex-row gap-3">
                           <View className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-                            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-400">
+                            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-300">
                               Days / week
                             </Text>
                             <Text className="mt-2 text-lg font-semibold text-white">
@@ -578,7 +579,7 @@ export function CoachWorkspaceView({
                             </Text>
                           </View>
                           <View className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
-                            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-400">
+                            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-300">
                               Sessions
                             </Text>
                             <Text className="mt-2 text-lg font-semibold text-white">
@@ -595,10 +596,10 @@ export function CoachWorkspaceView({
                               className="flex-row items-center justify-between gap-3"
                             >
                               <View className="flex-1">
-                                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-400">
+                                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-300">
                                   Notes
                                 </Text>
-                                <Text className="mt-1 text-sm text-neutral-300">
+                                <Text className="mt-1 text-sm leading-5 text-neutral-200">
                                   {displayedWorkoutPlan.notes.length} note{displayedWorkoutPlan.notes.length === 1 ? "" : "s"}
                                 </Text>
                               </View>
@@ -631,7 +632,7 @@ export function CoachWorkspaceView({
                     ) : (
                       <View className="mt-5">
                         <Text className="text-base font-semibold text-white">Build your plan</Text>
-                        <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
+                        <Text className="mt-2 text-sm leading-6 text-neutral-300">
                           Answer a few intake questions and your coach will generate a workout draft you can confirm.
                         </Text>
                         <Button
@@ -646,17 +647,17 @@ export function CoachWorkspaceView({
 
                   {displayedWorkoutPlan ? (
                     <>
-                      <View className="border-t border-neutral-900 px-5 py-4">
+                      <View className="border-t border-neutral-800 px-5 py-4">
                         <TouchableOpacity
                           activeOpacity={0.85}
                           onPress={() => setWorkoutScheduleOpen((current) => !current)}
                           className="flex-row items-center justify-between gap-3"
                         >
                           <View className="flex-1">
-                            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-400">
+                            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-300">
                               Weekly schedule
                             </Text>
-                            <Text className="mt-1 text-sm text-neutral-300">
+                            <Text className="mt-1 text-sm leading-5 text-neutral-200">
                               {displayedWorkoutPlan.schedule.length} day{displayedWorkoutPlan.schedule.length === 1 ? "" : "s"}
                             </Text>
                           </View>
@@ -681,7 +682,7 @@ export function CoachWorkspaceView({
                             return (
                               <View
                                 key={dayKey}
-                                className={`${dayIndex === 0 ? "" : "border-t border-neutral-900"} px-5 py-4`}
+                                className={`${dayIndex === 0 ? "" : "border-t border-neutral-800"} px-5 py-4`}
                               >
                                 <TouchableOpacity
                                   activeOpacity={0.85}
@@ -694,14 +695,14 @@ export function CoachWorkspaceView({
                                   className="flex-row items-start justify-between gap-3"
                                 >
                                   <View className="flex-1">
-                                    <Text className="text-sm font-semibold text-neutral-100">
+                                    <Text className="text-base font-semibold text-neutral-100">
                                       {day.dayLabel}
                                     </Text>
-                                    <Text className="mt-1 text-sm text-neutral-300">
+                                    <Text className="mt-1 text-sm leading-5 text-neutral-200">
                                       {day.focus} • {day.items.length} exercise{day.items.length === 1 ? "" : "s"}
                                     </Text>
                                   </View>
-                                  <Text className="text-sm font-semibold text-neutral-200">
+                                  <Text className="text-xs font-semibold text-neutral-300">
                                     {dayOpen ? "Hide" : "Show"}
                                   </Text>
                                 </TouchableOpacity>
@@ -727,7 +728,7 @@ export function CoachWorkspaceView({
                           })
                         : null}
 
-                      <View className="border-t border-neutral-900 px-5 py-5">
+                      <View className="border-t border-neutral-800 px-5 py-5">
                         {workoutDraftPlan ? (
                           <View className="flex-row gap-3">
                             <Button
@@ -756,7 +757,7 @@ export function CoachWorkspaceView({
                       </View>
                     </>
                   ) : null}
-                </View>
+                </PlanSurface>
               ) : (
                 <NutritionPlanCard
                   plan={displayedNutritionPlan}

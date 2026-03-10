@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import Button from "../../ui/Button";
 import OptionPill from "../../ui/OptionPill";
+import PlanSurface from "../workspace/PlanSurface";
 import type { NutritionPlan } from "../../../lib/features/coaches";
 
 type NutritionPlanCardProps = {
@@ -50,13 +51,11 @@ function SectionToggle({
   subtitle,
   open,
   onPress,
-  accent = false,
 }: {
   title: string;
   subtitle?: string;
   open: boolean;
   onPress: () => void;
-  accent?: boolean;
 }) {
   return (
     <TouchableOpacity
@@ -66,13 +65,11 @@ function SectionToggle({
     >
       <View className="flex-1">
         <Text
-          className={`text-[11px] font-semibold uppercase tracking-[1px] ${
-            accent ? "text-violet-300" : "text-neutral-400"
-          }`}
+          className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-300"
         >
           {title}
         </Text>
-        {subtitle ? <Text className="mt-1 text-sm text-neutral-300">{subtitle}</Text> : null}
+        {subtitle ? <Text className="mt-1 text-sm leading-5 text-neutral-200">{subtitle}</Text> : null}
       </View>
       <View className="flex-row items-center gap-2">
         <Text className="text-sm font-semibold text-neutral-200">
@@ -97,7 +94,7 @@ function MacroStat({
 }) {
   return (
     <View className="flex-1">
-      <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-400">
+      <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-300">
         {label}
       </Text>
       <Text className="mt-1 text-base font-semibold text-white">{value}</Text>
@@ -143,9 +140,9 @@ export default function NutritionPlanCard({
 
   if (!plan) {
     return (
-      <View className="mt-3 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-5">
+      <PlanSurface className="mt-3 p-5">
         <Text className="text-base font-semibold text-white">Build your nutrition plan</Text>
-        <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
+        <Text className="mt-2 text-sm leading-6 text-neutral-300">
           Create a calmer baseline plan, then adjust it with your coach as needed.
         </Text>
         <Button
@@ -154,7 +151,7 @@ export default function NutritionPlanCard({
           onPress={onOpenIntake}
           disabled={planApiUnavailable}
         />
-      </View>
+      </PlanSurface>
     );
   }
 
@@ -162,7 +159,7 @@ export default function NutritionPlanCard({
   const displayedPlanKind = draftPlan && showDraftInPlan ? "new" : "current";
 
   return (
-    <View className="mt-3 overflow-hidden">
+    <PlanSurface className="mt-3">
       <View className="px-5 py-5">
         <View className="flex-row items-start justify-between gap-3">
           <View className="min-w-0 flex-1">
@@ -182,10 +179,10 @@ export default function NutritionPlanCard({
           </View>
         ) : null}
 
-        <View className="mt-5 rounded-2xl border border-violet-500/20 bg-violet-500/8 p-4">
+        <View className="mt-5 rounded-2xl border border-neutral-800 bg-neutral-900/70 p-4">
           <View className="flex-row items-end justify-between gap-3">
             <View className="flex-1">
-              <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-300">
+              <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-300">
                 Daily target
               </Text>
               <Text className="mt-2 text-2xl font-bold tracking-tight text-white">
@@ -193,32 +190,31 @@ export default function NutritionPlanCard({
                 <Text className="text-sm font-semibold text-neutral-300"> kcal</Text>
               </Text>
             </View>
-            <View className="rounded-full border border-violet-500/25 bg-violet-500/12 px-3 py-1.5">
-              <Text className="text-xs font-semibold text-violet-100">
+            <View className="rounded-full border border-neutral-700 bg-neutral-800/80 px-3 py-1.5">
+              <Text className="text-xs font-semibold text-neutral-100">
                 {plan.meals.length} meal{plan.meals.length === 1 ? "" : "s"}
               </Text>
             </View>
           </View>
 
-          <View className="mt-4 border-t border-violet-500/15 pt-4">
+          <View className="mt-4 border-t border-neutral-800 pt-4">
             <View className="flex-row items-center gap-3">
               <MacroStat label="Protein" value={`${plan.macros.proteinG}g`} />
-              <View className="h-10 w-px bg-violet-500/15" />
+              <View className="h-10 w-px bg-neutral-800" />
               <MacroStat label="Carbs" value={`${plan.macros.carbsG}g`} />
-              <View className="h-10 w-px bg-violet-500/15" />
+              <View className="h-10 w-px bg-neutral-800" />
               <MacroStat label="Fats" value={`${plan.macros.fatsG}g`} />
             </View>
           </View>
         </View>
       </View>
 
-      <View className="border-t border-neutral-900 px-5 py-4">
+      <View className="border-t border-neutral-800 px-5 py-4">
         <SectionToggle
           title="Meal structure"
           subtitle={`${plan.meals.length} meal${plan.meals.length === 1 ? "" : "s"}`}
           open={mealsOpen}
           onPress={() => setMealsOpen((current) => !current)}
-          accent
         />
       </View>
 
@@ -230,7 +226,7 @@ export default function NutritionPlanCard({
             return (
               <View
                 key={mealKey}
-                className={`${mealIndex === 0 ? "" : "border-t border-neutral-900"} px-5 py-4`}
+                className={`${mealIndex === 0 ? "" : "border-t border-neutral-800"} px-5 py-4`}
               >
                 <TouchableOpacity
                   activeOpacity={0.85}
@@ -243,16 +239,16 @@ export default function NutritionPlanCard({
                   className="flex-row items-start justify-between gap-3"
                 >
                   <View className="flex-1">
-                    <Text className="text-sm font-semibold text-violet-200">{meal.name}</Text>
-                    <Text className="mt-1 text-sm text-neutral-300">
+                    <Text className="text-base font-semibold text-neutral-100">{meal.name}</Text>
+                    <Text className="mt-1 text-sm leading-5 text-neutral-200">
                       {meal.items.length} item{meal.items.length === 1 ? "" : "s"}
                     </Text>
                   </View>
                   <View className="items-end">
-                    <Text className="text-xs font-semibold uppercase tracking-[1px] text-neutral-300">
+                    <Text className="text-xs font-semibold uppercase tracking-[1px] text-neutral-200">
                       {meal.targetCalories} kcal
                     </Text>
-                    <Text className="mt-1 text-sm font-semibold text-neutral-200">
+                    <Text className="mt-1 text-xs font-semibold text-neutral-300">
                       {mealOpen ? "Hide" : "Show"}
                     </Text>
                   </View>
@@ -261,7 +257,10 @@ export default function NutritionPlanCard({
                 {mealOpen ? (
                   <View className="mt-3 gap-2">
                     {meal.items.map((item, itemIndex) => (
-                      <Text key={`${meal.name}-${item}-${itemIndex}`} className="text-sm leading-6 text-white">
+                      <Text
+                        key={`${meal.name}-${item}-${itemIndex}`}
+                        className="text-sm leading-6 text-white"
+                      >
                         • {item}
                       </Text>
                     ))}
@@ -273,18 +272,20 @@ export default function NutritionPlanCard({
         : null}
 
       {plan.notes.length ? (
-        <View className="border-t border-neutral-900 px-5 py-4">
+        <View className="border-t border-neutral-800 px-5 py-4">
           <SectionToggle
             title="Notes"
             subtitle={`${plan.notes.length} note${plan.notes.length === 1 ? "" : "s"}`}
             open={notesOpen}
             onPress={() => setNotesOpen((current) => !current)}
-            accent
           />
           {notesOpen ? (
             <View className="mt-3 gap-2">
               {plan.notes.map((note, noteIndex) => (
-                <Text key={`${note}-${noteIndex}`} className="text-sm leading-6 text-neutral-200">
+                <Text
+                  key={`${note}-${noteIndex}`}
+                  className="text-sm leading-6 text-neutral-200"
+                >
                   • {note}
                 </Text>
               ))}
@@ -295,7 +296,7 @@ export default function NutritionPlanCard({
 
       {draftPlan ? (
         showExplicitDecision ? (
-          <View className="border-t border-neutral-900 px-5 py-5">
+          <View className="border-t border-neutral-800 px-5 py-5">
             <View className="rounded-xl border border-fuchsia-400/45 bg-fuchsia-500/15 px-3 py-2.5">
               <Text className="text-xs font-semibold uppercase tracking-[0.8px] text-fuchsia-100">
                 Decision required
@@ -325,9 +326,7 @@ export default function NutritionPlanCard({
             </View>
           </View>
         ) : (
-          <View
-            className="border-t border-neutral-900 px-5 py-5"
-          >
+          <View className="border-t border-neutral-800 px-5 py-5">
             <View className="flex-row gap-3">
               <Button
                 className="flex-1"
@@ -346,7 +345,7 @@ export default function NutritionPlanCard({
           </View>
         )
       ) : (
-        <View className="border-t border-neutral-900 px-5 py-5">
+        <View className="border-t border-neutral-800 px-5 py-5">
           <Button
             title="Regenerate with updated intake"
             onPress={onOpenIntake}
@@ -354,6 +353,6 @@ export default function NutritionPlanCard({
           />
         </View>
       )}
-    </View>
+    </PlanSurface>
   );
 }
