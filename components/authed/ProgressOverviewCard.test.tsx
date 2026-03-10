@@ -266,4 +266,17 @@ describe("ProgressOverviewCard", () => {
     expect(circleStrokes).toContain("#60a5fa");
   });
 
+  it("shows average-daily copy for non-default step summaries", () => {
+    const { root } = renderCard({
+      stepsEnabled: true,
+      steps: 8400,
+      stepsTarget: 12000,
+      stepsSummaryMode: "average",
+    });
+    const textValues = getTextValues(root);
+
+    expect(textValues).toContain("8.4k");
+    expect(textValues).toContain("Avg/day");
+  });
+
 });

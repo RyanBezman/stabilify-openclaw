@@ -15,8 +15,20 @@ type AppleHealthKitStepCountOptions = {
   includeManuallyAdded: boolean;
 };
 
+type AppleHealthKitDailyStepCountOptions = {
+  startDate: string;
+  endDate: string;
+  includeManuallyAdded: boolean;
+};
+
 type AppleHealthKitValue = {
   value: number;
+};
+
+type AppleHealthKitDailyStepSample = {
+  value: number;
+  startDate: string;
+  endDate: string;
 };
 
 type AppleHealthKitNativeModule = {
@@ -30,6 +42,10 @@ type AppleHealthKitNativeModule = {
   getStepCount: (
     options: AppleHealthKitStepCountOptions,
     callback: (error: string | null, results: AppleHealthKitValue) => void,
+  ) => void;
+  getDailyStepCountSamples?: (
+    options: AppleHealthKitDailyStepCountOptions,
+    callback: (error: string | null, results: AppleHealthKitDailyStepSample[]) => void,
   ) => void;
 };
 
@@ -182,6 +198,91 @@ export async function fetchAppleHealthTodayStepCount(): Promise<Result<{ steps: 
         }
 
         resolve(ok({ steps: Math.floor(results.value) }));
+      },
+    );
+  });
+}
+
+function getLocalRangeWindow(days: number) {
+  const safeDays = Math.max(1, Math.floor(days));
+  const endDate = new Date();
+  endDate.setHours(23, 59, 59, 999);
+
+  const startDate = new Date();
+  startDate.setHours(0, 0, 0, 0);
+  startDate.setDate(startDate.getDate() - (safeDays - 1));
+
+  return {
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    days: safeDays,
+  };
+}
+
+export async function fetchAppleHealthDailyStepAverage(
+  days: number,
+): Promise<Result<{ averageDailySteps: number; totalSteps: number; days: number }>> {
+  const supportResult = ensureIosSupport();
+  if (supportResult.error) {
+    return supportResult;
+  }
+
+  const moduleResult = getNativeModuleOrFail();
+  if (moduleResult.error || !moduleResult.data) {
+    return moduleResult;
+  }
+
+  const getDailyStepCountSamples = moduleResult.data.module.getDailyStepCountSamples;
+  if (typeof getDailyStepCountSamples !== "function") {
+    return fail(
+      "Apple Health daily history is unavailable in this build. Reinstall the latest iOS dev client or production build.",
+    );
+  }
+
+  const accessResult = await requestAppleHealthStepReadAccess();
+  if (accessResult.error) {
+    return accessResult;
+  }
+
+  const rangeWindow = getLocalRangeWindow(days);
+
+  return new Promise((resolve) => {
+    getDailyStepCountSamples(
+      {
+        startDate: rangeWindow.startDate,
+        endDate: rangeWindow.endDate,
+        includeManuallyAdded: false,
+      },
+      (error, results) => {
+        if (error) {
+          resolve(
+            fail(
+              normalizeHealthErrorMessage(
+                error,
+                "Couldn't read daily step history from Apple Health.",
+              ),
+            ),
+          );
+          return;
+        }
+
+        const samples = Array.isArray(results) ? results : [];
+        let totalSteps = 0;
+        for (const sample of samples) {
+          if (!Number.isFinite(sample.value) || sample.value < 0) {
+            resolve(fail("Apple Health returned an invalid daily step sample."));
+            return;
+          }
+          totalSteps += sample.value;
+        }
+
+        resolve(
+          ok({
+            averageDailySteps: Math.round(totalSteps / rangeWindow.days),
+            totalSteps: Math.round(totalSteps),
+            days: rangeWindow.days,
+          }),
+        );
       },
     );
   });
