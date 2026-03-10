@@ -1,34 +1,41 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Text, TouchableOpacity, View } from "react-native";
-import Card from "../../ui/Card";
 import SectionTitle from "../../ui/SectionTitle";
 
-export default function CoachChatCard({ onPress }: { onPress: () => void }) {
+export default function CoachChatCard({
+  coachName,
+  onPress,
+}: {
+  coachName: string;
+  onPress: () => void;
+}) {
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
-      <Card className="mb-6 p-5">
-        <View className="flex-row items-center justify-between">
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} className="mb-6 px-5">
+      <View className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900 px-5 py-6">
+        <View className="flex-row items-start justify-between">
           <View className="flex-1 pr-3">
-            <SectionTitle>Coach Chat</SectionTitle>
-            <Text className="mt-2 text-sm text-neutral-300">
-              Ask questions, adjust plans, and get guidance in one thread.
+            <SectionTitle className="text-neutral-400">Coach Hub</SectionTitle>
+            <Text className="mt-2 text-2xl font-semibold tracking-tight text-white">
+              {coachName}
+            </Text>
+            <Text className="mt-2 text-sm leading-5 text-neutral-300">
+              Ask questions, tune your plan, and close the week with clear next steps.
             </Text>
           </View>
-          <View className="h-10 w-10 items-center justify-center rounded-full border border-violet-500/40 bg-violet-600/20">
+          <View className="h-11 w-11 items-center justify-center rounded-full border border-neutral-700 bg-neutral-950/50">
             <Ionicons
               name="chatbubble-ellipses-outline"
-              size={18}
-              color="#ddd6fe"
+              size={20}
+              color="#d4d4d4"
             />
           </View>
         </View>
 
-        <View className="mt-4 self-start rounded-full border border-violet-500/40 bg-violet-600/20 px-3 py-1">
-          <Text className="text-xs font-semibold text-violet-200">
-            Open chat
-          </Text>
+        <View className="mt-5 flex-row items-center justify-between border-t border-neutral-800 pt-4">
+          <Text className="text-sm font-semibold text-violet-300">Open coach chat</Text>
+          <Ionicons name="chevron-forward" size={16} color="#a78bfa" />
         </View>
-      </Card>
+      </View>
     </TouchableOpacity>
   );
 }

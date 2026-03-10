@@ -1,6 +1,6 @@
 # Coach UI Manual QA Checklist (v1)
 
-Last updated: 2026-03-09
+Last updated: 2026-03-10
 
 ## Canonical References
 - Product policy:
@@ -12,7 +12,7 @@ Last updated: 2026-03-09
   - `docs/implementation/screen-architecture.md`
 
 ## Scope
-- Coaches tab dashboard root (`Today`, `Training`, `Nutrition`, `Weekly recap` cards)
+- Coaches tab dashboard root (`Coach Hub`, `Performance`, `Today`, `Plans`, `Weekly recap`)
 - Unified coach chat entry routed through `CoachWorkspace` chat tab
 - Pro coach onboarding flow (`CoachOnboardingFlow`) before first workspace run
 - Weekly check-in v2 form fields + save/update behavior
@@ -54,9 +54,10 @@ Expected:
 - Dashboard root loads (not coach workspace hub).
 - For Pro users, no `Pro required` / `Upgrade to Pro` lock card flashes during initial tier check.
 - When loading dashboard data for an already-selected coach, `Coach Dashboard` header + avatar stay anchored at top while body cards skeletonize.
-- Dashboard stays centered in a wider coach shell and does not stretch edge-to-edge on wide devices.
-- Sections appear in order: `Coach Chat`, `Today`, `Plans`, `Weekly recap`.
-- `Plans` renders `Training` and `Nutrition` as paired sibling cards inside one full-width section.
+- Dashboard uses full-width app shell (no centered max-width coach column).
+- Sections appear in order: `Coach Hub`, `Performance`, `Today`, `Plans`, `Weekly recap`.
+- `Performance` shows two rings (`Adherence`, `8wk completion`) plus streak and nutrition target metrics.
+- `Plans` renders stacked `Training` and `Nutrition` modules, each with a progress meter line.
 
 2. Tap `Coach Chat`.
 Expected:
@@ -105,12 +106,14 @@ Expected:
 8. Return to dashboard.
 Expected:
 - Weekly card shows `Weekly recap`.
-- Three rows render:
+- Weekly recap includes:
+  - adherence ring with latest percentage
+  - three status rows:
   - `Completed check-in` (Yes/No)
-  - `Plan accepted?` (Yes/No/Pending)
+  - `Plan accepted` (Yes/No/Pending)
   - `Adherence trend` (Up/Down/Flat/No trend yet)
 - CTA text is `Do weekly check-in` or `Preview last check-in` based on due state.
-- Skeleton state mirrors the final hierarchy: header remains anchored, and the body skeleton shows `Coach Chat`, `Today`, grouped `Plans`, and `Weekly recap`.
+- Skeleton state mirrors the final hierarchy: header remains anchored, and the body skeleton shows `Coach Hub`, `Performance`, `Today`, `Plans`, and `Weekly recap`.
 
 ## Regression checks
 1. Membership lock path still routes to Billing screen.

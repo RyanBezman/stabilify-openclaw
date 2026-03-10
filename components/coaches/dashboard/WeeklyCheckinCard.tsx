@@ -1,11 +1,12 @@
 import { Text, TouchableOpacity, View } from "react-native";
-import Card from "../../ui/Card";
+import CircularProgressRing from "../../authed/CircularProgressRing";
 import SectionTitle from "../../ui/SectionTitle";
 
 export default function WeeklyCheckinCard({
   nextDueLabel,
   checkinCompleted,
   planAcceptedThisWeek,
+  adherenceScore,
   adherenceTrendDirection,
   adherenceTrendDelta,
   cta,
@@ -14,6 +15,7 @@ export default function WeeklyCheckinCard({
   nextDueLabel: string;
   checkinCompleted: boolean;
   planAcceptedThisWeek: boolean | null;
+  adherenceScore: number;
   adherenceTrendDirection: "up" | "down" | "flat" | "no_data";
   adherenceTrendDelta: number | null;
   cta: string;
@@ -49,38 +51,60 @@ export default function WeeklyCheckinCard({
         : adherenceTrendDirection === "flat"
           ? "text-neutral-300"
           : "text-neutral-400";
+  const safeAdherence = Math.max(0, Math.min(100, Math.round(adherenceScore)));
+  const ringTone =
+    safeAdherence >= 85
+      ? "emerald"
+      : safeAdherence >= 60
+        ? "amber"
+        : "rose";
 
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress}>
-      <Card className="mb-6 p-5">
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} className="mb-6 px-5">
+      <View className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
         <View className="flex-row items-center justify-between">
           <SectionTitle>Weekly recap</SectionTitle>
           <Text className="text-xs text-neutral-500">{nextDueLabel}</Text>
         </View>
 
-        <View className="mt-4 gap-3">
-          <View className="flex-row items-center justify-between rounded-xl border border-neutral-800 bg-neutral-950/60 px-3 py-2.5">
-            <Text className="text-sm text-neutral-300">Completed check-in</Text>
-            <Text className={`text-sm font-semibold ${completedColor}`}>{completedLabel}</Text>
+        <View className="mt-4 flex-row gap-4">
+          <View className="shrink-0 justify-center">
+            <CircularProgressRing
+              label="Adherence"
+              value={safeAdherence / 100}
+              valueText={`${safeAdherence}%`}
+              subText="Latest"
+              tone={ringTone}
+              size={104}
+              strokeWidth={8}
+              animateOnMount
+            />
           </View>
-          <View className="flex-row items-center justify-between rounded-xl border border-neutral-800 bg-neutral-950/60 px-3 py-2.5">
-            <Text className="text-sm text-neutral-300">Plan accepted?</Text>
-            <Text className={`text-sm font-semibold ${planAcceptedColor}`}>{planAcceptedLabel}</Text>
-          </View>
-          <View className="flex-row items-center justify-between rounded-xl border border-neutral-800 bg-neutral-950/60 px-3 py-2.5">
-            <Text className="text-sm text-neutral-300">Adherence trend</Text>
-            <Text className={`text-sm font-semibold ${adherenceTrendColor}`}>{adherenceTrendLabel}</Text>
+
+          <View className="flex-1 justify-center">
+            <View className="flex-row items-center justify-between border-b border-neutral-800/80 py-2">
+              <Text className="text-sm text-neutral-300">Completed check-in</Text>
+              <Text className={`text-sm font-semibold ${completedColor}`}>{completedLabel}</Text>
+            </View>
+            <View className="flex-row items-center justify-between border-b border-neutral-800/80 py-2">
+              <Text className="text-sm text-neutral-300">Plan accepted</Text>
+              <Text className={`text-sm font-semibold ${planAcceptedColor}`}>{planAcceptedLabel}</Text>
+            </View>
+            <View className="flex-row items-center justify-between py-2">
+              <Text className="text-sm text-neutral-300">Trend</Text>
+              <Text className={`text-sm font-semibold ${adherenceTrendColor}`}>{adherenceTrendLabel}</Text>
+            </View>
           </View>
         </View>
 
         <View className="mt-4 flex-row items-center justify-end">
-          <View className="shrink-0 rounded-full border border-violet-500/40 bg-violet-600/20 px-3 py-1">
-            <Text className="text-xs font-semibold text-violet-200">
+          <View className="shrink-0 rounded-full border border-violet-500/40 bg-violet-500/20 px-3 py-1">
+            <Text className="text-xs font-semibold text-violet-100">
               {cta}
             </Text>
           </View>
         </View>
-      </Card>
+      </View>
     </TouchableOpacity>
   );
 }

@@ -8,6 +8,7 @@ import CoachesLoadingSkeleton from "../components/coaches/CoachesLoadingSkeleton
 import CoachDashboardSkeleton from "../components/coaches/CoachDashboardSkeleton";
 import CoachWorkspaceLocked from "../components/coaches/CoachWorkspaceLocked";
 import CoachChatCard from "../components/coaches/dashboard/CoachChatCard";
+import CoachMetricsStrip from "../components/coaches/dashboard/CoachMetricsStrip";
 import CoachPlansSection from "../components/coaches/dashboard/CoachPlansSection";
 import CoachTodayCard from "../components/coaches/dashboard/CoachTodayCard";
 import TrackCard from "../components/coaches/dashboard/TrackCard";
@@ -341,15 +342,14 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
       <AppScreen
         className="flex-1 bg-neutral-950"
         edges={FLOATING_TAB_SCREEN_SAFE_AREA_EDGES}
-        maxContentWidth={960}
       >
         <ScrollView
           className="flex-1"
-          contentContainerClassName="px-5 pt-6"
+          contentContainerClassName="pt-6"
           contentContainerStyle={{ paddingBottom: contentBottomPadding }}
           showsVerticalScrollIndicator={false}
         >
-          <View className="mb-6 flex-row items-center justify-between gap-3">
+          <View className="mb-6 flex-row items-center justify-between gap-3 px-5">
             <Text className="text-3xl font-bold tracking-tight text-white">
               Coach Dashboard
             </Text>
@@ -357,16 +357,19 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
           </View>
 
           {serverError || dashboard.error || saveError ? (
-            <Card className="mb-6 border border-amber-500/30 bg-amber-500/10 p-4">
-              <Text className="text-sm font-semibold text-amber-200">
-                {saveError ?? serverError ?? dashboard.error}
-              </Text>
-            </Card>
+            <View className="mb-6 px-5">
+              <Card className="border border-amber-500/30 bg-amber-500/10 p-4">
+                <Text className="text-sm font-semibold text-amber-200">
+                  {saveError ?? serverError ?? dashboard.error}
+                </Text>
+              </Card>
+            </View>
           ) : null}
 
           {dashboardReady && dashboard.snapshot ? (
             <>
               <CoachChatCard
+                coachName={canonicalCoach.displayName}
                 onPress={() =>
                   navigation.navigate("CoachWorkspace", {
                     coach: canonicalCoach,
@@ -374,6 +377,14 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
                     tab: "chat",
                   })
                 }
+              />
+
+              <CoachMetricsStrip
+                adherenceScore={dashboard.snapshot.weeklyCheckin.adherenceScore}
+                completionRate={dashboard.analytics.completionRate}
+                streak={dashboard.analytics.streak}
+                caloriesTarget={dashboard.snapshot.nutrition.caloriesTarget}
+                nextDueLabel={dashboard.weeklyRecap.nextDueLabel}
               />
 
               <CoachTodayCard
@@ -387,6 +398,12 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
                   subtitle={dashboard.snapshot.training.preview}
                   cta={dashboard.snapshot.training.cta}
                   icon="barbell-outline"
+                  progressPercent={dashboard.snapshot.training.planId ? 100 : 18}
+                  progressLabel={
+                    dashboard.snapshot.training.planId
+                      ? "Plan status"
+                      : "Needs setup"
+                  }
                   onPress={() =>
                     navigation.navigate("CoachWorkspace", {
                       specialization: "workout",
@@ -407,6 +424,20 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
                   }
                   stateLoading={nutritionPendingApproval && dashboard.nutritionSyncing}
                   icon="restaurant-outline"
+                  progressPercent={
+                    dashboard.snapshot.nutrition.planId
+                      ? nutritionPendingApproval
+                        ? 72
+                        : 100
+                      : 14
+                  }
+                  progressLabel={
+                    dashboard.snapshot.nutrition.planId
+                      ? nutritionPendingApproval
+                        ? "Awaiting approval"
+                        : "Plan status"
+                      : "Needs setup"
+                  }
                   onPress={() =>
                     navigation.push("CoachWorkspace", {
                       specialization: "nutrition",
@@ -424,6 +455,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
                 nextDueLabel={dashboard.weeklyRecap.nextDueLabel}
                 checkinCompleted={dashboard.weeklyRecap.checkinCompleted}
                 planAcceptedThisWeek={dashboard.weeklyRecap.planAcceptedThisWeek}
+                adherenceScore={dashboard.snapshot.weeklyCheckin.adherenceScore}
                 adherenceTrendDirection={dashboard.weeklyRecap.adherenceTrendDirection}
                 adherenceTrendDelta={dashboard.weeklyRecap.adherenceTrendDelta}
                 cta={dashboard.weeklyRecap.cta}
@@ -438,7 +470,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
             <CoachDashboardSkeleton />
           )}
 
-          <View className="mt-8 border-t border-neutral-900 pt-4">
+          <View className="mt-8 border-t border-neutral-900 px-5 pt-4">
             <Button
               variant="secondary"
               title="Switch coach"
