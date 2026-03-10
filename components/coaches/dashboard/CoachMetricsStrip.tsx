@@ -1,13 +1,17 @@
+import React from "react";
 import { Text, View } from "react-native";
 import CircularProgressRing from "../../authed/CircularProgressRing";
 import SectionTitle from "../../ui/SectionTitle";
 
-type CoachMetricsStripProps = {
+export type CoachMetricsStripProps = {
   adherenceScore: number;
   completionRate: number;
   streak: number;
   caloriesTarget: number | null;
   nextDueLabel: string;
+  title?: string | null;
+  showDueLabel?: boolean;
+  containerClassName?: string;
 };
 
 function clampPercent(value: number) {
@@ -42,6 +46,9 @@ export default function CoachMetricsStrip({
   streak,
   caloriesTarget,
   nextDueLabel,
+  title = "Performance",
+  showDueLabel = true,
+  containerClassName,
 }: CoachMetricsStripProps) {
   const safeAdherence = clampPercent(adherenceScore);
   const safeCompletion = clampPercent(completionRate);
@@ -51,11 +58,15 @@ export default function CoachMetricsStrip({
       : "No target yet";
 
   return (
-    <View className="mb-6 px-5">
-      <View className="mb-3 flex-row items-center justify-between">
-        <SectionTitle>Performance</SectionTitle>
-        <Text className="text-xs text-neutral-500">Due {nextDueLabel}</Text>
-      </View>
+    <View className={containerClassName ?? "mb-6 px-5"}>
+      {title || showDueLabel ? (
+        <View className="mb-3 flex-row items-center justify-between">
+          {title ? <SectionTitle>{title}</SectionTitle> : <View />}
+          {showDueLabel ? (
+            <Text className="text-xs text-neutral-500">Due {nextDueLabel}</Text>
+          ) : null}
+        </View>
+      ) : null}
 
       <View className="flex-row gap-3">
         <View className="flex-1 items-center rounded-2xl border border-neutral-800 bg-neutral-900 px-3 py-4">

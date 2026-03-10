@@ -2707,22 +2707,18 @@ Deno.serve(async (req) => {
 
     const statusIndicators = [
       nextSession
-        ? `Workout scheduled: ${nextSession.focus}`
-        : "Workout status: unscheduled",
+        ? `Workout: ${nextSession.focus}`
+        : "Workout: Unscheduled",
       nutritionPlan
-        ? `Macro target: ${nutritionSummary}`
-        : "Macro target: not set",
-      "Hydration reminder: keep water intake steady",
-      historyRows[0]
-        ? `Recovery note: energy ${historyRows[0].energy}/5 last check-in`
-        : "Recovery note: complete a weekly check-in",
+        ? `Macros: ${nutritionSummary}`
+        : "Macros: Not set",
     ];
 
     return json(200, {
       dashboard_snapshot: {
         today: {
           directive,
-          status_indicators: statusIndicators.slice(0, 4),
+          status_indicators: statusIndicators.slice(0, 2),
           primary_cta: "Chat with Coach",
         },
         training: {

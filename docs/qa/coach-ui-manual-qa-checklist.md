@@ -12,7 +12,7 @@ Last updated: 2026-03-10
   - `docs/implementation/screen-architecture.md`
 
 ## Scope
-- Coaches tab dashboard root (`Coach Hub`, `Performance`, `Today`, `Plans`, `Weekly recap`)
+- Coaches tab dashboard root (`Today`, `Plans`, `This week`, header `Chat` action)
 - Unified coach chat entry routed through `CoachWorkspace` chat tab
 - Pro coach onboarding flow (`CoachOnboardingFlow`) before first workspace run
 - Weekly check-in v2 form fields + save/update behavior
@@ -53,13 +53,20 @@ Expected:
 Expected:
 - Dashboard root loads (not coach workspace hub).
 - For Pro users, no `Pro required` / `Upgrade to Pro` lock card flashes during initial tier check.
-- When loading dashboard data for an already-selected coach, `Coach Dashboard` header + avatar stay anchored at top while body cards skeletonize.
+- When loading dashboard data for an already-selected coach, `Coach Dashboard` header + header `Chat` action + avatar stay anchored at top while body cards skeletonize.
 - Dashboard uses full-width app shell (no centered max-width coach column).
-- Sections appear in order: `Coach Hub`, `Performance`, `Today`, `Plans`, `Weekly recap`.
-- `Performance` shows two rings (`Adherence`, `8wk completion`) plus streak and nutrition target metrics.
-- `Plans` renders stacked `Training` and `Nutrition` modules, each with a progress meter line.
+- Header exposes a compact `Chat` action instead of a standalone `Coach Hub` body card.
+- Sections appear in order: `Today`, `Plans`, `This week`.
+- `Today` is rendered as a full-width header band, should look visually distinct from the stacked cards below it, and should not use top/bottom framing borders.
+- `Today` references plans only and does not show a summary directive line.
+- `Today` shows exactly two inline summary items: `Workout` and `Macros` (no hydration/recovery reminder rows).
+- `Today` stays compact and minimal, using a low-height inline strip instead of expanded tiles or table-style rows.
+- `Macros` stays condensed to a single compact summary rather than rendering separate `Protein`, `Carbs`, and `Fat` rows.
+- `Plans` remains a permanent section directly below `Today`.
+- `This week` reads as one grouped section rather than separate `Performance` and `Weekly recap` modules.
+- `This week` shows two rings (`Adherence`, `8wk completion`) plus streak and nutrition target metrics above the weekly status card.
 
-2. Tap `Coach Chat`.
+2. Tap header `Chat`.
 Expected:
 - Opens `CoachWorkspace` with `Chat` tab selected.
 - Compatibility route `CoachChat` (if invoked by stale deep link) redirects to the same workspace chat tab.
@@ -69,7 +76,7 @@ Expected:
 3. Return to dashboard and inspect track cards.
 Expected:
 - Track labels are exactly `Training` and `Nutrition`.
-- Track cards appear inside the shared `Plans` section instead of as a standalone dashboard row.
+- Track cards appear inside the shared `Plans` section instead of as a conditional dashboard row.
 - Training CTA is `Start workout` or `View plan`.
 - Nutrition card shows targets summary and valid CTA text.
 
@@ -105,15 +112,15 @@ Expected:
 
 8. Return to dashboard.
 Expected:
-- Weekly card shows `Weekly recap`.
-- Weekly recap includes:
+- Lower section shows `This week` with a nested `Weekly check-in` card.
+- `Weekly check-in` includes:
   - adherence ring with latest percentage
   - three status rows:
   - `Completed check-in` (Yes/No)
   - `Plan accepted` (Yes/No/Pending)
   - `Adherence trend` (Up/Down/Flat/No trend yet)
 - CTA text is `Do weekly check-in` or `Preview last check-in` based on due state.
-- Skeleton state mirrors the final hierarchy: header remains anchored, and the body skeleton shows `Coach Hub`, `Performance`, `Today`, `Plans`, and `Weekly recap`.
+- Skeleton state mirrors the final hierarchy: header remains anchored, and the body skeleton shows a compact `Today` snapshot, then `Plans`, then `This week`.
 
 ## Regression checks
 1. Membership lock path still routes to Billing screen.

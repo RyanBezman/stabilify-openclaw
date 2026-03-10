@@ -102,24 +102,45 @@ export function buildTodayStatusIndicators(args: {
   provided: string[];
   trainingPreview: string;
   nutritionSummary: string;
-  recoveryNote: string;
 }) {
   const normalizedProvided = args.provided
     .map((entry) => normalizeText(entry))
     .filter((entry) => entry.length > 0);
 
-  if (normalizedProvided.length >= 2) {
-    return normalizedProvided.slice(0, 4);
+  if (normalizedProvided.length > 0) {
+    return normalizedProvided.slice(0, 2).map((entry) => {
+      const [rawLabel, ...rest] = entry.split(":");
+      const value = rest.join(":").trim();
+      if (!rawLabel?.trim().length || !value.length) {
+        return entry;
+      }
+
+      const label = rawLabel.trim().toLowerCase();
+      if (
+        label === "nutrition" ||
+        label === "macro target" ||
+        label === "macros"
+      ) {
+        return `Macros: ${value}`;
+      }
+      if (
+        label === "workout" ||
+        label === "workout scheduled" ||
+        label === "workout status"
+      ) {
+        return `Workout: ${value}`;
+      }
+
+      return entry;
+    });
   }
 
   const fallback = [
     `Workout: ${args.trainingPreview}`,
-    `Nutrition: ${args.nutritionSummary}`,
-    "Hydration: keep water intake steady",
-    args.recoveryNote,
+    `Macros: ${args.nutritionSummary}`,
   ];
 
-  return fallback.slice(0, 4);
+  return fallback.slice(0, 2);
 }
 
 export async function hydrateCoachDashboard(options?: {
@@ -140,10 +161,6 @@ export async function hydrateCoachDashboard(options?: {
 
   const trainingPreview = normalizeText(training.preview, "No training plan set");
   const nutritionSummary = normalizeText(nutrition.targets_summary, "No nutrition targets set");
-  const recoveryNote = normalizeText(
-    (Array.isArray(today.status_indicators) ? today.status_indicators[3] : null),
-    "Recovery: complete your weekly check-in."
-  );
 
   return {
     today: {
@@ -155,7 +172,6 @@ export async function hydrateCoachDashboard(options?: {
         provided: normalizeStringList(today.status_indicators),
         trainingPreview,
         nutritionSummary,
-        recoveryNote,
       }),
       primaryCta: normalizeText(today.primary_cta, "Chat with Coach"),
     },

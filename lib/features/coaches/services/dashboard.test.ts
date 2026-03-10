@@ -15,6 +15,63 @@ describe("hydrateCoachDashboard", () => {
     mocks.invokeCoachChat.mockReset();
   });
 
+  it("builds deterministic today fallback indicators without hydration or recovery rows", async () => {
+    mocks.invokeCoachChat.mockResolvedValue({
+      dashboard_snapshot: {
+        training: {
+          preview: "Upper A - 45 min",
+        },
+        nutrition: {
+          targets_summary: "P160 C220 F65",
+        },
+      },
+    });
+
+    const snapshot = await hydrateCoachDashboard();
+
+    expect(snapshot.today.statusIndicators).toEqual([
+      "Workout: Upper A - 45 min",
+      "Macros: P160 C220 F65",
+    ]);
+    expect(snapshot.today.statusIndicators.join(" ")).not.toContain("Hydration");
+    expect(snapshot.today.statusIndicators.join(" ")).not.toContain("Recovery");
+  });
+
+  it("caps provided today indicators to two rows", async () => {
+    mocks.invokeCoachChat.mockResolvedValue({
+      dashboard_snapshot: {
+        today: {
+          status_indicators: [
+            "Workout: Lower body",
+            "Nutrition: P150 C210 F60",
+            "Hydration: keep water intake steady",
+            "Recovery: energy 4/5",
+          ],
+        },
+      },
+    });
+
+    const snapshot = await hydrateCoachDashboard();
+
+    expect(snapshot.today.statusIndicators).toEqual([
+      "Workout: Lower body",
+      "Macros: P150 C210 F60",
+    ]);
+  });
+
+  it("uses stable today fallback text when plans are missing", async () => {
+    mocks.invokeCoachChat.mockResolvedValue({
+      dashboard_snapshot: {},
+    });
+
+    const snapshot = await hydrateCoachDashboard();
+
+    expect(snapshot.today.statusIndicators).toEqual([
+      "Workout: No training plan set",
+      "Macros: No nutrition targets set",
+    ]);
+  });
+
   it("maps plan_accepted_this_week and ignores accepted_plan_rate in client model", async () => {
     mocks.invokeCoachChat.mockResolvedValue({
       dashboard_snapshot: {

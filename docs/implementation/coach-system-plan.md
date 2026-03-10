@@ -1,6 +1,6 @@
 # Coach System Implementation Plan (One Coach + Dashboard + Weekly Check-ins)
 
-Last updated: 2026-03-09
+Last updated: 2026-03-10
 
 ## Goal
 - This file is implementation-focused: architecture, contracts, persistence, workflows, and testing.
@@ -22,23 +22,23 @@ Last updated: 2026-03-09
 
 ### Dashboard layout
 - Dashboard uses a wider centered coach shell aligned with `CoachWorkspace`, while remaining constrained on large screens instead of stretching edge-to-edge.
-- Header row shows `Coach Dashboard` with the unified coach avatar anchored while dashboard body content loads.
-- `Coach Chat` card appears first as the unified conversation entry point.
-- Top `Today` card.
-- Today directive text is 1-2 sentences in unified coach voice.
-- Today card shows 2-4 status pills: scheduled workout, macro progress, hydration reminder, recovery note.
-- One full-width `Plans` section groups the paired `Training` and `Nutrition` cards.
+- Header row shows `Coach Dashboard` with the unified coach avatar plus a compact `Chat` action anchored while dashboard body content loads.
+- `Today` appears first and serves as the primary daily execution surface.
+- Today is rendered as a full-width header band that feels visually distinct from the card stack below it, without framed top/bottom borders.
+- Today shows workout status and macros as the only two content blocks.
+- Today uses a compact summary presentation instead of expanded table-style detail rows.
+- Macro content stays compressed into one concise summary line inside the Today snapshot.
+- One full-width `Plans` section sits directly under `Today` and groups the paired `Training` and `Nutrition` cards.
 - `Training` card.
 - Shows next session preview (example: `Upper A - 45 min`).
 - CTA: `Start workout` if session exists, else `View plan`.
 - `Nutrition` card.
 - Shows calories/macros target and daily progress summary.
 - CTA priority: `Log meal`, `View meal plan`, `Adjust targets`.
-- Track cards are the only paired row in the dashboard; the rest of the surface stays in a single wide column.
-- `Weekly Check-in` card.
-- Shows next due date (`Sunday` in user timezone).
-- Shows streak and adherence score.
-- CTA is `Do weekly check-in` when due; otherwise `Preview last check-in`.
+- Track cards remain a persistent dashboard section even when both plans are healthy/current.
+- Lower-priority progress/accountability content is grouped under a single `This week` section.
+- `This week` shows adherence and 8-week completion rings, streak, nutrition target, and a nested `Weekly check-in` status card.
+- `Weekly check-in` shows next due date (`Sunday` in user timezone), latest adherence, weekly status rows, and CTA text `Do weekly check-in` when due or `Preview last check-in` otherwise.
 
 ### Weekly check-in flow (3-5 min)
 - Input set includes: current weight, optional waist/measurement/photo prompt, goal progress, training difficulty (`too_easy|right|too_hard`), nutrition adherence (percent or subjective), appetite/cravings, energy (1-5), recovery (1-5), sleep average hours and quality (1-5), stress (1-5), upcoming schedule constraints, injury/pain screen.

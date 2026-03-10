@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -7,12 +8,10 @@ import CoachOptionCard from "../components/coaches/CoachOptionCard";
 import CoachesLoadingSkeleton from "../components/coaches/CoachesLoadingSkeleton";
 import CoachDashboardSkeleton from "../components/coaches/CoachDashboardSkeleton";
 import CoachWorkspaceLocked from "../components/coaches/CoachWorkspaceLocked";
-import CoachChatCard from "../components/coaches/dashboard/CoachChatCard";
-import CoachMetricsStrip from "../components/coaches/dashboard/CoachMetricsStrip";
 import CoachPlansSection from "../components/coaches/dashboard/CoachPlansSection";
+import CoachThisWeekSection from "../components/coaches/dashboard/CoachThisWeekSection";
 import CoachTodayCard from "../components/coaches/dashboard/CoachTodayCard";
 import TrackCard from "../components/coaches/dashboard/TrackCard";
-import WeeklyCheckinCard from "../components/coaches/dashboard/WeeklyCheckinCard";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import { useCoach } from "../lib/features/coaches";
@@ -337,6 +336,12 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   if (canonicalCoach && !forcePicker) {
     const dashboardReady = viewState === "ready" && ready;
     const nutritionPendingApproval = dashboard.effectiveNutritionPendingReview;
+    const openCoachChat = () =>
+      navigation.navigate("CoachWorkspace", {
+        coach: canonicalCoach,
+        specialization: "workout",
+        tab: "chat",
+      });
 
     return (
       <AppScreen
@@ -349,11 +354,27 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
           contentContainerStyle={{ paddingBottom: contentBottomPadding }}
           showsVerticalScrollIndicator={false}
         >
-          <View className="mb-6 flex-row items-center justify-between gap-3 px-5">
+          <View className="mb-4 flex-row items-center justify-between gap-3 px-5">
             <Text className="text-3xl font-bold tracking-tight text-white">
               Coach Dashboard
             </Text>
-            <CoachAvatar coach={canonicalCoach} size={42} />
+            <View className="flex-row items-center gap-2">
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={openCoachChat}
+                className="flex-row items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-3 py-2"
+              >
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={14}
+                  color="#f5f5f5"
+                />
+                <Text className="text-sm font-semibold text-neutral-100">
+                  Chat
+                </Text>
+              </TouchableOpacity>
+              <CoachAvatar coach={canonicalCoach} size={42} />
+            </View>
           </View>
 
           {serverError || dashboard.error || saveError ? (
@@ -368,25 +389,6 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
 
           {dashboardReady && dashboard.snapshot ? (
             <>
-              <CoachChatCard
-                coachName={canonicalCoach.displayName}
-                onPress={() =>
-                  navigation.navigate("CoachWorkspace", {
-                    coach: canonicalCoach,
-                    specialization: "workout",
-                    tab: "chat",
-                  })
-                }
-              />
-
-              <CoachMetricsStrip
-                adherenceScore={dashboard.snapshot.weeklyCheckin.adherenceScore}
-                completionRate={dashboard.analytics.completionRate}
-                streak={dashboard.analytics.streak}
-                caloriesTarget={dashboard.snapshot.nutrition.caloriesTarget}
-                nextDueLabel={dashboard.weeklyRecap.nextDueLabel}
-              />
-
               <CoachTodayCard
                 directive={dashboard.snapshot.today.directive}
                 statusIndicators={dashboard.snapshot.today.statusIndicators}
@@ -451,11 +453,14 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
                 />
               </CoachPlansSection>
 
-              <WeeklyCheckinCard
+              <CoachThisWeekSection
+                adherenceScore={dashboard.snapshot.weeklyCheckin.adherenceScore}
+                completionRate={dashboard.analytics.completionRate}
+                streak={dashboard.analytics.streak}
+                caloriesTarget={dashboard.snapshot.nutrition.caloriesTarget}
                 nextDueLabel={dashboard.weeklyRecap.nextDueLabel}
                 checkinCompleted={dashboard.weeklyRecap.checkinCompleted}
                 planAcceptedThisWeek={dashboard.weeklyRecap.planAcceptedThisWeek}
-                adherenceScore={dashboard.snapshot.weeklyCheckin.adherenceScore}
                 adherenceTrendDirection={dashboard.weeklyRecap.adherenceTrendDirection}
                 adherenceTrendDelta={dashboard.weeklyRecap.adherenceTrendDelta}
                 cta={dashboard.weeklyRecap.cta}

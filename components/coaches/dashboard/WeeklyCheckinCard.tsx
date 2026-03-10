@@ -1,6 +1,21 @@
+import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import CircularProgressRing from "../../authed/CircularProgressRing";
 import SectionTitle from "../../ui/SectionTitle";
+
+export type WeeklyCheckinCardProps = {
+  nextDueLabel: string;
+  checkinCompleted: boolean;
+  planAcceptedThisWeek: boolean | null;
+  adherenceScore: number;
+  adherenceTrendDirection: "up" | "down" | "flat" | "no_data";
+  adherenceTrendDelta: number | null;
+  cta: string;
+  onPress: () => void;
+  title?: string;
+  showNextDueLabel?: boolean;
+  containerClassName?: string;
+};
 
 export default function WeeklyCheckinCard({
   nextDueLabel,
@@ -11,16 +26,10 @@ export default function WeeklyCheckinCard({
   adherenceTrendDelta,
   cta,
   onPress,
-}: {
-  nextDueLabel: string;
-  checkinCompleted: boolean;
-  planAcceptedThisWeek: boolean | null;
-  adherenceScore: number;
-  adherenceTrendDirection: "up" | "down" | "flat" | "no_data";
-  adherenceTrendDelta: number | null;
-  cta: string;
-  onPress: () => void;
-}) {
+  title = "Weekly recap",
+  showNextDueLabel = true,
+  containerClassName,
+}: WeeklyCheckinCardProps) {
   const completedLabel = checkinCompleted ? "Yes" : "No";
   const completedColor = checkinCompleted ? "text-emerald-300" : "text-rose-300";
   const planAcceptedLabel =
@@ -60,11 +69,17 @@ export default function WeeklyCheckinCard({
         : "rose";
 
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={onPress} className="mb-6 px-5">
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      className={containerClassName ?? "mb-6 px-5"}
+    >
       <View className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
         <View className="flex-row items-center justify-between">
-          <SectionTitle>Weekly recap</SectionTitle>
-          <Text className="text-xs text-neutral-500">{nextDueLabel}</Text>
+          <SectionTitle>{title}</SectionTitle>
+          {showNextDueLabel ? (
+            <Text className="text-xs text-neutral-500">{nextDueLabel}</Text>
+          ) : null}
         </View>
 
         <View className="mt-4 flex-row gap-4">
