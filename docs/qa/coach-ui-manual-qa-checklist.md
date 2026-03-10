@@ -15,7 +15,7 @@ Last updated: 2026-03-10
 - Coaches tab dashboard root (`Today`, `Plans`, `This week`, floating `Chat with Coach` action)
 - Unified coach chat entry routed through `CoachWorkspace` chat tab
 - Pro coach onboarding flow (`CoachOnboardingFlow`) before first workspace run
-- Weekly check-in v2 form fields + save/update behavior
+- Weekly check-in overview + onboarding-style wizard flow + save/update behavior
 
 ## Devices
 - iPhone 17 Pro (or iPhone 15 Pro)
@@ -87,34 +87,52 @@ Expected:
 - Screen title is `Weekly check-in`.
 - Current week range is displayed.
 - `This week` preview and `History` entries render as full-width flat rows with divider lines rather than compact nested cards.
-- Form includes the full v2 input set:
-  - weight, waist optional, progress photo prompted
-  - training difficulty
+- Overview does not show the full input set at once.
+- Empty-state CTA opens a dedicated full-screen wizard with progress bar, step count, hero copy, and bottom CTA.
+
+5. Walk through a new weekly check-in wizard.
+Expected:
+- Step order is:
+  - body metrics
+  - training recap
+  - nutrition recap
+  - recovery
+  - next week
+  - pain / safety
+  - review
+- `Back` returns to the prior step; backing out of the first step exits to overview mode.
+- Previously entered values remain in memory when closing and reopening the wizard during the same screen session.
+- Review step shows editable summary cards and submit CTA.
+- Wizard includes the full v2 input set across steps:
+  - weight, waist optional, body composition changes
+  - progress photo prompted, training difficulty
   - energy/recovery/sleep/stress ratings
   - adherence percent + subjective
   - appetite/cravings
-  - goal progress/PRs, consistency notes, body comp changes
+  - goal progress/PRs, consistency notes
   - schedule constraints next week
   - injury/pain + red-flag prompt
   - optional blockers
 
-5. Submit a new weekly check-in.
+6. Submit a new weekly check-in.
 Expected:
-- Save succeeds with success banner.
+- Review-step submit succeeds with onboarding-style loading overlay.
+- Screen returns to overview mode with success banner.
 - History shows newest entry first.
 - Existing current-week entry switches to edit/update behavior.
 
-6. Edit the newest same-week check-in and save.
+7. Edit the newest same-week check-in and save.
 Expected:
-- Button label changes to `Update weekly check-in`.
+- Opening from `Edit` resumes the wizard instead of showing a long inline form.
+- Review-step button label changes to `Update weekly check-in`.
 - History keeps one current-week row and reflects updated values.
 
-7. Pull to refresh / tap refresh in check-ins.
+8. Pull to refresh / tap refresh in check-ins.
 Expected:
 - Refresh state appears and completes without duplicate entries.
 - History rows keep full-width spacing and remain readable with long coach summaries.
 
-8. Return to dashboard.
+9. Return to dashboard.
 Expected:
 - Lower section shows `This week` with a nested `Weekly check-in` card.
 - `Weekly check-in` includes:

@@ -42,6 +42,18 @@ Last updated: 2026-03-10
 - `Weekly check-in` shows next due date (`Sunday` in user timezone), latest adherence, weekly status rows, and CTA text `Do weekly check-in` when due or `Preview last check-in` otherwise.
 
 ### Weekly check-in flow (3-5 min)
+- `CoachCheckins` keeps overview/history as the entry state and only opens the active form inside a dedicated wizard mode.
+- Weekly check-in wizard reuses the onboarding step chrome: progress bar, step count, hero copy, animated step transitions, and bottom CTA bar.
+- Wizard step order:
+  - `body_metrics`
+  - `training_recap`
+  - `nutrition_recap`
+  - `recovery`
+  - `next_week`
+  - `pain_safety`
+  - `review`
+- Review step shows editable summary sections and is the only place the final submit action appears.
+- Overview mode never renders the full check-in field set all at once.
 - Input set includes: current weight, optional waist/measurement/photo prompt, goal progress, training difficulty (`too_easy|right|too_hard`), nutrition adherence (percent or subjective), appetite/cravings, energy (1-5), recovery (1-5), sleep average hours and quality (1-5), stress (1-5), upcoming schedule constraints, injury/pain screen.
 - Output set includes: adjusted `WorkoutPlan` when needed, adjusted `NutritionTargets` and optional `MealPlan` when needed, 1-3 focus habits, short motivational summary in unified voice.
 
@@ -71,6 +83,7 @@ Last updated: 2026-03-10
 - Onboarding submission writes `coach_user_profiles`, sets unified persona selection, and triggers initial workout + nutrition plan generation via `coach-chat` (`plan_generate`).
 - `CoachOnboardingResults` is the post-submit review surface that shows both Training + Nutrition outcomes and routes into per-track plan views/intake.
 - `CoachWorkspace` is now the canonical plan + chat surface.
+- `CoachCheckins` now runs as an overview + wizard split: overview holds history/current-week preview; wizard handles the active weekly check-in steps and review.
 - `CoachChat` is a compatibility shim that redirects to `CoachWorkspace` with `tab: "chat"` and carries `prefill`.
 - Voice recording/transcription/synthesis orchestration is consolidated in `lib/features/coaches/hooks/useCoachVoiceComposer.ts` and consumed by workspace chat pane.
 - Coach UI decomposition is anchored under:

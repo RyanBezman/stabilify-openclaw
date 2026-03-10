@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Easing,
   ScrollView,
@@ -13,6 +12,7 @@ import Card from "../components/ui/Card";
 import OnboardingHero from "../components/coaches/onboarding/OnboardingHero";
 import OnboardingStepContent from "../components/coaches/onboarding/OnboardingStepContent";
 import OnboardingTopBar from "../components/coaches/onboarding/OnboardingTopBar";
+import CoachFlowProgressOverlay from "../components/coaches/flow/CoachFlowProgressOverlay";
 import type { RootStackParamList } from "../lib/navigation/types";
 import AppScreen from "../components/ui/AppScreen";
 import {
@@ -224,71 +224,20 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
 
   const generatingPhases = GENERATING_PHASES_BY_START[draft.planStart];
   const loadingProgressPct = Math.round(((generatingIndex + 1) / generatingPhases.length) * 100);
-  const tipFadeStyle = {
-    opacity: loadingPulse.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0.65, 1],
-    }),
-    transform: [
-      {
-        scale: loadingPulse.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.995, 1],
-        }),
-      },
-    ],
-  };
-
   if (submitting) {
     return (
       <AppScreen className="flex-1 bg-neutral-950 px-6" maxContentWidth={720}>
-        <View className="flex-1 items-center justify-center">
-          <View className="w-full max-w-md gap-4">
-            <Text className="text-center text-2xl font-bold text-white">Building your coaching setup</Text>
-            <Text className="text-center text-sm text-neutral-400">We’re preparing your selected plans and coach workspace.</Text>
-
-            <View className="mt-3 rounded-3xl border border-neutral-800 bg-neutral-900/60 p-5">
-              <View className="mb-4">
-                <View className="mb-2 flex-row items-center justify-between">
-                  <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-neutral-400">Progress</Text>
-                  <Text className="text-xs font-semibold text-violet-200">{loadingProgressPct}%</Text>
-                </View>
-                <View className="h-2 w-full rounded-full bg-neutral-800">
-                  <View
-                    className="h-2 rounded-full bg-violet-400"
-                    style={{ width: `${loadingProgressPct}%` }}
-                  />
-                </View>
-                <Text className="mt-2 text-[11px] text-neutral-500">Elapsed: {submitSeconds}s</Text>
-              </View>
-
-              {generatingPhases.map((phase, idx) => {
-                const done = idx < generatingIndex;
-                const active = idx === generatingIndex;
-                return (
-                  <View key={phase} className="mb-3 flex-row items-center gap-3 last:mb-0">
-                    <Text className={`text-base ${done ? "text-emerald-300" : active ? "text-violet-200" : "text-neutral-600"}`}>
-                      {done ? "✓" : active ? "◉" : "○"}
-                    </Text>
-                    <Text className={`text-sm font-medium ${done ? "text-emerald-200" : active ? "text-neutral-200" : "text-neutral-500"}`}>
-                      {phase}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-
-            <Animated.View style={tipFadeStyle} className="mt-1 rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
-              <Text className="text-[11px] font-semibold uppercase tracking-[1.4px] text-neutral-400">What’s happening now</Text>
-              <Text className="mt-2 text-sm leading-relaxed text-neutral-200">{LOADING_TIPS[tipIndex]}</Text>
-            </Animated.View>
-
-            <View className="mt-2 flex-row items-center justify-center gap-2">
-              <ActivityIndicator color="#a78bfa" />
-              <Text className="text-sm font-semibold text-neutral-300">Please keep this screen open…</Text>
-            </View>
-          </View>
-        </View>
+        <CoachFlowProgressOverlay
+          title="Building your coaching setup"
+          subtitle="We’re preparing your selected plans and coach workspace."
+          elapsedSeconds={submitSeconds}
+          progressPct={loadingProgressPct}
+          phases={generatingPhases}
+          activePhaseIndex={generatingIndex}
+          tips={LOADING_TIPS}
+          activeTipIndex={tipIndex}
+          loadingPulse={loadingPulse}
+        />
       </AppScreen>
     );
   }
