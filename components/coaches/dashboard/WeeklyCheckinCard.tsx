@@ -90,6 +90,7 @@ export default function WeeklyCheckinCard({
               valueText={`${safeAdherence}%`}
               subText="Latest"
               tone={ringTone}
+              progressColor="#AFCBFF"
               size={104}
               strokeWidth={8}
               animateOnMount

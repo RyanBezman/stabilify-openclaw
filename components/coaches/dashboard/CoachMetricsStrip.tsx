@@ -76,6 +76,7 @@ export default function CoachMetricsStrip({
             valueText={`${safeAdherence}%`}
             subText="Last check-in"
             tone={metricTone(safeAdherence)}
+            progressColor="#AFCBFF"
             size={94}
             strokeWidth={7}
             animateOnMount

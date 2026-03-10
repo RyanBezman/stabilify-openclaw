@@ -16,6 +16,7 @@ export type CircularProgressRingProps = {
   valueText: string;
   subText: string;
   tone?: CircularProgressRingTone;
+  progressColor?: string;
   size?: number;
   strokeWidth?: number;
   animateOnMount?: boolean;
@@ -76,6 +77,7 @@ export default function CircularProgressRing({
   valueText,
   subText,
   tone = "neutral",
+  progressColor,
   size = 124,
   strokeWidth = 10,
   animateOnMount = true,
@@ -144,7 +146,7 @@ export default function CircularProgressRing({
             cx={center}
             cy={center}
             r={radius}
-            stroke={palette.progress}
+            stroke={progressColor ?? palette.progress}
             strokeWidth={strokeWidth}
             fill="none"
             strokeDasharray={`${circumference} ${circumference}`}

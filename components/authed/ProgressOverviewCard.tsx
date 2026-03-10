@@ -169,6 +169,7 @@ export default function ProgressOverviewCard({
             valueText={stepsValueText}
             subText={stepsSubText}
             tone="blue"
+            progressColor="#AFCBFF"
             size={86}
             strokeWidth={7}
             animateOnMount
