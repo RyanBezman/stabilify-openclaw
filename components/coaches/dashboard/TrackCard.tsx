@@ -1,55 +1,94 @@
+import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 
-function clampPercent(value: number) {
-  if (!Number.isFinite(value)) return 0;
-  if (value <= 0) return 0;
-  if (value >= 100) return 100;
-  return Math.round(value);
+function getStateTone(stateLabel?: string) {
+  const normalized = stateLabel?.trim().toLowerCase() ?? "";
+
+  if (normalized.includes("pending")) {
+    return {
+      container: "border-amber-400/40 bg-amber-500/15",
+      text: "text-amber-100",
+      spinnerColor: "#fde68a",
+    };
+  }
+
+  if (normalized.includes("setup")) {
+    return {
+      container: "border-violet-500/35 bg-violet-500/12",
+      text: "text-violet-100",
+      spinnerColor: "#c4b5fd",
+    };
+  }
+
+  return {
+    container: "border-neutral-700 bg-neutral-950/70",
+    text: "text-neutral-200",
+    spinnerColor: "#d4d4d8",
+  };
 }
 
 export default function TrackCard({
   title,
-  subtitle,
   cta,
   stateLabel,
   stateLoading = false,
-  progressPercent,
-  progressLabel,
   icon,
   onPress,
 }: {
   title: "Training" | "Nutrition";
-  subtitle: string;
   cta: string;
   stateLabel?: string;
   stateLoading?: boolean;
-  progressPercent?: number;
-  progressLabel?: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
 }) {
-  const safePercent =
-    typeof progressPercent === "number" ? clampPercent(progressPercent) : null;
-  const accentClassName = "bg-violet-400";
+  const stateTone = getStateTone(stateLabel);
 
   return (
-    <TouchableOpacity activeOpacity={0.82} onPress={onPress}>
-      <View className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900 p-5">
-        <View>
-          <View className="flex-row items-center justify-between">
-            <Text className="text-base font-semibold text-white">{title}</Text>
-            <Ionicons name={icon} size={16} color="#737373" />
+    <TouchableOpacity
+      activeOpacity={0.82}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityHint={cta}
+    >
+      <View className="overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900">
+        <View className="px-5 py-5">
+          <View className="flex-row items-start justify-between gap-3">
+            <View className="min-w-0 flex-1">
+              <View className="flex-row items-center gap-3">
+                <View className="h-10 w-10 items-center justify-center rounded-2xl border border-violet-500/35 bg-violet-500/15">
+                  <Ionicons name={icon} size={18} color="#c4b5fd" />
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text className="text-base font-semibold text-white">{title}</Text>
+                  <Text className="mt-1 text-[10px] font-semibold uppercase tracking-[1px] text-violet-300">
+                    Coach plan
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View className="shrink-0 rounded-full border border-violet-500/40 bg-violet-500/20 px-3 py-1">
+              <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-100">
+                Open
+              </Text>
+            </View>
           </View>
-          <Text className="mt-2 text-sm leading-5 text-neutral-300" numberOfLines={2}>
-            {subtitle}
-          </Text>
+
           {stateLabel ? (
-            <View className="mt-2 max-w-full self-start rounded-full border border-neutral-700 bg-neutral-950/60 px-2 py-0.5">
+            <View
+              className={`mt-4 max-w-full self-start rounded-full px-2.5 py-1 ${stateTone.container}`}
+            >
               <View className="flex-row items-center gap-1.5">
-                {stateLoading ? <ActivityIndicator size="small" color="#a3a3a3" /> : null}
+                {stateLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={stateTone.spinnerColor}
+                  />
+                ) : null}
                 <Text
-                  className="text-[10px] font-semibold uppercase tracking-[0.8px] text-neutral-300"
+                  className={`text-[10px] font-semibold uppercase tracking-[0.8px] ${stateTone.text}`}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
@@ -58,24 +97,7 @@ export default function TrackCard({
               </View>
             </View>
           ) : null}
-          {safePercent !== null ? (
-            <View className="mt-4">
-              <View className="mb-1.5 flex-row items-center justify-between">
-                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
-                  {progressLabel ?? "Progress"}
-                </Text>
-                <Text className="text-[11px] font-semibold text-neutral-300">{safePercent}%</Text>
-              </View>
-              <View className="h-1.5 rounded-full bg-neutral-800">
-                <View
-                  className={`h-full rounded-full ${accentClassName}`}
-                  style={{ width: `${Math.max(safePercent, 8)}%` }}
-                />
-              </View>
-            </View>
-          ) : null}
         </View>
-        <Text className="mt-5 text-xs font-semibold text-violet-300">{cta}</Text>
       </View>
     </TouchableOpacity>
   );

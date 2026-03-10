@@ -2,7 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Text, TouchableOpacity, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
-export type CircularProgressRingTone = "neutral" | "violet" | "emerald" | "amber" | "rose";
+export type CircularProgressRingTone =
+  | "neutral"
+  | "violet"
+  | "emerald"
+  | "amber"
+  | "rose"
+  | "blue";
 
 export type CircularProgressRingProps = {
   label: string;
@@ -42,6 +48,10 @@ const TONE_PALETTE: Record<CircularProgressRingTone, TonePalette> = {
   rose: {
     track: "rgba(255, 255, 255, 0.12)",
     progress: "#fb7185",
+  },
+  blue: {
+    track: "rgba(255, 255, 255, 0.12)",
+    progress: "#60a5fa",
   },
 };
 

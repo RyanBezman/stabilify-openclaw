@@ -62,10 +62,10 @@ export default function CoachAdjustmentsCard({
   ];
 
   return (
-    <View className="mt-4 rounded-xl border border-violet-500/25 bg-violet-500/10 p-3">
-      <View className="flex-row items-center gap-1.5">
+    <View className="border-t border-neutral-900">
+      <View className="flex-row items-center gap-1.5 px-5 py-4">
         <Ionicons name="git-compare-outline" size={13} color="#c4b5fd" />
-        <Text className="text-xs font-semibold uppercase tracking-[1px] text-violet-200">
+        <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
           Coach adjustments
         </Text>
       </View>
@@ -73,42 +73,42 @@ export default function CoachAdjustmentsCard({
       {groups.map((group) => (
         <View
           key={group.key}
-          className="mt-2.5 rounded-lg border border-neutral-800 bg-neutral-950/70 px-2.5 py-2"
+          className="border-t border-neutral-900 px-5 py-4"
         >
-          <Text className="text-[11px] font-semibold uppercase tracking-[0.8px] text-neutral-400">
+          <Text className="text-[11px] font-semibold uppercase tracking-[0.8px] text-neutral-500">
             {group.label}
           </Text>
           {group.patches.length ? (
             group.patches.slice(0, 4).map((patch, index) => (
               <Text
                 key={`${group.key}-${patch.path}-${index}`}
-                className="mt-1 text-xs text-neutral-200"
+                className="mt-2 text-sm leading-5 text-neutral-200"
               >
                 {`- ${describeDiffPatch(patch)}`}
               </Text>
             ))
           ) : (
-            <Text className="mt-1 text-xs text-neutral-500">No changes.</Text>
+            <Text className="mt-2 text-sm text-neutral-500">No changes.</Text>
           )}
         </View>
       ))}
 
-      <View className="mt-2.5 rounded-lg border border-neutral-800 bg-neutral-950/70 px-2.5 py-2">
-        <Text className="text-[11px] font-semibold uppercase tracking-[0.8px] text-neutral-400">
+      <View className="border-t border-neutral-900 px-5 py-4">
+        <Text className="text-[11px] font-semibold uppercase tracking-[0.8px] text-neutral-500">
           Rationale
         </Text>
-        <Text className="mt-1 text-xs text-neutral-300">{recommendations.rationale.training}</Text>
-        <Text className="mt-1 text-xs text-neutral-300">{recommendations.rationale.nutrition}</Text>
-        <Text className="mt-1 text-xs text-neutral-300">{recommendations.rationale.coordination}</Text>
+        <Text className="mt-2 text-sm leading-5 text-neutral-300">{recommendations.rationale.training}</Text>
+        <Text className="mt-2 text-sm leading-5 text-neutral-300">{recommendations.rationale.nutrition}</Text>
+        <Text className="mt-2 text-sm leading-5 text-neutral-300">{recommendations.rationale.coordination}</Text>
       </View>
 
       {guardrailNotes?.length ? (
-        <View className="mt-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2">
+        <View className="border-t border-neutral-900 px-5 py-4">
           <Text className="text-[11px] font-semibold uppercase tracking-[0.8px] text-amber-200">
             Guardrails
           </Text>
           {guardrailNotes.slice(0, 3).map((note, index) => (
-            <Text key={`${note}-${index}`} className="mt-1 text-xs text-amber-100/90">
+            <Text key={`${note}-${index}`} className="mt-2 text-sm leading-5 text-amber-100/90">
               {`- ${note}`}
             </Text>
           ))}

@@ -1,45 +1,31 @@
 import type { ReactNode } from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-import Card from "../../ui/Card";
+import { Text, View } from "react-native";
 
 type HistoryListProps = {
-  refreshing: boolean;
-  onRefresh: () => void;
-  disabled?: boolean;
   empty: boolean;
   children: ReactNode;
 };
 
 export default function HistoryList({
-  refreshing,
-  onRefresh,
-  disabled = false,
   empty,
   children,
 }: HistoryListProps) {
   return (
-    <>
-      <View className="mb-3 mt-6 flex-row items-center justify-between">
-        <Text className="text-base font-bold text-white">History</Text>
-        <TouchableOpacity
-          onPress={onRefresh}
-          disabled={disabled}
-          activeOpacity={0.85}
-          className="rounded-full border border-neutral-800 px-3 py-1.5"
-        >
-          <Text className="text-xs font-semibold text-neutral-300">
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </Text>
-        </TouchableOpacity>
+    <View className="-mx-5 mt-6 border-y border-violet-700 bg-black">
+      <View className="bg-violet-900 px-5 py-4">
+        <View>
+          <Text className="text-base font-bold text-white">History</Text>
+          <Text className="mt-1 text-sm text-violet-100">Past weekly check-ins</Text>
+        </View>
       </View>
 
       {empty ? (
-        <Card className="p-5">
-          <Text className="text-sm text-neutral-500">No past weekly check-ins yet.</Text>
-        </Card>
+        <View className="border-t border-violet-500/20 px-5 py-5">
+          <Text className="text-sm text-neutral-400">No past weekly check-ins yet.</Text>
+        </View>
       ) : (
-        children
+        <View className="border-t border-violet-500/20 bg-black pb-4">{children}</View>
       )}
-    </>
+    </View>
   );
 }

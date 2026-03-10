@@ -22,7 +22,8 @@ Last updated: 2026-03-10
 
 ### Dashboard layout
 - Dashboard uses a wider centered coach shell aligned with `CoachWorkspace`, while remaining constrained on large screens instead of stretching edge-to-edge.
-- Header row shows `Coach Dashboard` with the unified coach avatar plus a compact `Chat` action anchored while dashboard body content loads.
+- Header row shows `Coach Dashboard` with the unified coach avatar while dashboard body content loads.
+- Chat entry is a floating `Chat with Coach` CTA anchored above the tab bar so it remains accessible without crowding the header.
 - `Today` appears first and serves as the primary daily execution surface.
 - Today is rendered as a full-width header band that feels visually distinct from the card stack below it, without framed top/bottom borders.
 - Today shows workout status and macros as the only two content blocks.
@@ -30,11 +31,11 @@ Last updated: 2026-03-10
 - Macro content stays compressed into one concise summary line inside the Today snapshot.
 - One full-width `Plans` section sits directly under `Today` and groups the paired `Training` and `Nutrition` cards.
 - `Training` card.
-- Shows next session preview (example: `Upper A - 45 min`).
-- CTA: `Start workout` if session exists, else `View plan`.
+- Presents as a compact entry tile without extra summary copy at the bottom.
 - `Nutrition` card.
-- Shows calories/macros target and daily progress summary.
-- CTA priority: `Log meal`, `View meal plan`, `Adjust targets`.
+- Presents as a compact entry tile without extra summary copy at the bottom.
+- Training/Nutrition cards do not render long inline CTA sentences; tap affordance is a compact violet `Open` badge with a stronger card accent instead of a trailing chevron.
+- Training/Nutrition cards use explicit state chips (for example `Setup needed`, `Pending approval`) instead of percentage plan-status bars.
 - Track cards remain a persistent dashboard section even when both plans are healthy/current.
 - Lower-priority progress/accountability content is grouped under a single `This week` section.
 - `This week` shows adherence and 8-week completion rings, streak, nutrition target, and a nested `Weekly check-in` status card.

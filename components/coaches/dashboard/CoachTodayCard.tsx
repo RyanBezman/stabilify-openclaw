@@ -34,32 +34,36 @@ export default function CoachTodayCard({
     : macrosValue;
 
   return (
-    <View className="mb-4 bg-neutral-900/20 py-1.5">
-      <View className="px-5">
-        <SectionTitle className="text-neutral-400">Today</SectionTitle>
-        <View className="mt-1.5 flex-row items-center gap-3">
-          <View className="min-w-0 flex-1 flex-row items-center gap-2">
-            <Ionicons name="barbell-outline" size={12} color="#737373" />
-            <View className="min-w-0 flex-1">
-              <Text className="text-[9px] font-semibold uppercase tracking-[1px] text-neutral-500">
-                Workout
-              </Text>
-              <Text className="text-sm font-semibold text-neutral-100" numberOfLines={1}>
-                {workoutValue}
-              </Text>
-            </View>
+    <View className="mb-4 px-5">
+      <SectionTitle className="mb-2.5 text-neutral-400">Today</SectionTitle>
+      <View className="flex-row overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900">
+        <View className="min-w-0 flex-1 flex-row items-center gap-3 px-4 py-3.5">
+          <View className="h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-700 bg-neutral-800">
+            <Ionicons name="barbell-outline" size={16} color="#a3a3a3" />
           </View>
+          <View className="min-w-0 flex-1">
+            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+              Workout
+            </Text>
+            <Text className="mt-0.5 text-sm font-semibold text-white" numberOfLines={1}>
+              {workoutValue}
+            </Text>
+          </View>
+        </View>
 
-          <View className="min-w-0 flex-1 flex-row items-center gap-2">
-            <Ionicons name="restaurant-outline" size={12} color="#737373" />
-            <View className="min-w-0 flex-1">
-              <Text className="text-[9px] font-semibold uppercase tracking-[1px] text-neutral-500">
-                Macros
-              </Text>
-              <Text className="text-sm font-semibold text-neutral-100" numberOfLines={1}>
-                {macroSnapshot}
-              </Text>
-            </View>
+        <View className="w-px shrink-0 bg-neutral-800" />
+
+        <View className="min-w-0 flex-1 flex-row items-center gap-3 px-4 py-3.5">
+          <View className="h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-700 bg-neutral-800">
+            <Ionicons name="restaurant-outline" size={16} color="#a3a3a3" />
+          </View>
+          <View className="min-w-0 flex-1">
+            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+              Macros
+            </Text>
+            <Text className="mt-0.5 text-sm font-semibold text-white" numberOfLines={1}>
+              {macroSnapshot}
+            </Text>
           </View>
         </View>
       </View>

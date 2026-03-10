@@ -606,113 +606,105 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
             className="mb-4"
           />
         ) : null}
-        <CurrentWeekCard title="This week">
+        <CurrentWeekCard title="This week" helper="Active check-in">
         {showCheckinAreaSkeleton ? (
           showOpenSkeleton ? <CheckinOpenSkeleton /> : <CheckinClosedSkeleton />
         ) : showSavedCheckinPreview && currentWeekCheckin ? (
-          <Card className="overflow-hidden border-neutral-700 p-0">
-            <View className="h-1 bg-violet-400/70" />
-            <View className="p-4">
+          <View className="mt-1 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950">
+            <View className="px-5 py-5">
               <View className="flex-row items-start justify-between gap-3">
                 <View className="flex-1">
-                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
-                    Last weekly check-in
+                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
+                    Current check-in
                   </Text>
-                  <Text className="text-sm font-semibold text-white">
+                  <Text className="mt-1 text-base font-semibold text-white">
                     {weekRangeLabel(currentWeekCheckin.weekStart, currentWeekCheckin.weekEnd)}
                   </Text>
-                  <View className="mt-0.5 flex-row items-center gap-1.5">
+                  <View className="mt-1 flex-row items-center gap-1.5">
                     <Ionicons name="time-outline" size={12} color="#737373" />
-                    <Text className="text-xs text-neutral-500">
+                    <Text className="text-sm text-neutral-500">
                       Updated {formatUpdatedAt(currentWeekCheckin.updatedAt)}
                     </Text>
                   </View>
                 </View>
-                <View className="flex-row items-center gap-1.5">
-                  <View className="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-0.5">
-                    <Text className="text-[10px] font-semibold uppercase tracking-[0.8px] text-emerald-200">
-                      Completed
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => setIsCurrentWeekDetailsOpen((current) => !current)}
-                    disabled={saving}
-                    activeOpacity={0.85}
-                    className={`rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1 ${
-                      saving ? "opacity-60" : ""
-                    }`}
-                  >
-                    <Text className="text-[11px] font-semibold text-neutral-200">
-                      {isCurrentWeekDetailsOpen ? "Hide details" : "View details"}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={onOpenForm}
-                    disabled={saving}
-                    activeOpacity={0.85}
-                    className={`rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1 ${
-                      saving ? "opacity-60" : ""
-                    }`}
-                  >
-                    <Text className="text-[11px] font-semibold text-neutral-200">Edit</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {!isCurrentWeekDetailsOpen && currentWeekSummaryPreview ? (
-                <View className="mt-3 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2.5">
-                  <Text className="text-[10px] font-semibold uppercase tracking-[0.8px] text-violet-200">
-                    Coach summary
+                <View className="items-end gap-2">
+                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-emerald-300">
+                    Completed
                   </Text>
-                  <Text className="mt-1 text-xs leading-relaxed text-violet-100/95">
-                    {currentWeekSummaryPreview}
-                  </Text>
-                </View>
-              ) : null}
-
-              {showReviewUpdatedPlanCta ? (
-                <View className="mt-3 rounded-xl border border-fuchsia-400/60 bg-fuchsia-500/20 px-3 py-2.5">
-                  <View className="flex-row items-center justify-between gap-2">
-                    <View className="flex-1 pr-2">
-                      <View className="flex-row items-center gap-1.5">
-                        <View className="h-1.5 w-1.5 rounded-full bg-fuchsia-200" />
-                        <Text className="text-[10px] font-semibold uppercase tracking-[0.8px] text-fuchsia-100">
-                          Updated plan pending approval
-                        </Text>
-                      </View>
-                      <Text className="mt-0.5 text-xs text-fuchsia-50">
-                        Review your nutrition draft from this check-in.
-                      </Text>
-                    </View>
+                  <View className="flex-row items-center gap-4">
                     <TouchableOpacity
-                      onPress={onReviewUpdatedPlan}
+                      onPress={() => setIsCurrentWeekDetailsOpen((current) => !current)}
+                      disabled={saving}
                       activeOpacity={0.85}
-                      className="rounded-full border border-fuchsia-200/70 bg-fuchsia-400/35 px-2.5 py-1"
+                      className={saving ? "opacity-60" : ""}
                     >
-                      <View className="flex-row items-center gap-1">
-                        <Text className="text-[11px] font-semibold text-white">Review</Text>
-                        <Ionicons name="arrow-forward" size={12} color="#ffffff" />
-                      </View>
+                      <Text className="text-sm font-semibold text-neutral-200">
+                        {isCurrentWeekDetailsOpen ? "Hide details" : "View details"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={onOpenForm}
+                      disabled={saving}
+                      activeOpacity={0.85}
+                      className={saving ? "opacity-60" : ""}
+                    >
+                      <Text className="text-sm font-semibold text-violet-300">Edit</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
-              ) : null}
-
-              {isCurrentWeekDetailsOpen ? (
-                <>
-                  <CheckinSnapshotDetails
-                    checkin={currentWeekCheckin}
-                    summaryOverride={currentWeekSummary}
-                  />
-
-                  <CoachAdjustmentsCard
-                    recommendations={currentWeekAdjustmentRecommendations}
-                    guardrailNotes={currentWeekGuardrailNotes}
-                  />
-                </>
-              ) : null}
+              </View>
             </View>
-          </Card>
+
+            {!isCurrentWeekDetailsOpen && currentWeekSummaryPreview ? (
+              <View className="border-t border-neutral-900 px-5 py-4">
+                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
+                  Coach summary
+                </Text>
+                <Text className="mt-2 text-sm leading-relaxed text-neutral-200">
+                  {currentWeekSummaryPreview}
+                </Text>
+              </View>
+            ) : null}
+
+            {showReviewUpdatedPlanCta ? (
+              <View className="border-t border-neutral-900 px-5 py-4">
+                <View className="flex-row items-center justify-between gap-3">
+                  <View className="flex-1">
+                    <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-fuchsia-200">
+                      Updated plan pending approval
+                    </Text>
+                    <Text className="mt-1 text-sm text-neutral-200">
+                      Review your nutrition draft from this check-in.
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={onReviewUpdatedPlan}
+                    activeOpacity={0.85}
+                    className="py-1"
+                  >
+                    <View className="flex-row items-center gap-1">
+                      <Text className="text-sm font-semibold text-fuchsia-200">Review</Text>
+                      <Ionicons name="arrow-forward" size={14} color="#f5d0fe" />
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+
+            {isCurrentWeekDetailsOpen ? (
+              <>
+                <CheckinSnapshotDetails
+                  checkin={currentWeekCheckin}
+                  summaryOverride={currentWeekSummary}
+                />
+
+                <CoachAdjustmentsCard
+                  recommendations={currentWeekAdjustmentRecommendations}
+                  guardrailNotes={currentWeekGuardrailNotes}
+                />
+              </>
+            ) : null}
+          </View>
         ) : (
           <CheckinForm>
           <View className="flex-row items-center justify-between gap-2">
@@ -1122,16 +1114,13 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
         </CurrentWeekCard>
 
         <HistoryList
-          refreshing={refreshing}
-          onRefresh={() => {
-            if (!saving) void hydrateCheckins();
-          }}
-          disabled={saving}
           empty={!pastHistory.length}
         >
-          {pastHistory.map((item) => {
+          {pastHistory.map((item, index) => {
             const isExpanded = Boolean(expandedHistoryIds[item.id]);
             const summaryPreview = truncatePreviewText(item.coachSummary?.trim() ?? null, 100);
+            const entryClassName =
+              "mx-5 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950";
 
             if (!isExpanded) {
               return (
@@ -1139,73 +1128,78 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
                   key={item.id}
                   onPress={() => toggleHistoryCard(item.id)}
                   activeOpacity={0.9}
+                  className={`${entryClassName} mt-3`}
                 >
-                  <Card className="mb-3 overflow-hidden border-neutral-700 p-0">
-                    <View className="h-1 bg-neutral-700" />
-                    <View className="p-4">
-                      <View className="flex-row items-start justify-between gap-3">
-                        <View className="flex-1">
-                          <Text className="text-sm font-semibold text-white">
-                            {weekRangeLabel(item.weekStart, item.weekEnd)}
-                          </Text>
-                          <View className="mt-0.5 flex-row items-center gap-1.5">
-                            <Ionicons name="time-outline" size={12} color="#737373" />
-                            <Text className="text-xs text-neutral-500">
-                              Updated {formatUpdatedAt(item.updatedAt)}
-                            </Text>
-                          </View>
-                        </View>
-                        <View className="rounded-full border border-violet-500/35 bg-violet-500/15 px-2.5 py-1">
-                          <Text className="text-[11px] font-semibold text-violet-100">
-                            View details
+                  <View className="px-5 py-5">
+                    <View className="flex-row items-start justify-between gap-3">
+                      <View className="flex-1">
+                        <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+                          Past check-in
+                        </Text>
+                        <Text className="mt-1 text-base font-semibold text-white">
+                          {weekRangeLabel(item.weekStart, item.weekEnd)}
+                        </Text>
+                        <View className="mt-1 flex-row items-center gap-1.5">
+                          <Ionicons name="time-outline" size={12} color="#737373" />
+                          <Text className="text-sm text-neutral-500">
+                            Updated {formatUpdatedAt(item.updatedAt)}
                           </Text>
                         </View>
                       </View>
-
-                      <View className="mt-3 flex-row flex-wrap gap-2">
-                        <View className="rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1">
-                          <Text className="text-[11px] text-neutral-300">
-                            Adherence{" "}
-                            <Text className="font-semibold text-neutral-100">{item.adherencePercent}%</Text>
-                          </Text>
-                        </View>
-                        <View className="rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1">
-                          <Text className="text-[11px] text-neutral-300">
-                            Score{" "}
-                            <Text className="font-semibold text-neutral-100">
-                              {item.adherenceScore ?? item.adherencePercent}
-                            </Text>
-                          </Text>
-                        </View>
-                      </View>
-                      {summaryPreview ? (
-                        <View className="mt-2.5 rounded-xl border border-violet-500/20 bg-violet-500/8 px-3 py-2.5">
-                          <Text className="text-[10px] font-semibold uppercase tracking-[0.8px] text-violet-200">
-                            Coach summary
-                          </Text>
-                          <Text className="mt-1 text-xs leading-relaxed text-violet-100/90">
-                            {summaryPreview}
-                          </Text>
-                        </View>
-                      ) : null}
+                      <Text className="text-sm font-semibold text-violet-300">
+                        View details
+                      </Text>
                     </View>
-                  </Card>
+
+                    <View className="mt-4 flex-row items-start">
+                      <View className="flex-1 pr-4">
+                        <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+                          Adherence
+                        </Text>
+                        <Text className="mt-1 text-xl font-semibold text-white">
+                          {item.adherencePercent}%
+                        </Text>
+                      </View>
+                      <View className="w-px self-stretch bg-neutral-900" />
+                      <View className="flex-1 pl-4">
+                        <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+                          Score
+                        </Text>
+                        <Text className="mt-1 text-xl font-semibold text-violet-300">
+                          {item.adherenceScore ?? item.adherencePercent}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {summaryPreview ? (
+                      <View className="mt-4 border-t border-neutral-900 pt-4">
+                        <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+                          Coach summary
+                        </Text>
+                        <Text className="mt-2 text-sm leading-relaxed text-neutral-200">
+                          {summaryPreview}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
                 </TouchableOpacity>
               );
             }
 
             return (
-              <Card key={item.id} className="mb-3 overflow-hidden border-neutral-700 p-0">
-                <View className="h-1 bg-violet-400/70" />
-                <View className="p-4">
+              <View key={item.id} className={`${entryClassName} mt-3 border-violet-500/20`}>
+                <View className="px-5 py-5">
                   <View className="flex-row items-start justify-between gap-3">
                     <View className="flex-1">
-                      <Text className="text-sm font-semibold text-white">
+                      <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+                        Past check-in
+                      </Text>
+                      <Text className="mt-1 text-base font-semibold text-white">
                         {weekRangeLabel(item.weekStart, item.weekEnd)}
                       </Text>
-                      <View className="mt-0.5 flex-row items-center gap-1.5">
+                      <View className="mt-1 flex-row items-center gap-1.5">
                         <Ionicons name="time-outline" size={12} color="#737373" />
-                        <Text className="text-xs text-neutral-500">
+                        <Text className="text-sm text-neutral-500">
                           Updated {formatUpdatedAt(item.updatedAt)}
                         </Text>
                       </View>
@@ -1213,17 +1207,16 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
                     <TouchableOpacity
                       onPress={() => toggleHistoryCard(item.id)}
                       activeOpacity={0.85}
-                      className="rounded-full border border-violet-500/35 bg-violet-500/15 px-2.5 py-1"
                     >
-                      <Text className="text-[11px] font-semibold text-violet-100">
+                      <Text className="text-sm font-semibold text-violet-300">
                         Hide details
                       </Text>
                     </TouchableOpacity>
                   </View>
-
-                  <CheckinSnapshotDetails checkin={item} />
                 </View>
-              </Card>
+
+                <CheckinSnapshotDetails checkin={item} />
+              </View>
             );
           })}
         </HistoryList>

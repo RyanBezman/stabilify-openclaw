@@ -58,7 +58,7 @@ const personalities: CoachPersonality[] = [
 ];
 
 export default function Coaches({ navigation }: CoachesScreenProps) {
-  const { contentBottomPadding } = useFloatingTabBarLayout();
+  const { contentBottomPadding, overlayHeight } = useFloatingTabBarLayout();
   const {
     setActiveCoach,
     getActiveCoach,
@@ -336,6 +336,9 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   if (canonicalCoach && !forcePicker) {
     const dashboardReady = viewState === "ready" && ready;
     const nutritionPendingApproval = dashboard.effectiveNutritionPendingReview;
+    const chatFabBottom = overlayHeight + 8;
+    const chatFabHeight = 48;
+    const chatFabClearance = chatFabBottom + chatFabHeight;
     const openCoachChat = () =>
       navigation.navigate("CoachWorkspace", {
         coach: canonicalCoach,
@@ -351,30 +354,16 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
         <ScrollView
           className="flex-1"
           contentContainerClassName="pt-6"
-          contentContainerStyle={{ paddingBottom: contentBottomPadding }}
+          contentContainerStyle={{
+            paddingBottom: Math.max(contentBottomPadding, chatFabClearance + 20),
+          }}
           showsVerticalScrollIndicator={false}
         >
           <View className="mb-4 flex-row items-center justify-between gap-3 px-5">
             <Text className="text-3xl font-bold tracking-tight text-white">
               Coach Dashboard
             </Text>
-            <View className="flex-row items-center gap-2">
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={openCoachChat}
-                className="flex-row items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-3 py-2"
-              >
-                <Ionicons
-                  name="chatbubble-ellipses-outline"
-                  size={14}
-                  color="#f5f5f5"
-                />
-                <Text className="text-sm font-semibold text-neutral-100">
-                  Chat
-                </Text>
-              </TouchableOpacity>
-              <CoachAvatar coach={canonicalCoach} size={42} />
-            </View>
+            <CoachAvatar coach={canonicalCoach} size={42} />
           </View>
 
           {serverError || dashboard.error || saveError ? (
@@ -397,15 +386,13 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
               <CoachPlansSection>
                 <TrackCard
                   title="Training"
-                  subtitle={dashboard.snapshot.training.preview}
                   cta={dashboard.snapshot.training.cta}
-                  icon="barbell-outline"
-                  progressPercent={dashboard.snapshot.training.planId ? 100 : 18}
-                  progressLabel={
+                  stateLabel={
                     dashboard.snapshot.training.planId
-                      ? "Plan status"
-                      : "Needs setup"
+                      ? undefined
+                      : "Setup needed"
                   }
+                  icon="barbell-outline"
                   onPress={() =>
                     navigation.navigate("CoachWorkspace", {
                       specialization: "workout",
@@ -417,29 +404,16 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
 
                 <TrackCard
                   title="Nutrition"
-                  subtitle={dashboard.snapshot.nutrition.targetsSummary}
                   cta={dashboard.snapshot.nutrition.cta}
                   stateLabel={
                     nutritionPendingApproval
                       ? "Pending approval"
+                      : !dashboard.snapshot.nutrition.planId
+                        ? "Setup needed"
                       : undefined
                   }
                   stateLoading={nutritionPendingApproval && dashboard.nutritionSyncing}
                   icon="restaurant-outline"
-                  progressPercent={
-                    dashboard.snapshot.nutrition.planId
-                      ? nutritionPendingApproval
-                        ? 72
-                        : 100
-                      : 14
-                  }
-                  progressLabel={
-                    dashboard.snapshot.nutrition.planId
-                      ? nutritionPendingApproval
-                        ? "Awaiting approval"
-                        : "Plan status"
-                      : "Needs setup"
-                  }
                   onPress={() =>
                     navigation.push("CoachWorkspace", {
                       specialization: "nutrition",
@@ -509,6 +483,27 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
             </TouchableOpacity>
           </View>
         </ScrollView>
+
+        <View
+          pointerEvents="box-none"
+          className="absolute right-5"
+          style={{ bottom: chatFabBottom }}
+        >
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={openCoachChat}
+            className="flex-row items-center gap-2 rounded-full border border-neutral-700 bg-neutral-900/95 px-4 py-3"
+          >
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={16}
+              color="#f5f5f5"
+            />
+            <Text className="text-sm font-semibold text-neutral-100">
+              Chat with Coach
+            </Text>
+          </TouchableOpacity>
+        </View>
       </AppScreen>
     );
   }

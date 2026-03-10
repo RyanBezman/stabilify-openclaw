@@ -12,7 +12,7 @@ Last updated: 2026-03-10
   - `docs/implementation/screen-architecture.md`
 
 ## Scope
-- Coaches tab dashboard root (`Today`, `Plans`, `This week`, header `Chat` action)
+- Coaches tab dashboard root (`Today`, `Plans`, `This week`, floating `Chat with Coach` action)
 - Unified coach chat entry routed through `CoachWorkspace` chat tab
 - Pro coach onboarding flow (`CoachOnboardingFlow`) before first workspace run
 - Weekly check-in v2 form fields + save/update behavior
@@ -53,9 +53,9 @@ Expected:
 Expected:
 - Dashboard root loads (not coach workspace hub).
 - For Pro users, no `Pro required` / `Upgrade to Pro` lock card flashes during initial tier check.
-- When loading dashboard data for an already-selected coach, `Coach Dashboard` header + header `Chat` action + avatar stay anchored at top while body cards skeletonize.
+- When loading dashboard data for an already-selected coach, `Coach Dashboard` header + avatar stay anchored at top while body cards skeletonize.
 - Dashboard uses full-width app shell (no centered max-width coach column).
-- Header exposes a compact `Chat` action instead of a standalone `Coach Hub` body card.
+- Dashboard exposes a floating `Chat with Coach` CTA above the tab bar instead of a header chat control.
 - Sections appear in order: `Today`, `Plans`, `This week`.
 - `Today` is rendered as a full-width header band, should look visually distinct from the stacked cards below it, and should not use top/bottom framing borders.
 - `Today` references plans only and does not show a summary directive line.
@@ -66,7 +66,7 @@ Expected:
 - `This week` reads as one grouped section rather than separate `Performance` and `Weekly recap` modules.
 - `This week` shows two rings (`Adherence`, `8wk completion`) plus streak and nutrition target metrics above the weekly status card.
 
-2. Tap header `Chat`.
+2. Tap floating `Chat with Coach`.
 Expected:
 - Opens `CoachWorkspace` with `Chat` tab selected.
 - Compatibility route `CoachChat` (if invoked by stale deep link) redirects to the same workspace chat tab.
@@ -77,13 +77,16 @@ Expected:
 Expected:
 - Track labels are exactly `Training` and `Nutrition`.
 - Track cards appear inside the shared `Plans` section instead of as a conditional dashboard row.
-- Training CTA is `Start workout` or `View plan`.
-- Nutrition card shows targets summary and valid CTA text.
+- Track cards show explicit state chips (for example `Setup needed`, `Pending approval`) instead of percentage plan-status bars.
+- Track cards do not render a bottom summary line for session preview or macro targets.
+- Track cards do not show long inline CTA sentences; each card indicates clickability via a compact violet `Open` badge instead of a trailing chevron.
+- Nutrition card shows targets summary and remains fully tappable to open the plan surface.
 
 4. Open `Weekly Check-in` from dashboard.
 Expected:
 - Screen title is `Weekly check-in`.
 - Current week range is displayed.
+- `This week` preview and `History` entries render as full-width flat rows with divider lines rather than compact nested cards.
 - Form includes the full v2 input set:
   - weight, waist optional, progress photo prompted
   - training difficulty
@@ -109,6 +112,7 @@ Expected:
 7. Pull to refresh / tap refresh in check-ins.
 Expected:
 - Refresh state appears and completes without duplicate entries.
+- History rows keep full-width spacing and remain readable with long coach summaries.
 
 8. Return to dashboard.
 Expected:

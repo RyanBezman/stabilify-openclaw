@@ -65,7 +65,7 @@ export default function WeeklyCheckinCard({
     safeAdherence >= 85
       ? "emerald"
       : safeAdherence >= 60
-        ? "amber"
+        ? "blue"
         : "rose";
 
   return (

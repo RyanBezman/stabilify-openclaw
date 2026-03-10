@@ -260,6 +260,10 @@ describe("ProgressOverviewCard", () => {
 
     expect(textValues).toContain("8.4k");
     expect(textValues).toContain("8.4k/12.0k");
+    const circleStrokes = root
+      .findAllByType("Circle")
+      .map((node: ReactTestInstance) => String(node.props.stroke));
+    expect(circleStrokes).toContain("#60a5fa");
   });
 
 });

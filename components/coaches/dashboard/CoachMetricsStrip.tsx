@@ -35,7 +35,7 @@ function metricTone(value: number) {
     return "emerald" as const;
   }
   if (value >= 60) {
-    return "amber" as const;
+    return "blue" as const;
   }
   return "rose" as const;
 }
