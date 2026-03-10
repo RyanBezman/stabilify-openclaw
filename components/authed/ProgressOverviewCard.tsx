@@ -38,6 +38,7 @@ export type ProgressOverviewCardProps = {
   stepsTarget?: number;
   stepsEnabled?: boolean;
   stepsLoading?: boolean;
+  stepsSummaryMode?: "today" | "average";
   onPressSteps?: () => void;
 };
 
@@ -91,6 +92,7 @@ export default function ProgressOverviewCard({
   stepsTarget = 10000,
   stepsEnabled = false,
   stepsLoading = false,
+  stepsSummaryMode = "today",
   onPressSteps,
 }: ProgressOverviewCardProps) {
   const consistencyProgress = clampProgress(consistencyPercent);
@@ -116,9 +118,11 @@ export default function ProgressOverviewCard({
         : formatStepValue(clampedSteps);
   const stepsSubText = !stepsEnabled
     ? "Enable"
-    : hasStepTarget
-      ? `${formatStepValue(clampedSteps)}/${formatStepValue(stepsTarget)}`
-      : "No goal";
+    : stepsSummaryMode === "average"
+      ? "Avg/day"
+      : hasStepTarget
+        ? `${formatStepValue(clampedSteps)}/${formatStepValue(stepsTarget)}`
+        : "No goal";
 
   return (
     <Card className="mb-6 p-5">

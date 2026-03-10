@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   fetchDashboardData: vi.fn(),
   fetchActionableNotificationCount: vi.fn(),
   fetchAppleHealthTodayStepCount: vi.fn(),
+  fetchAppleHealthDailyStepAverage: vi.fn(),
   fetchGymSessionValidationRequestForSession: vi.fn(),
   requestGymSessionValidation: vi.fn(),
   getProfilePhotoSignedUrl: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock("../../data/notifications", () => ({
 
 vi.mock("../../data/appleHealth", () => ({
   fetchAppleHealthTodayStepCount: mocks.fetchAppleHealthTodayStepCount,
+  fetchAppleHealthDailyStepAverage: mocks.fetchAppleHealthDailyStepAverage,
 }));
 
 vi.mock("../../data/gymSessionValidation", () => ({
@@ -138,6 +140,7 @@ function buildSupportRequest() {
 function buildDashboardData(overrides?: {
   autoSupportEnabled?: boolean;
   autoSupportConsentAt?: string | null;
+  appleHealthStepsEnabled?: boolean;
 }) {
   return {
     profile: {
@@ -156,6 +159,8 @@ function buildDashboardData(overrides?: {
       postShareVisibility: "private" as const,
       autoSupportEnabled: overrides?.autoSupportEnabled ?? true,
       autoSupportConsentAt: overrides?.autoSupportConsentAt ?? null,
+      appleHealthStepsEnabled: overrides?.appleHealthStepsEnabled ?? false,
+      dailyStepGoal: 10000,
     },
     goal: null,
     routine: null,
@@ -207,6 +212,7 @@ describe("useAuthedHome support nudge hardening", () => {
     mocks.fetchDashboardData.mockReset();
     mocks.fetchActionableNotificationCount.mockReset();
     mocks.fetchAppleHealthTodayStepCount.mockReset();
+    mocks.fetchAppleHealthDailyStepAverage.mockReset();
     mocks.fetchGymSessionValidationRequestForSession.mockReset();
     mocks.requestGymSessionValidation.mockReset();
     mocks.getProfilePhotoSignedUrl.mockReset();
@@ -228,6 +234,9 @@ describe("useAuthedHome support nudge hardening", () => {
     mocks.fetchDashboardData.mockResolvedValue({ data: buildDashboardData() });
     mocks.fetchActionableNotificationCount.mockResolvedValue({ data: { count: 0 } });
     mocks.fetchAppleHealthTodayStepCount.mockResolvedValue({ data: { steps: 4200 } });
+    mocks.fetchAppleHealthDailyStepAverage.mockResolvedValue({
+      data: { averageDailySteps: 4200, totalSteps: 29400, days: 7 },
+    });
     mocks.fetchHasActivePushNotificationDevice.mockResolvedValue({
       data: { hasActiveDevice: false },
     });
@@ -408,6 +417,37 @@ describe("useAuthedHome support nudge hardening", () => {
     });
 
     expect(mocks.allowAutoSupportWithConsent).toHaveBeenCalledTimes(1);
+    hook.unmount();
+  });
+
+  it("recomputes step summary from the selected consistency window", async () => {
+    mocks.fetchDashboardData.mockResolvedValueOnce({
+      data: buildDashboardData({ appleHealthStepsEnabled: true }),
+    });
+    mocks.fetchCurrentWeekSupportRequest.mockResolvedValueOnce({ data: null });
+    mocks.fetchAppleHealthTodayStepCount.mockResolvedValueOnce({ data: { steps: 4200 } });
+    mocks.fetchAppleHealthDailyStepAverage.mockResolvedValueOnce({
+      data: { averageDailySteps: 6800, totalSteps: 612000, days: 90 },
+    });
+
+    const hook = renderUseAuthedHome();
+    await flushAsyncWork();
+
+    expect(mocks.fetchAppleHealthTodayStepCount).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchAppleHealthDailyStepAverage).not.toHaveBeenCalled();
+    expect(hook.current.stepSummary).toBe(4200);
+    expect(hook.current.stepSummaryMode).toBe("today");
+
+    act(() => {
+      hook.current.selectConsistencyOption(hook.current.consistencyOptions[2]);
+    });
+    await flushAsyncWork();
+
+    expect(hook.current.consistencyOption.id).toBe("3m");
+    expect(hook.current.stepSummaryMode).toBe("average");
+    expect(mocks.fetchAppleHealthDailyStepAverage).toHaveBeenLastCalledWith(90);
+    expect(hook.current.stepSummary).toBe(6800);
+
     hook.unmount();
   });
 });

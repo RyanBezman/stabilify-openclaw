@@ -1,4 +1,5 @@
-import { Animated, Text, TouchableOpacity, View } from "react-native";
+import { Animated } from "react-native";
+import CoachFlowTopBar from "../flow/CoachFlowTopBar";
 
 type Props = {
   stepIndex: number;
@@ -10,30 +11,12 @@ type Props = {
 
 export default function OnboardingTopBar({ stepIndex, totalSteps, progressAnim, currentStepLabel, onBack }: Props) {
   return (
-    <View className="px-5 pt-4">
-      <View className="flex-row items-center justify-between">
-        <TouchableOpacity onPress={onBack}>
-          <Text className="text-sm font-semibold text-neutral-400">Back</Text>
-        </TouchableOpacity>
-        <View className="items-center">
-          <Text className="text-[11px] font-semibold uppercase tracking-[1.8px] text-neutral-500">
-            Step {stepIndex + 1} of {totalSteps}
-          </Text>
-          <Text className="mt-0.5 text-xs font-semibold text-neutral-300">{currentStepLabel}</Text>
-        </View>
-        <View className="w-8" />
-      </View>
-      <View className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-neutral-900">
-        <Animated.View
-          className="h-full rounded-full bg-violet-400"
-          style={{
-            width: progressAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: ["8%", "100%"],
-            }),
-          }}
-        />
-      </View>
-    </View>
+    <CoachFlowTopBar
+      stepIndex={stepIndex}
+      totalSteps={totalSteps}
+      progressAnim={progressAnim}
+      currentStepLabel={currentStepLabel}
+      onBack={onBack}
+    />
   );
 }

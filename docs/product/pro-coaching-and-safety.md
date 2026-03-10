@@ -20,6 +20,10 @@ Define Pro-tier coaching boundaries, quality defaults, and safety behavior.
 - Coach cadence:
   - weekly check-ins are required,
   - light proactive prompts are allowed.
+- Weekly check-in UX policy:
+  - use an onboarding-style step-by-step wizard for active weekly check-ins,
+  - keep overview/history outside the wizard,
+  - do not show the full check-in input set in one long form on the overview screen.
 - AI quality policy in Pro coach flows: prefer higher response quality over lower cost when safety is satisfied.
 - Weekly adjustment application: require explicit user acceptance before plan promotion.
 
@@ -52,4 +56,5 @@ If `safety_blocked = true`, no plan-adjustment payload is applied.
 - Medical-risk input must return hard-stop safety response.
 - No plan diff should be applied while safety-blocked.
 - Weekly plan updates must remain pending until user acceptance.
+- Weekly check-in should present one guided step at a time and end with a review step before submit.
 - Onboarding results review must show both tracks and clearly indicate generated vs not-generated states when user chose a single-track start.

@@ -3,23 +3,24 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from "react-native";
-import Slider from "@react-native-community/slider";
 import { Ionicons } from "@expo/vector-icons";
+import CoachFlowHero from "../components/coaches/flow/CoachFlowHero";
+import CoachFlowProgressOverlay from "../components/coaches/flow/CoachFlowProgressOverlay";
+import CoachFlowTopBar from "../components/coaches/flow/CoachFlowTopBar";
+import CheckinWizardStepContent from "../components/coaches/checkins/CheckinWizardStepContent";
 import CoachWorkspaceLocked from "../components/coaches/CoachWorkspaceLocked";
 import CheckinHeader from "../components/coaches/checkins/CheckinHeader";
 import CurrentWeekCard from "../components/coaches/checkins/CurrentWeekCard";
-import CheckinForm from "../components/coaches/checkins/CheckinForm";
 import HistoryList from "../components/coaches/checkins/HistoryList";
 import CheckinSnapshotDetails from "../components/coaches/checkins/CheckinSnapshotDetails";
 import CoachAdjustmentsCard from "../components/coaches/checkins/CoachAdjustmentsCard";
-import OptionPill from "../components/ui/OptionPill";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import SkeletonBlock from "../components/ui/SkeletonBlock";
@@ -29,31 +30,30 @@ import {
   useCoach,
   useCoachAccessGate,
   useCoachCheckins,
+  useCoachRenderDiagnostics,
 } from "../lib/features/coaches";
-import type {
-  CoachSpecialization,
-  WeeklyCheckinAdherenceSubjective,
-  WeeklyCheckinDifficulty,
-  WeeklyCheckinRating,
-  WeeklyCheckinTrend,
-} from "../lib/features/coaches";
+import { useCoachCheckinFlow } from "../lib/features/coaches/hooks/useCoachCheckinFlow";
+import type { WeightUnit } from "../lib/data/types";
+import type { CoachSpecialization, WeeklyCheckinTrend } from "../lib/features/coaches";
 import { formatShortDate } from "../lib/utils/metrics";
 import { formatWeight } from "../lib/utils/weight";
 import type { RootStackParamList } from "../lib/navigation/types";
-import { useCoachRenderDiagnostics } from "../lib/features/coaches";
 import AppScreen from "../components/ui/AppScreen";
 
 type ScreenProps = NativeStackScreenProps<RootStackParamList, "CoachCheckins">;
 type BannerTone = "info" | "success" | "error";
-const FOCUS_REFRESH_STALE_MS = 30_000;
 
-const SINGLE_LINE_INPUT_STYLE = {
-  includeFontPadding: false,
-  fontSize: 16,
-  paddingTop: 0,
-  paddingBottom: 0,
-  height: 48,
-};
+const FOCUS_REFRESH_STALE_MS = 30_000;
+const CHECKIN_SUBMIT_PHASES = [
+  "Saving your weekly check-in",
+  "Reviewing coach adjustments",
+  "Refreshing your latest summary",
+] as const;
+const CHECKIN_LOADING_TIPS = [
+  "We’re turning this week’s answers into a tighter coaching recap.",
+  "Your coach is checking whether the nutrition draft needs an update.",
+  "Finalizing your latest weekly summary and review state.",
+] as const;
 
 function weekRangeLabel(weekStart: string, weekEnd: string) {
   if (!weekStart || !weekEnd) return "This week";
@@ -74,36 +74,26 @@ function trendColorClass(trend: WeeklyCheckinTrend) {
   return "text-neutral-400";
 }
 
-function clampAdherence(value: number) {
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(100, Math.round(value)));
+function formatUpdatedAt(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(date);
+  } catch {
+    return value;
+  }
 }
 
-function parseAdherence(value: string) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 0;
-  return clampAdherence(parsed);
-}
-
-function optionButtonClass(selected: boolean) {
-  return selected
-    ? "border-violet-400 bg-violet-500/20"
-    : "border-neutral-700 bg-neutral-900";
-}
-
-function SectionTitle({
-  title,
-  helper,
-}: {
-  title: string;
-  helper?: string;
-}) {
-  return (
-    <View>
-      <Text className="text-sm font-semibold text-neutral-200">{title}</Text>
-      {helper ? <Text className="mt-1 text-xs text-neutral-500">{helper}</Text> : null}
-    </View>
-  );
+function truncatePreviewText(value: string | null, maxLength = 120) {
+  const normalized = value?.trim().replace(/\s+/g, " ");
+  if (!normalized) return null;
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}...`;
 }
 
 function StatusBanner({
@@ -152,53 +142,12 @@ function StatusBanner({
   );
 }
 
-function CheckinOpenSkeleton() {
+function CurrentWeekSkeleton() {
   return (
     <Card className="p-5">
       <View className="flex-row items-center justify-between">
         <SkeletonBlock className="h-4 w-20 rounded-full" />
         <SkeletonBlock className="h-4 w-28 rounded-full" />
-      </View>
-      <SkeletonBlock className="mt-2 h-3 w-5/6 rounded-full" />
-
-      <View className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900 p-3">
-        <SkeletonBlock className="h-3 w-20 rounded-full" />
-        <View className="mt-2 flex-row gap-2">
-          <SkeletonBlock className="h-6 w-20 rounded-full" />
-          <SkeletonBlock className="h-6 w-20 rounded-full" />
-        </View>
-      </View>
-
-      <View className="mt-5">
-        <SkeletonBlock className="h-3 w-36 rounded-full" />
-        <SkeletonBlock className="mt-3 h-12 w-full rounded-xl" />
-      </View>
-
-      <View className="mt-4">
-        <SkeletonBlock className="h-3 w-28 rounded-full" />
-        <SkeletonBlock className="mt-3 h-12 w-full rounded-xl" />
-      </View>
-
-      <View className="mt-5">
-        <SkeletonBlock className="h-3 w-32 rounded-full" />
-        <View className="mt-3 flex-row gap-2">
-          <SkeletonBlock className="h-10 flex-1 rounded-xl" />
-          <SkeletonBlock className="h-10 flex-1 rounded-xl" />
-          <SkeletonBlock className="h-10 flex-1 rounded-xl" />
-        </View>
-      </View>
-
-      <SkeletonBlock className="mt-5 h-12 w-full rounded-xl" />
-    </Card>
-  );
-}
-
-function CheckinClosedSkeleton() {
-  return (
-    <Card className="p-5">
-      <View className="flex-row items-center justify-between">
-        <SkeletonBlock className="h-4 w-20 rounded-full" />
-        <SkeletonBlock className="h-8 w-28 rounded-full" />
       </View>
       <SkeletonBlock className="mt-2 h-3 w-5/6 rounded-full" />
 
@@ -218,111 +167,87 @@ function CheckinClosedSkeleton() {
   );
 }
 
-function RatingPicker({
-  value,
-  onChange,
-  labels,
-  disabled = false,
+function CurrentWeekEntryCard({
+  weekStart,
+  weekEnd,
+  weightSnapshot,
+  onOpenWizard,
+  disabled,
 }: {
-  value: WeeklyCheckinRating;
-  onChange: (next: WeeklyCheckinRating) => void;
-  labels: [string, string, string, string, string];
-  disabled?: boolean;
+  weekStart: string;
+  weekEnd: string;
+  weightSnapshot: {
+    startWeight: number | null;
+    endWeight: number | null;
+    unit: WeightUnit;
+    trend: WeeklyCheckinTrend;
+  };
+  onOpenWizard: () => void;
+  disabled: boolean;
 }) {
-  const values: WeeklyCheckinRating[] = [1, 2, 3, 4, 5];
-  const { width } = useWindowDimensions();
-  const compactLayout = width < 390;
-
   return (
-    <View className="mt-3 flex-row flex-wrap justify-between gap-2">
-      {values.map((entry, index) => {
-        const selected = value === entry;
-        return (
-          <TouchableOpacity
-            key={`${entry}-${labels[index]}`}
-            activeOpacity={0.85}
-            onPress={() => {
-              if (disabled) return;
-              onChange(entry);
-            }}
-            className={`h-12 items-center justify-center rounded-xl border px-2 ${optionButtonClass(selected)} ${
-              disabled ? "opacity-60" : ""
-            }`}
-            style={{ width: compactLayout ? "31.5%" : "19%" }}
-          >
-            <Text
-              className={`text-[11px] font-semibold ${
-                selected ? "text-violet-100" : "text-neutral-300"
-              }`}
-            >
-              {labels[index]}
+    <Card className="p-5">
+      <View className="flex-row items-start justify-between gap-3">
+        <View className="flex-1">
+          <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
+            This week
+          </Text>
+          <Text className="mt-1 text-base font-semibold text-white">
+            {weekRangeLabel(weekStart, weekEnd)}
+          </Text>
+          <Text className="mt-2 text-sm leading-6 text-neutral-300">
+            Weekly check-ins now run one step at a time, just like coach onboarding.
+            Expect a short guided flow instead of one long form.
+          </Text>
+        </View>
+        <View className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5">
+          <Text className="text-[11px] font-semibold uppercase tracking-[1.4px] text-violet-200">
+            3-5 min
+          </Text>
+        </View>
+      </View>
+
+      <View className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+            Weight trend
+          </Text>
+          <Text className={`text-xs font-semibold ${trendColorClass(weightSnapshot.trend)}`}>
+            {trendLabel(weightSnapshot.trend)}
+          </Text>
+        </View>
+        <View className="mt-2 flex-row flex-wrap gap-2">
+          <View className="rounded-full border border-neutral-700 bg-neutral-950 px-2.5 py-1">
+            <Text className="text-xs text-neutral-300">
+              Start{" "}
+              <Text className="font-semibold text-neutral-100">
+                {weightSnapshot.startWeight === null
+                  ? "-"
+                  : formatWeight(weightSnapshot.startWeight, weightSnapshot.unit)}
+              </Text>
             </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
+          </View>
+          <View className="rounded-full border border-neutral-700 bg-neutral-950 px-2.5 py-1">
+            <Text className="text-xs text-neutral-300">
+              End{" "}
+              <Text className="font-semibold text-neutral-100">
+                {weightSnapshot.endWeight === null
+                  ? "-"
+                  : formatWeight(weightSnapshot.endWeight, weightSnapshot.unit)}
+              </Text>
+            </Text>
+          </View>
+        </View>
+      </View>
 
-function YesNoPicker({
-  value,
-  onChange,
-  disabled = false,
-}: {
-  value: boolean;
-  onChange: (next: boolean) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <View className="mt-3 flex-row gap-2">
-      <TouchableOpacity
+      <Button
+        className="mt-5"
+        title="Open weekly check-in"
+        onPress={onOpenWizard}
         disabled={disabled}
-        activeOpacity={0.85}
-        onPress={() => onChange(true)}
-        className={`flex-1 rounded-xl border px-3 py-3 ${optionButtonClass(value)} ${
-          disabled ? "opacity-60" : ""
-        }`}
-      >
-        <Text className={`text-center text-sm font-semibold ${value ? "text-violet-100" : "text-neutral-300"}`}>
-          Yes
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        disabled={disabled}
-        activeOpacity={0.85}
-        onPress={() => onChange(false)}
-        className={`flex-1 rounded-xl border px-3 py-3 ${optionButtonClass(!value)} ${
-          disabled ? "opacity-60" : ""
-        }`}
-      >
-        <Text className={`text-center text-sm font-semibold ${!value ? "text-violet-100" : "text-neutral-300"}`}>
-          No
-        </Text>
-      </TouchableOpacity>
-    </View>
+      />
+    </Card>
   );
-}
-
-function formatUpdatedAt(value: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "";
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(date);
-  } catch {
-    return value;
-  }
-}
-
-function truncatePreviewText(value: string | null, maxLength = 120) {
-  const normalized = value?.trim().replace(/\s+/g, " ");
-  if (!normalized) return null;
-  if (normalized.length <= maxLength) return normalized;
-  return `${normalized.slice(0, maxLength - 1).trimEnd()}...`;
 }
 
 export default function CoachCheckins({ navigation, route }: ScreenProps) {
@@ -331,6 +256,15 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
   const scrollRef = useRef<ScrollView | null>(null);
   const lastFocusRefreshAtRef = useRef(0);
   const trackedOpenedWeekRef = useRef<string | null>(null);
+
+  const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(18)).current;
+  const scale = useRef(new Animated.Value(0.98)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const loadingPulse = useRef(new Animated.Value(0)).current;
+  const [submittingIndex, setSubmittingIndex] = useState(0);
+  const [tipIndex, setTipIndex] = useState(0);
+  const [submitSeconds, setSubmitSeconds] = useState(0);
 
   const { getActiveCoach, hydrated } = useCoach();
   const coach = getActiveCoach("nutrition");
@@ -358,8 +292,6 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     history,
     planUpdatedForReview,
     planUpdateError,
-    energy,
-    setEnergy,
     adherencePercent,
     setAdherencePercent,
     blockers,
@@ -370,7 +302,8 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     adjustmentRecommendations,
     coachMessage,
     guardrailNotes,
-    isEditingCurrentWeek,
+    energy,
+    setEnergy,
     hydrateCheckins,
     submitCheckin,
     clearSaveSuccessMessage,
@@ -380,9 +313,18 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     userTier: membershipTier,
     onTierRequired: lockToFreeTier,
   });
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isCurrentWeekDetailsOpen, setIsCurrentWeekDetailsOpen] = useState(false);
   const [expandedHistoryIds, setExpandedHistoryIds] = useState<Record<string, boolean>>({});
+
+  const flow = useCoachCheckinFlow({
+    snapshot: {
+      energy,
+      adherencePercent,
+      blockers,
+      currentWeightInputUnit,
+      v2Form,
+    },
+  });
 
   useFocusEffect(
     useCallback(() => {
@@ -415,10 +357,89 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     });
   }, [coach, isPro, membershipTier, weekStart]);
 
-  const hasCurrentWeekCheckin = useMemo(
-    () => Boolean(isEditingCurrentWeek || history.some((item) => item.weekStart === weekStart)),
-    [history, isEditingCurrentWeek, weekStart]
-  );
+  useEffect(() => {
+    if (flow.mode !== "wizard") return;
+    fade.setValue(0);
+    slide.setValue(18);
+    scale.setValue(0.98);
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.timing(slide, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.spring(scale, {
+        toValue: 1,
+        damping: 16,
+        stiffness: 180,
+        mass: 0.6,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fade, flow.currentStep, flow.mode, scale, slide]);
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: flow.progress,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [flow.progress, progressAnim]);
+
+  useEffect(() => {
+    if (!(flow.mode === "wizard" && saving)) {
+      setSubmittingIndex(0);
+      setTipIndex(0);
+      setSubmitSeconds(0);
+      return;
+    }
+
+    const phaseInterval = setInterval(() => {
+      setSubmittingIndex((current) =>
+        current < CHECKIN_SUBMIT_PHASES.length - 1 ? current + 1 : current
+      );
+    }, 900);
+    const tipInterval = setInterval(() => {
+      setTipIndex((current) => (current + 1) % CHECKIN_LOADING_TIPS.length);
+    }, 2400);
+    const secondsInterval = setInterval(() => {
+      setSubmitSeconds((current) => current + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(phaseInterval);
+      clearInterval(tipInterval);
+      clearInterval(secondsInterval);
+    };
+  }, [flow.mode, saving]);
+
+  useEffect(() => {
+    if (!(flow.mode === "wizard" && saving)) {
+      loadingPulse.setValue(0);
+      return;
+    }
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(loadingPulse, {
+          toValue: 1,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(loadingPulse, {
+          toValue: 0,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+
+    return () => {
+      loop.stop();
+      loadingPulse.setValue(0);
+    };
+  }, [flow.mode, loadingPulse, saving]);
+
   const currentWeekCheckin = useMemo(
     () =>
       currentCheckin && currentCheckin.weekStart === weekStart
@@ -453,16 +474,25 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     () => history.filter((item) => item.weekStart !== weekStart),
     [history, weekStart]
   );
-  const onToggleForm = useCallback(() => {
-    setIsFormOpen((current) => !current);
-  }, []);
-  const onOpenForm = useCallback(() => {
-    setIsFormOpen(true);
-    setIsCurrentWeekDetailsOpen(false);
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
-    });
-  }, []);
+  const showReviewUpdatedPlanCta = Boolean(planUpdatedForReview);
+  const showCurrentWeekSkeleton = historyLoading && !(
+    weekStart.length ||
+    weekEnd.length ||
+    currentCheckin ||
+    history.length
+  );
+  const loadingProgressPct = Math.round(
+    ((submittingIndex + 1) / CHECKIN_SUBMIT_PHASES.length) * 100
+  );
+  const wizardSubmitTitle = currentWeekCheckin
+    ? "Update weekly check-in"
+    : "Submit weekly check-in";
+
+  const openWizard = useCallback(() => {
+      setIsCurrentWeekDetailsOpen(false);
+      flow.openWizard();
+    }, [flow]);
+
   const onReviewUpdatedPlan = useCallback(() => {
     if (coach) {
       const idempotencyKey = buildCoachFunnelWeeklyIdempotencyKey({
@@ -489,12 +519,27 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
       feedbackContext: "checkin_review_updated_plan",
     });
   }, [coach, membershipTier, navigation, weekStart]);
+
   const toggleHistoryCard = useCallback((id: string) => {
     setExpandedHistoryIds((current) => ({
       ...current,
       [id]: !current[id],
     }));
   }, []);
+
+  const handleWizardSubmit = useCallback(() => {
+    void (async () => {
+      const result = await submitCheckin();
+      if (!result.saved) return;
+      flow.resetAfterSuccessfulSubmit();
+      setIsCurrentWeekDetailsOpen(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollRef.current?.scrollTo({ y: 0, animated: true });
+        });
+      });
+    })();
+  }, [flow, submitCheckin]);
 
   useCoachRenderDiagnostics("CoachCheckinsScreen", {
     specialization,
@@ -503,6 +548,8 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     refreshing,
     saving,
     history: history.length,
+    mode: flow.mode,
+    step: flow.currentStep,
   });
 
   if (viewState === "gating") {
@@ -561,23 +608,127 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     );
   }
 
-  const adherenceValue = parseAdherence(adherencePercent);
-  const hasLoadedSnapshot = Boolean(
-    weekStart.length ||
-    weekEnd.length ||
-    currentCheckin ||
-    history.length
-  );
-  const showCheckinAreaSkeleton = historyLoading && !hasLoadedSnapshot;
-  const showOpenSkeleton = isFormOpen;
-  const showSavedCheckinPreview = !isFormOpen && Boolean(currentWeekCheckin);
-  const showReviewUpdatedPlanCta = Boolean(planUpdatedForReview);
-  const formToggleLabel = isFormOpen
-    ? "Hide form"
-    : hasCurrentWeekCheckin
-      ? "Edit check-in"
-      : "Open form";
-  const showHeaderToggle = isFormOpen || !hasCurrentWeekCheckin;
+  if (flow.mode === "wizard" && saving) {
+    return (
+      <AppScreen className="flex-1 bg-neutral-950 px-6" maxContentWidth={720}>
+        <CoachFlowProgressOverlay
+          title="Submitting your weekly check-in"
+          subtitle="We’re saving this week’s recap and refreshing your latest coach summary."
+          elapsedSeconds={submitSeconds}
+          progressPct={loadingProgressPct}
+          phases={CHECKIN_SUBMIT_PHASES}
+          activePhaseIndex={submittingIndex}
+          tips={CHECKIN_LOADING_TIPS}
+          activeTipIndex={tipIndex}
+          loadingPulse={loadingPulse}
+        />
+      </AppScreen>
+    );
+  }
+
+  if (flow.mode === "wizard") {
+    return (
+      <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
+        <CoachFlowTopBar
+          stepIndex={flow.stepIndex}
+          totalSteps={flow.totalSteps}
+          progressAnim={progressAnim}
+          currentStepLabel={flow.isReviewStep ? "Review" : "Weekly check-in"}
+          onBack={flow.back}
+        />
+
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-5 pb-40 pt-6"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View
+            style={{ opacity: fade, transform: [{ translateX: slide }, { scale }] }}
+          >
+            <CoachFlowHero
+              title={flow.stepDefinition.title}
+              subtitle={flow.stepDefinition.subtitle}
+              badgeLabel={flow.isReviewStep ? flow.stepDefinition.badgeLabel ?? null : null}
+            />
+
+            {flow.stepIndex > 1 && !flow.isReviewStep ? (
+              <View className="mt-4 flex-row flex-wrap gap-2">
+                {flow.summaryChips.map((chip) => (
+                  <View
+                    key={chip}
+                    className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5"
+                  >
+                    <Text className="text-[11px] font-semibold text-neutral-300">
+                      {chip}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {flow.isReviewStep ? (
+              <View className="mt-6">
+                <CheckinWizardStepContent
+                  currentStep={flow.currentStep}
+                  currentWeightInputUnit={currentWeightInputUnit}
+                  energy={energy}
+                  setEnergy={setEnergy}
+                  adherencePercent={adherencePercent}
+                  setAdherencePercent={setAdherencePercent}
+                  blockers={blockers}
+                  setBlockers={setBlockers}
+                  v2Form={v2Form}
+                  updateV2Field={updateV2Field}
+                  saving={saving}
+                  reviewSections={flow.reviewSections}
+                  onEditStep={flow.goToStep}
+                />
+              </View>
+            ) : (
+              <Card className="mt-6 p-5">
+                <CheckinWizardStepContent
+                  currentStep={flow.currentStep}
+                  currentWeightInputUnit={currentWeightInputUnit}
+                  energy={energy}
+                  setEnergy={setEnergy}
+                  adherencePercent={adherencePercent}
+                  setAdherencePercent={setAdherencePercent}
+                  blockers={blockers}
+                  setBlockers={setBlockers}
+                  v2Form={v2Form}
+                  updateV2Field={updateV2Field}
+                  saving={saving}
+                  reviewSections={flow.reviewSections}
+                  onEditStep={flow.goToStep}
+                />
+              </Card>
+            )}
+
+            {flow.validationError ? (
+              <Text className="mt-3 text-sm font-semibold text-rose-300">
+                {flow.validationError}
+              </Text>
+            ) : null}
+            {flow.isReviewStep && validationMessage ? (
+              <StatusBanner tone="error" message={validationMessage} className="mt-4" />
+            ) : null}
+            {flow.isReviewStep && saveError ? (
+              <StatusBanner tone="error" message={saveError} className="mt-3" />
+            ) : null}
+          </Animated.View>
+        </ScrollView>
+
+        <View className="border-t border-neutral-900 bg-neutral-950 px-5 pb-6 pt-4">
+          <Button
+            title={flow.isReviewStep ? wizardSubmitTitle : "Continue"}
+            onPress={() => (flow.isReviewStep ? handleWizardSubmit() : flow.next())}
+            disabled={!flow.canContinue || saving}
+          />
+        </View>
+      </AppScreen>
+    );
+  }
 
   return (
     <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={840}>
@@ -599,6 +750,9 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
         {refreshing && !historyLoading ? (
           <StatusBanner tone="info" message="Refreshing latest check-in..." className="mb-4" />
         ) : null}
+        {saveSuccessMessage ? (
+          <StatusBanner tone="success" message={saveSuccessMessage} className="mb-4" />
+        ) : null}
         {planUpdateError ? (
           <StatusBanner
             tone="error"
@@ -606,519 +760,122 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
             className="mb-4"
           />
         ) : null}
+
         <CurrentWeekCard title="This week" helper="Active check-in">
-        {showCheckinAreaSkeleton ? (
-          showOpenSkeleton ? <CheckinOpenSkeleton /> : <CheckinClosedSkeleton />
-        ) : showSavedCheckinPreview && currentWeekCheckin ? (
-          <View className="mt-1 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950">
-            <View className="px-5 py-5">
-              <View className="flex-row items-start justify-between gap-3">
-                <View className="flex-1">
-                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
-                    Current check-in
-                  </Text>
-                  <Text className="mt-1 text-base font-semibold text-white">
-                    {weekRangeLabel(currentWeekCheckin.weekStart, currentWeekCheckin.weekEnd)}
-                  </Text>
-                  <View className="mt-1 flex-row items-center gap-1.5">
-                    <Ionicons name="time-outline" size={12} color="#737373" />
-                    <Text className="text-sm text-neutral-500">
-                      Updated {formatUpdatedAt(currentWeekCheckin.updatedAt)}
-                    </Text>
-                  </View>
-                </View>
-                <View className="items-end gap-2">
-                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-emerald-300">
-                    Completed
-                  </Text>
-                  <View className="flex-row items-center gap-4">
-                    <TouchableOpacity
-                      onPress={() => setIsCurrentWeekDetailsOpen((current) => !current)}
-                      disabled={saving}
-                      activeOpacity={0.85}
-                      className={saving ? "opacity-60" : ""}
-                    >
-                      <Text className="text-sm font-semibold text-neutral-200">
-                        {isCurrentWeekDetailsOpen ? "Hide details" : "View details"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={onOpenForm}
-                      disabled={saving}
-                      activeOpacity={0.85}
-                      className={saving ? "opacity-60" : ""}
-                    >
-                      <Text className="text-sm font-semibold text-violet-300">Edit</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {!isCurrentWeekDetailsOpen && currentWeekSummaryPreview ? (
-              <View className="border-t border-neutral-900 px-5 py-4">
-                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
-                  Coach summary
-                </Text>
-                <Text className="mt-2 text-sm leading-relaxed text-neutral-200">
-                  {currentWeekSummaryPreview}
-                </Text>
-              </View>
-            ) : null}
-
-            {showReviewUpdatedPlanCta ? (
-              <View className="border-t border-neutral-900 px-5 py-4">
-                <View className="flex-row items-center justify-between gap-3">
+          {showCurrentWeekSkeleton ? (
+            <CurrentWeekSkeleton />
+          ) : currentWeekCheckin ? (
+            <View className="mt-1 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950">
+              <View className="px-5 py-5">
+                <View className="flex-row items-start justify-between gap-3">
                   <View className="flex-1">
-                    <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-fuchsia-200">
-                      Updated plan pending approval
+                    <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
+                      Current check-in
                     </Text>
-                    <Text className="mt-1 text-sm text-neutral-200">
-                      Review your nutrition draft from this check-in.
+                    <Text className="mt-1 text-base font-semibold text-white">
+                      {weekRangeLabel(currentWeekCheckin.weekStart, currentWeekCheckin.weekEnd)}
                     </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={onReviewUpdatedPlan}
-                    activeOpacity={0.85}
-                    className="py-1"
-                  >
-                    <View className="flex-row items-center gap-1">
-                      <Text className="text-sm font-semibold text-fuchsia-200">Review</Text>
-                      <Ionicons name="arrow-forward" size={14} color="#f5d0fe" />
+                    <View className="mt-1 flex-row items-center gap-1.5">
+                      <Ionicons name="time-outline" size={12} color="#737373" />
+                      <Text className="text-sm text-neutral-500">
+                        Updated {formatUpdatedAt(currentWeekCheckin.updatedAt)}
+                      </Text>
                     </View>
-                  </TouchableOpacity>
+                  </View>
+                  <View className="items-end gap-2">
+                    <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-emerald-300">
+                      Completed
+                    </Text>
+                    <View className="flex-row items-center gap-4">
+                      <TouchableOpacity
+                        onPress={() =>
+                          setIsCurrentWeekDetailsOpen((current) => !current)
+                        }
+                        activeOpacity={0.85}
+                      >
+                        <Text className="text-sm font-semibold text-neutral-200">
+                          {isCurrentWeekDetailsOpen ? "Hide details" : "View details"}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => openWizard()}
+                        activeOpacity={0.85}
+                      >
+                        <Text className="text-sm font-semibold text-violet-300">Edit</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 </View>
               </View>
-            ) : null}
 
-            {isCurrentWeekDetailsOpen ? (
-              <>
-                <CheckinSnapshotDetails
-                  checkin={currentWeekCheckin}
-                  summaryOverride={currentWeekSummary}
-                />
-
-                <CoachAdjustmentsCard
-                  recommendations={currentWeekAdjustmentRecommendations}
-                  guardrailNotes={currentWeekGuardrailNotes}
-                />
-              </>
-            ) : null}
-          </View>
-        ) : (
-          <CheckinForm>
-          <View className="flex-row items-center justify-between gap-2">
-            <View className="flex-1">
-              <View className="flex-row items-center justify-between gap-2">
-                <Text className="text-sm font-semibold text-neutral-400">This week</Text>
-                <Text className="text-xs font-semibold text-neutral-500">
-                  {weekRangeLabel(weekStart, weekEnd)}
-                </Text>
-              </View>
-            </View>
-            {showHeaderToggle ? (
-              <TouchableOpacity
-                onPress={onToggleForm}
-                disabled={saving}
-                activeOpacity={0.85}
-                className={`rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5 ${
-                  saving ? "opacity-60" : ""
-                }`}
-              >
-                <Text className="text-xs font-semibold text-neutral-200">{formToggleLabel}</Text>
-              </TouchableOpacity>
-            ) : null}
-          </View>
-
-          {isEditingCurrentWeek && isFormOpen ? (
-            <View className="mt-3 self-start rounded-full border border-violet-400/40 bg-violet-500/10 px-2.5 py-1">
-              <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
-                Editing saved check-in
-              </Text>
-            </View>
-          ) : null}
-
-          <View className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2.5">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
-                Weight trend
-              </Text>
-              <Text className={`text-xs font-semibold ${trendColorClass(weightSnapshot.trend)}`}>
-                {trendLabel(weightSnapshot.trend)}
-              </Text>
-            </View>
-            <View className="mt-2 flex-row flex-wrap gap-2">
-              <View className="rounded-full border border-neutral-700 bg-neutral-950 px-2.5 py-1">
-                <Text className="text-xs text-neutral-300">
-                  Start{" "}
-                  <Text className="font-semibold text-neutral-100">
-                    {weightSnapshot.startWeight === null
-                      ? "-"
-                      : formatWeight(weightSnapshot.startWeight, weightSnapshot.unit)}
+              {!isCurrentWeekDetailsOpen && currentWeekSummaryPreview ? (
+                <View className="border-t border-neutral-900 px-5 py-4">
+                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
+                    Coach summary
                   </Text>
-                </Text>
-              </View>
-              <View className="rounded-full border border-neutral-700 bg-neutral-950 px-2.5 py-1">
-                <Text className="text-xs text-neutral-300">
-                  End{" "}
-                  <Text className="font-semibold text-neutral-100">
-                    {weightSnapshot.endWeight === null
-                      ? "-"
-                      : formatWeight(weightSnapshot.endWeight, weightSnapshot.unit)}
+                  <Text className="mt-2 text-sm leading-relaxed text-neutral-200">
+                    {currentWeekSummaryPreview}
                   </Text>
-                </Text>
-              </View>
-            </View>
-          </View>
+                </View>
+              ) : null}
 
-          {isFormOpen ? (
-            <>
-              <View className="mt-5">
-            <SectionTitle title={`Current weight (${currentWeightInputUnit})`} />
-            <TextInput
-              className="mt-3 h-12 rounded-xl border border-neutral-800 bg-neutral-900 px-3 text-white"
-              value={v2Form.currentWeight}
-              onChangeText={(value) => updateV2Field("currentWeight", value)}
-              keyboardType="decimal-pad"
-              underlineColorAndroid="transparent"
-              textAlignVertical="center"
-              style={SINGLE_LINE_INPUT_STYLE}
-              editable={!saving}
-              placeholder="180"
-              placeholderTextColor="#525252"
-            />
-              </View>
-
-              <View className="mt-4">
-            <SectionTitle title="Waist (cm, optional)" />
-            <TextInput
-              className="mt-3 h-12 rounded-xl border border-neutral-800 bg-neutral-900 px-3 text-white"
-              value={v2Form.waistCm}
-              onChangeText={(value) => updateV2Field("waistCm", value)}
-              keyboardType="decimal-pad"
-              underlineColorAndroid="transparent"
-              textAlignVertical="center"
-              style={SINGLE_LINE_INPUT_STYLE}
-              editable={!saving}
-              placeholder="Optional"
-              placeholderTextColor="#525252"
-            />
-              </View>
-
-              <View className="mt-5">
-            <SectionTitle title="Progress photo prompted this week?" />
-            <YesNoPicker
-              value={v2Form.progressPhotoPrompted}
-              onChange={(value) => updateV2Field("progressPhotoPrompted", value)}
-              disabled={saving}
-            />
-              </View>
-
-              <View className="mt-5">
-            <SectionTitle title="Training difficulty" />
-            <View className="mt-3 flex-row gap-2">
-              {([
-                ["too_easy", "Too easy"],
-                ["right", "Right"],
-                ["too_hard", "Too hard"],
-              ] as [WeeklyCheckinDifficulty, string][]).map(([value, label]) => (
-                <OptionPill
-                  key={value}
-                  label={label}
-                  selected={v2Form.trainingDifficulty === value}
-                  onPress={() => {
-                    if (!saving) updateV2Field("trainingDifficulty", value);
-                  }}
-                />
-              ))}
-            </View>
-              </View>
-
-              <View className="mt-5">
-            <SectionTitle title="Energy (1-5)" />
-            <RatingPicker
-              value={energy as WeeklyCheckinRating}
-              onChange={(value) => setEnergy(value)}
-              labels={["1", "2", "3", "4", "5"]}
-              disabled={saving}
-            />
-              </View>
-
-              <View className="mt-5">
-            <SectionTitle title="Recovery (1-5)" />
-            <RatingPicker
-              value={v2Form.recoveryRating}
-              onChange={(value) => updateV2Field("recoveryRating", value)}
-              labels={["1", "2", "3", "4", "5"]}
-              disabled={saving}
-            />
-              </View>
-
-              <View className="mt-5">
-            <SectionTitle title="Nutrition adherence (%)" />
-            <View className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900 p-3">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-sm font-semibold text-neutral-100">Adherence</Text>
-                <Text className="text-sm font-semibold text-neutral-100">{adherenceValue}%</Text>
-              </View>
-              <Slider
-                style={{ marginTop: 8 }}
-                value={adherenceValue}
-                minimumValue={0}
-                maximumValue={100}
-                step={1}
-                onValueChange={(value) => setAdherencePercent(String(clampAdherence(value)))}
-                minimumTrackTintColor="#a78bfa"
-                maximumTrackTintColor="#404040"
-                thumbTintColor="#c4b5fd"
-                disabled={saving}
-              />
-            </View>
-            <View className="mt-3 flex-row gap-2">
-              {([
-                ["low", "Low"],
-                ["medium", "Medium"],
-                ["high", "High"],
-              ] as [WeeklyCheckinAdherenceSubjective, string][]).map(([value, label]) => (
-                <OptionPill
-                  key={value}
-                  label={label}
-                  selected={v2Form.nutritionAdherenceSubjective === value}
-                  onPress={() => {
-                    if (!saving) updateV2Field("nutritionAdherenceSubjective", value);
-                  }}
-                />
-              ))}
-            </View>
-              </View>
-
-              <View className="mt-5">
-            <SectionTitle title="Sleep average hours" />
-            <TextInput
-              className="mt-3 h-12 rounded-xl border border-neutral-800 bg-neutral-900 px-3 text-white"
-              value={v2Form.sleepAvgHours}
-              onChangeText={(value) => updateV2Field("sleepAvgHours", value)}
-              keyboardType="decimal-pad"
-              underlineColorAndroid="transparent"
-              textAlignVertical="center"
-              style={SINGLE_LINE_INPUT_STYLE}
-              editable={!saving}
-              placeholder="7"
-              placeholderTextColor="#525252"
-            />
-              </View>
-
-              <View className="mt-5">
-            <SectionTitle title="Sleep quality (1-5)" />
-            <RatingPicker
-              value={v2Form.sleepQuality}
-              onChange={(value) => updateV2Field("sleepQuality", value)}
-              labels={["1", "2", "3", "4", "5"]}
-              disabled={saving}
-            />
-              </View>
-
-              <View className="mt-5">
-            <SectionTitle title="Stress level (1-5)" />
-            <RatingPicker
-              value={v2Form.stressLevel}
-              onChange={(value) => updateV2Field("stressLevel", value)}
-              labels={["1", "2", "3", "4", "5"]}
-              disabled={saving}
-            />
-              </View>
-
-              <View className="mt-5">
-            <SectionTitle title="Goal progress / Strength PRs" />
-            <TextInput
-              className="mt-3 min-h-[70px] rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3 text-base text-white"
-              value={v2Form.strengthPRs}
-              onChangeText={(value) => updateV2Field("strengthPRs", value)}
-              multiline
-              editable={!saving}
-              placeholder="How did goal progress look this week?"
-              placeholderTextColor="#525252"
-            />
-              </View>
-
-              <View className="mt-4">
-            <SectionTitle title="Consistency notes" />
-            <TextInput
-              className="mt-3 min-h-[70px] rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3 text-base text-white"
-              value={v2Form.consistencyNotes}
-              onChangeText={(value) => updateV2Field("consistencyNotes", value)}
-              multiline
-              editable={!saving}
-              placeholder="How consistent were you?"
-              placeholderTextColor="#525252"
-            />
-              </View>
-
-              <View className="mt-4">
-            <SectionTitle title="Body composition changes" />
-            <TextInput
-              className="mt-3 min-h-[70px] rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3 text-base text-white"
-              value={v2Form.bodyCompChanges}
-              onChangeText={(value) => updateV2Field("bodyCompChanges", value)}
-              multiline
-              editable={!saving}
-              placeholder="Optional changes you noticed"
-              placeholderTextColor="#525252"
-            />
-              </View>
-
-              <View className="mt-4">
-            <SectionTitle title="Appetite and cravings" />
-            <TextInput
-              className="mt-3 min-h-[70px] rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3 text-base text-white"
-              value={v2Form.appetiteCravings}
-              onChangeText={(value) => updateV2Field("appetiteCravings", value)}
-              multiline
-              editable={!saving}
-              placeholder="How were cravings/appetite?"
-              placeholderTextColor="#525252"
-            />
-              </View>
-
-              <View className="mt-4">
-            <SectionTitle title="Schedule constraints next week" />
-            <TextInput
-              className="mt-3 min-h-[70px] rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3 text-base text-white"
-              value={v2Form.scheduleConstraintsNextWeek}
-              onChangeText={(value) => updateV2Field("scheduleConstraintsNextWeek", value)}
-              multiline
-              editable={!saving}
-              placeholder="Travel, work, events, etc."
-              placeholderTextColor="#525252"
-            />
-              </View>
-
-              <View className="mt-4">
-            <SectionTitle title="Any pain or injury concerns?" />
-            <YesNoPicker
-              value={v2Form.injuryHasPain}
-              onChange={(value) => updateV2Field("injuryHasPain", value)}
-              disabled={saving}
-            />
-            {v2Form.injuryHasPain ? (
-              <TextInput
-                className="mt-3 min-h-[70px] rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3 text-base text-white"
-                value={v2Form.injuryDetails}
-                onChangeText={(value) => updateV2Field("injuryDetails", value)}
-                multiline
-                editable={!saving}
-                placeholder="Where and when does it hurt?"
-                placeholderTextColor="#525252"
-              />
-            ) : null}
-              </View>
-
-              <View className="mt-4">
-            <SectionTitle title="Any red-flag pain symptoms?" helper="Sharp worsening pain, numbness, or concerning symptoms." />
-            <YesNoPicker
-              value={v2Form.injuryRedFlags}
-              onChange={(value) => updateV2Field("injuryRedFlags", value)}
-              disabled={saving}
-            />
-              </View>
-
-              <View className="mt-4">
-            <SectionTitle title="Other blockers (optional)" />
-            <TextInput
-              className="mt-3 min-h-[70px] rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3 text-base text-white"
-              value={blockers}
-              onChangeText={setBlockers}
-              multiline
-              editable={!saving}
-              placeholder="Anything else to flag for this week"
-              placeholderTextColor="#525252"
-              maxLength={500}
-            />
-              </View>
-
-              {saveSuccessMessage ? (
-                <>
-                  <StatusBanner tone="success" message={saveSuccessMessage} className="mt-4" />
-                  {showReviewUpdatedPlanCta ? (
+              {showReviewUpdatedPlanCta ? (
+                <View className="border-t border-neutral-900 px-5 py-4">
+                  <View className="flex-row items-center justify-between gap-3">
+                    <View className="flex-1">
+                      <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-fuchsia-200">
+                        Updated plan pending approval
+                      </Text>
+                      <Text className="mt-1 text-sm text-neutral-200">
+                        Review your nutrition draft from this check-in.
+                      </Text>
+                    </View>
                     <TouchableOpacity
                       onPress={onReviewUpdatedPlan}
                       activeOpacity={0.85}
-                      className="mt-3 rounded-xl border border-violet-500/40 bg-violet-500/10 px-4 py-3"
+                      className="py-1"
                     >
-                      <View className="flex-row items-center justify-between">
-                        <Text className="text-sm font-semibold text-violet-100">
-                          Review updated nutrition plan
-                        </Text>
-                        <Ionicons name="arrow-forward" size={16} color="#ddd6fe" />
+                      <View className="flex-row items-center gap-1">
+                        <Text className="text-sm font-semibold text-fuchsia-200">Review</Text>
+                        <Ionicons name="arrow-forward" size={14} color="#f5d0fe" />
                       </View>
                     </TouchableOpacity>
-                  ) : (
-                    <View className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-3">
-                      <Text className="text-xs text-neutral-400">
-                        No new nutrition draft was created from this check-in edit.
-                      </Text>
-                    </View>
-                  )}
+                  </View>
+                </View>
+              ) : null}
+
+              {isCurrentWeekDetailsOpen ? (
+                <>
+                  <CheckinSnapshotDetails
+                    checkin={currentWeekCheckin}
+                    summaryOverride={currentWeekSummary}
+                  />
+
+                  <CoachAdjustmentsCard
+                    recommendations={currentWeekAdjustmentRecommendations}
+                    guardrailNotes={currentWeekGuardrailNotes}
+                  />
                 </>
               ) : null}
-              {validationMessage ? (
-            <StatusBanner tone="error" message={validationMessage} className="mt-3" />
-              ) : null}
-              {saveError ? (
-            <StatusBanner tone="error" message={saveError} className="mt-2" />
-              ) : null}
-
-              <Button
-            className="mt-5"
-            title={saving ? "Saving..." : isEditingCurrentWeek ? "Update weekly check-in" : "Save weekly check-in"}
-            loading={saving}
-            disabled={saving}
-            onPress={() => {
-              void (async () => {
-                const result = await submitCheckin();
-                if (result.saved) {
-                  setIsFormOpen(false);
-                  setIsCurrentWeekDetailsOpen(false);
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      scrollRef.current?.scrollTo({ y: 0, animated: true });
-                    });
-                  });
-                }
-              })();
-            }}
-              />
-
-              {saveSuccessMessage ? (
-            <TouchableOpacity
-              onPress={clearSaveSuccessMessage}
-              activeOpacity={0.8}
-              className="mt-3 self-center"
-            >
-              <Text className="text-xs font-semibold text-neutral-400">Dismiss success message</Text>
-            </TouchableOpacity>
-              ) : null}
-            </>
-          ) : (
-            <View className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3">
-              <Text className="text-sm font-semibold text-neutral-200">
-                Weekly check-in form is collapsed.
-              </Text>
-              <Text className="mt-1 text-xs text-neutral-500">
-                Open the form when you are ready to submit this week’s check-in.
-              </Text>
             </View>
+          ) : (
+            <CurrentWeekEntryCard
+              weekStart={weekStart}
+              weekEnd={weekEnd}
+              weightSnapshot={weightSnapshot}
+              onOpenWizard={() => openWizard()}
+              disabled={saving}
+            />
           )}
-          </CheckinForm>
-        )}
         </CurrentWeekCard>
 
-        <HistoryList
-          empty={!pastHistory.length}
-        >
-          {pastHistory.map((item, index) => {
+        <HistoryList empty={!pastHistory.length}>
+          {pastHistory.map((item) => {
             const isExpanded = Boolean(expandedHistoryIds[item.id]);
-            const summaryPreview = truncatePreviewText(item.coachSummary?.trim() ?? null, 100);
+            const summaryPreview = truncatePreviewText(
+              item.coachSummary?.trim() ?? null,
+              100
+            );
             const entryClassName =
               "mx-5 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950";
 
@@ -1220,6 +977,18 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
             );
           })}
         </HistoryList>
+
+        {saveSuccessMessage ? (
+          <TouchableOpacity
+            onPress={clearSaveSuccessMessage}
+            activeOpacity={0.8}
+            className="mt-5 self-center"
+          >
+            <Text className="text-xs font-semibold text-neutral-400">
+              Dismiss success message
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
     </AppScreen>
   );

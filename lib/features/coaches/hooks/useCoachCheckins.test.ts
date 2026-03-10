@@ -180,6 +180,48 @@ describe("useCoachCheckins", () => {
     hook.unmount();
   });
 
+  it("guards final submit when current weight is out of range", async () => {
+    const hook = renderUseCoachCheckins();
+
+    act(() => {
+      hook.current.updateV2Field("currentWeight", "20");
+    });
+
+    let result: Awaited<ReturnType<HookValue["submitCheckin"]>> | null = null;
+    await act(async () => {
+      result = await hook.current.submitCheckin();
+    });
+
+    expect(result).toEqual({ saved: false });
+    expect(hook.current.validationMessage).toBe(
+      "Current weight must be between 66.1 and 771.6 lb.",
+    );
+    expect(mocks.submitCoachCheckinWorkflow).not.toHaveBeenCalled();
+
+    hook.unmount();
+  });
+
+  it("guards final submit when sleep average hours are invalid", async () => {
+    const hook = renderUseCoachCheckins();
+
+    act(() => {
+      hook.current.updateV2Field("sleepAvgHours", "25");
+    });
+
+    let result: Awaited<ReturnType<HookValue["submitCheckin"]>> | null = null;
+    await act(async () => {
+      result = await hook.current.submitCheckin();
+    });
+
+    expect(result).toEqual({ saved: false });
+    expect(hook.current.validationMessage).toBe(
+      "Sleep average hours must be between 0 and 24.",
+    );
+    expect(mocks.submitCoachCheckinWorkflow).not.toHaveBeenCalled();
+
+    hook.unmount();
+  });
+
   it("allows submitting with no blockers", async () => {
     mocks.submitCoachCheckinWorkflow.mockResolvedValueOnce({
       status: "success",
