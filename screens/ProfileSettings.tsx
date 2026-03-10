@@ -387,7 +387,7 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
 
     Alert.alert(
       "Consent saved",
-      "Future behind-goal triggers can auto-post to close friends. This week remains unchanged.",
+      "Private auto-support is on for future behind-goal triggers. This week's request stays suppressed and won't backfill.",
     );
     return true;
   };
@@ -424,8 +424,8 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
 
     setAutoSupportEnabled(true);
     Alert.alert(
-      "Allow auto-support?",
-      "When you are behind, Stabilify can automatically publish a private close-friends support post. No weight details are shared.",
+      "Allow private auto-support?",
+      "When you're behind, Stabilify can post a private support request to your close friends. It won't share weight, photos, or location details.",
       [
         {
           text: "Cancel",

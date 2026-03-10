@@ -1,6 +1,6 @@
 # Support Automation QA Checklist
 
-Last updated: 2026-03-03
+Last updated: 2026-03-10
 
 ## Goal
 
@@ -32,6 +32,9 @@ Verify behind-goal support automation trigger evaluation, consent gating, outcom
 - `suppressed_acknowledged` state confirms consent saved for future triggers (no same-week backfill).
 - `disabled` state shows re-enable CTA.
 - `published` state shows confirmation guidance.
+- Consent disclosure copy is identical on Home and Profile settings:
+  - `Allow private auto-support?`
+  - `When you're behind, Stabilify can post a private support request to your close friends. It won't share weight, photos, or location details.`
 - Home nudge card supports explicit `Enable phone notifications` flow.
 - Profile settings support card exposes phone notifications as a toggle.
 - Profile settings auto-support flow uses one switch and consent confirmation every time toggling `ON`.
@@ -60,13 +63,14 @@ Validate events:
 9. After local-day rollover, confirm same-week suppressed nudge can reappear.
 10. In Profile settings, toggling Auto support `ON` must show explicit consent confirmation; cancel keeps it off.
 11. In Profile settings, toggle Auto support `OFF` then back `ON`, tap agree, and confirm `profiles.auto_support_consent_at` updates to a newer timestamp.
-12. Toggle Phone notifications `ON` in Profile settings and confirm push token registration row is active.
-13. Toggle Phone notifications `OFF` in Profile settings and confirm active push device rows become inactive.
-14. Create queued push deliveries and run dispatch function:
+12. Confirm Home and Profile settings both use the exact consent disclosure copy and the same-week acknowledgement says the request stays suppressed with no backfill.
+13. Toggle Phone notifications `ON` in Profile settings and confirm push token registration row is active.
+14. Toggle Phone notifications `OFF` in Profile settings and confirm active push device rows become inactive.
+15. Create queued push deliveries and run dispatch function:
    - successful send marks `sent`,
    - failed send schedules retries,
    - third failure marks terminal `failed`.
-15. Simulate `DeviceNotRegistered` Expo error and confirm matching device row becomes inactive.
-16. Tap `Not now` on suppressed nudge and verify one `support_nudge_deferred` row with `surface` + `deferred_until_local_date`.
-17. Open Home nudge card first time and verify one `private_nudge_opened` row only.
-18. Run `npm test` and `npm run lint:arch`.
+16. Simulate `DeviceNotRegistered` Expo error and confirm matching device row becomes inactive.
+17. Tap `Not now` on suppressed nudge and verify one `support_nudge_deferred` row with `surface` + `deferred_until_local_date`.
+18. Open Home nudge card first time and verify one `private_nudge_opened` row only.
+19. Run `npm test` and `npm run lint:arch`.

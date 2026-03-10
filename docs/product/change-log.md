@@ -1,26 +1,26 @@
 # Product Policy Change Log
 
-## 2026-03-10 - Weekly check-in onboarding-style wizard
+## 2026-03-10 - Support consent disclosure copy finalized
 
 ### Added
 
-- Weekly check-in presentation policy:
-  - `CoachCheckins` opens with overview/history state,
-  - starting or editing the current week check-in launches a dedicated step-by-step wizard,
-  - wizard flow ends with an explicit review step before submit.
+- Final explicit support-consent copy policy:
+  - title `Allow private auto-support?`,
+  - disclosure states posts go only to close friends,
+  - disclosure states no weight, photos, or location details are shared,
+  - acknowledgement states the current week's suppressed request stays suppressed and does not backfill.
 
 ### Changed
 
-- Weekly check-in interaction policy:
-  - replace the single long-form check-in card with the same progressive step-shell pattern used by coach onboarding.
+- Home nudge and Profile settings consent prompts now share the same disclosure copy.
 
 ### Removed
 
-- Inline full-form weekly check-in presentation on the overview screen.
+- Open-ended support-consent copy decision state.
 
 ### Notes
 
-- This is a frontend flow change only; weekly check-in payloads, save contract, and submit timing remain unchanged.
+- OQ-002 is now decided and reflected in canonical product and implementation docs.
 
 ## 2026-03-09 - Social/account surface visual consistency
 

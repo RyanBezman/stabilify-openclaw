@@ -56,14 +56,6 @@ function parseDailyStepGoalDraft(value: string) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 10000;
 }
 
-export const profileSettingsEditableFieldOrder = [
-  "displayName",
-  "username",
-  "bio",
-  "timezone",
-  "dailyStepGoal",
-] as const satisfies readonly EditableProfileSettingsFieldKey[];
-
 export const profileSettingsEditableFields: Record<
   EditableProfileSettingsFieldKey,
   EditableProfileSettingsFieldDefinition

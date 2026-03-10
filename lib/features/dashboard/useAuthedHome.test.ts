@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   formatShortDate: vi.fn(),
   getConsistencyWindow: vi.fn(),
   getCurrentStreak: vi.fn(),
+  getExpoProjectId: vi.fn(),
   fetchCurrentWeekSupportRequest: vi.fn(),
   fetchHasActivePushNotificationDevice: vi.fn(),
   markSupportNudgeOpened: vi.fn(),
@@ -82,6 +83,10 @@ vi.mock("../../utils/metrics", () => ({
   formatShortDate: mocks.formatShortDate,
   getConsistencyWindow: mocks.getConsistencyWindow,
   getCurrentStreak: mocks.getCurrentStreak,
+}));
+
+vi.mock("../../utils/expo", () => ({
+  getExpoProjectId: mocks.getExpoProjectId,
 }));
 
 vi.mock("../../data/supportAutomation", () => ({
@@ -254,6 +259,7 @@ describe("useAuthedHome support nudge hardening", () => {
       percent: 0,
     });
     mocks.getCurrentStreak.mockReturnValue(0);
+    mocks.getExpoProjectId.mockReturnValue("expo-project-id");
   });
 
   it("defers the support nudge and clears visible request after refresh", async () => {
