@@ -1,6 +1,6 @@
 # Profile Settings QA Checklist
 
-Last updated: 2026-03-09
+Last updated: 2026-03-10
 
 ## Goal
 
@@ -51,3 +51,5 @@ Validate the Profile Settings flow with drill-in text editing.
 14. Toggle `Track steps` on and off and confirm the setting persists.
 15. Toggle `Auto support post` off and confirm it stays off after reopening the screen.
 16. Toggle `Auto support post` on and confirm consent is still required before the setting stays on.
+17. After the screen has loaded once, switch to another tab and back. Confirm the existing rows, avatar, and section content stay mounted during refresh instead of showing a full-screen blocking loader.
+18. With existing settings visible, trigger a refresh path (tab revisit or pull-to-refresh if available) and confirm in-flight updates do not clear the current snapshot before the refreshed values land.

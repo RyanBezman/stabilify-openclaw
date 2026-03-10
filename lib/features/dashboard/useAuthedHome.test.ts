@@ -435,8 +435,8 @@ describe("useAuthedHome support nudge hardening", () => {
 
     expect(mocks.fetchAppleHealthTodayStepCount).toHaveBeenCalledTimes(1);
     expect(mocks.fetchAppleHealthDailyStepAverage).not.toHaveBeenCalled();
-    expect(hook.current.stepSummary).toBe(4200);
-    expect(hook.current.stepSummaryMode).toBe("today");
+    expect(hook.current.stepSummary.steps).toBe(4200);
+    expect(hook.current.stepSummary.mode).toBe("today");
 
     act(() => {
       hook.current.selectConsistencyOption(hook.current.consistencyOptions[2]);
@@ -444,9 +444,44 @@ describe("useAuthedHome support nudge hardening", () => {
     await flushAsyncWork();
 
     expect(hook.current.consistencyOption.id).toBe("3m");
-    expect(hook.current.stepSummaryMode).toBe("average");
+    expect(hook.current.stepSummary.mode).toBe("average");
     expect(mocks.fetchAppleHealthDailyStepAverage).toHaveBeenLastCalledWith(90);
-    expect(hook.current.stepSummary).toBe(6800);
+    expect(hook.current.stepSummary.steps).toBe(6800);
+
+    hook.unmount();
+  });
+
+  it("keeps the existing snapshot mounted during a manual refresh", async () => {
+    mocks.fetchDashboardData.mockResolvedValueOnce({
+      data: buildDashboardData(),
+    });
+    mocks.fetchCurrentWeekSupportRequest.mockResolvedValueOnce({ data: null });
+
+    const hook = renderUseAuthedHome();
+    await flushAsyncWork();
+
+    const deferred = createDeferred<{ data: ReturnType<typeof buildDashboardData> }>();
+    mocks.fetchDashboardData.mockReturnValueOnce(deferred.promise);
+
+    let refreshPromise: Promise<{ error?: string }> | null = null;
+    await act(async () => {
+      refreshPromise = hook.current.refreshDashboard();
+      await Promise.resolve();
+    });
+
+    expect(hook.current.showSkeleton).toBe(false);
+    expect(hook.current.blockingLoad).toBe(false);
+    expect(hook.current.refreshing).toBe(true);
+
+    await act(async () => {
+      deferred.resolve({ data: buildDashboardData() });
+      if (refreshPromise) {
+        await refreshPromise;
+      }
+    });
+
+    expect(hook.current.refreshing).toBe(false);
+    expect(hook.current.showSkeleton).toBe(false);
 
     hook.unmount();
   });

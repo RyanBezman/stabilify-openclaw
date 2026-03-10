@@ -1,6 +1,6 @@
-// @vitest-environment jsdom
-import { renderHook, act } from "@testing-library/react";
+import { act } from "react-test-renderer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderTestHook } from "../../../test/utils/renderHook";
 
 type CameraPermission = {
   granted: boolean;
@@ -93,7 +93,7 @@ describe("useLogGymSession", () => {
   });
 
   it("does not auto-open the camera on mount", async () => {
-    const hook = renderHook(() => useLogGymSession());
+    const hook = renderTestHook(() => useLogGymSession());
     await flushAsyncWork();
 
     expect(mocks.launchCameraAsync).not.toHaveBeenCalled();
@@ -107,7 +107,7 @@ describe("useLogGymSession", () => {
     mocks.requestCameraPermission.mockResolvedValue({ granted: true });
     mocks.launchCameraAsync.mockResolvedValue({ canceled: true, assets: [] });
 
-    const hook = renderHook(() => useLogGymSession());
+    const hook = renderTestHook(() => useLogGymSession());
     await flushAsyncWork();
 
     expect(mocks.requestCameraPermission).not.toHaveBeenCalled();
@@ -127,7 +127,7 @@ describe("useLogGymSession", () => {
     mocks.getForegroundPermissionsAsync.mockResolvedValue({ status: "undetermined" });
     mocks.requestForegroundPermissionsAsync.mockResolvedValue({ status: "granted" });
 
-    const hook = renderHook(() => useLogGymSession());
+    const hook = renderTestHook(() => useLogGymSession());
     await flushAsyncWork();
 
     expect(mocks.getForegroundPermissionsAsync).not.toHaveBeenCalled();
@@ -151,7 +151,7 @@ describe("useLogGymSession", () => {
     mocks.getForegroundPermissionsAsync.mockResolvedValue({ status: "denied" });
     mocks.requestForegroundPermissionsAsync.mockResolvedValue({ status: "denied" });
 
-    const hook = renderHook(() => useLogGymSession());
+    const hook = renderTestHook(() => useLogGymSession());
     await flushAsyncWork();
 
     await act(async () => {

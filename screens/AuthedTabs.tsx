@@ -8,7 +8,10 @@ import FloatingTabBar from "../components/ui/FloatingTabBar";
 import type { AuthedTabsProps } from "../lib/features/auth";
 import { fetchCurrentUserId } from "../lib/features/auth";
 import { fetchCoachOnboardingStatus } from "../lib/features/coaches";
-import type { AuthedTabParamList } from "../lib/navigation/types";
+import type {
+  AuthedTabParamList,
+  RootStackNavigationProp,
+} from "../lib/navigation/types";
 import { appSceneStyle } from "../lib/navigation/theme";
 
 const Tab = createBottomTabNavigator<AuthedTabParamList>();
@@ -41,7 +44,7 @@ export default function AuthedTabs({ user }: AuthedTabsProps) {
               if (!userIdResult.error && userId) {
                 const onboardingStatus = await fetchCoachOnboardingStatus(userId);
                 if (onboardingStatus.data && !onboardingStatus.data.complete) {
-                  const parentNav = navigation.getParent() as any;
+                  const parentNav = navigation.getParent<RootStackNavigationProp>();
                   if (parentNav) {
                     parentNav.navigate("CoachOnboardingFlow", {
                       specialization: "workout",

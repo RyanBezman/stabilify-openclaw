@@ -1,8 +1,8 @@
-// @vitest-environment jsdom
 // @ts-nocheck
-import { renderHook, act } from "@testing-library/react";
+import { act } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActiveCoach } from "../types";
+import { renderTestHook } from "../../../../test/utils/renderHook";
 
 const mocks = vi.hoisted(() => ({
   hydrateCoachDashboard: vi.fn(),
@@ -86,7 +86,7 @@ function renderUseCoachDashboard(options?: {
   coach?: ActiveCoach | null;
   hydrated?: boolean;
 }) {
-  return renderHook(() =>
+  return renderTestHook(() =>
     useCoachDashboard({
       coach: options?.coach ?? coach,
       hydrated: options?.hydrated ?? true,
@@ -141,11 +141,9 @@ describe("useCoachDashboard", () => {
     hook.unmount();
   });
 
-  it("ignores stale dashboard responses when a newer request finishes first", async () => {
-    const staleRequest = createDeferred<ReturnType<typeof buildSnapshot>>();
-    const freshRequest = createDeferred<ReturnType<typeof buildSnapshot>>();
-    const staleSnapshot = buildSnapshot();
-    const freshSnapshot = {
+  it("dedupes refresh requests while a dashboard load is already in flight", async () => {
+    const pendingLoad = createDeferred<ReturnType<typeof buildSnapshot>>();
+    const loadedSnapshot = {
       ...buildSnapshot(),
       today: {
         directive: "Lift first, carbs later.",
@@ -153,27 +151,19 @@ describe("useCoachDashboard", () => {
       },
     };
 
-    mocks.hydrateCoachDashboard
-      .mockReturnValueOnce(staleRequest.promise)
-      .mockReturnValueOnce(freshRequest.promise);
+    mocks.hydrateCoachDashboard.mockReturnValueOnce(pendingLoad.promise);
 
     const hook = renderUseCoachDashboard();
     await flushAsyncWork(1);
 
-    let refreshPromise: Promise<void> | null = null;
     await act(async () => {
-      refreshPromise = hook.result.current.refresh("refresh");
+      await hook.result.current.refresh("refresh");
     });
 
-    await act(async () => {
-      freshRequest.resolve(freshSnapshot);
-      await refreshPromise;
-    });
-
-    expect(hook.result.current.snapshot?.today.directive).toBe("Lift first, carbs later.");
+    expect(mocks.hydrateCoachDashboard).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      staleRequest.resolve(staleSnapshot);
+      pendingLoad.resolve(loadedSnapshot);
       await Promise.resolve();
     });
 

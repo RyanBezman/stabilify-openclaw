@@ -1,6 +1,9 @@
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import type { HomeConsistencyOption } from "../../lib/features/dashboard";
+import type {
+  HomeConsistencyOption,
+  StepSummary,
+} from "../../lib/features/dashboard";
 import Card from "../ui/Card";
 import SectionTitle from "../ui/SectionTitle";
 import type {
@@ -34,11 +37,7 @@ export type ProgressOverviewCardProps = {
   gymLastStatusReason?: GymSessionStatusReason | null;
   gymLastDistanceMeters?: number | null;
   preferredUnit?: "lb" | "kg";
-  steps?: number | null;
-  stepsTarget?: number;
-  stepsEnabled?: boolean;
-  stepsLoading?: boolean;
-  stepsSummaryMode?: "today" | "average";
+  stepSummary: StepSummary;
   onPressSteps?: () => void;
 };
 
@@ -88,11 +87,7 @@ export default function ProgressOverviewCard({
   gymTarget,
   gymWeekLabel,
   gymLastStatus,
-  steps,
-  stepsTarget = 10000,
-  stepsEnabled = false,
-  stepsLoading = false,
-  stepsSummaryMode = "today",
+  stepSummary,
   onPressSteps,
 }: ProgressOverviewCardProps) {
   const consistencyProgress = clampProgress(consistencyPercent);
@@ -102,26 +97,26 @@ export default function ProgressOverviewCard({
   const gymProgress = hasGymTarget ? clampProgress(safeCompleted / gymTarget) : 0;
 
   const resolvedStatus = hasGymTarget ? gymLastStatus : undefined;
-  const hasStepTarget = stepsTarget > 0;
-  const resolvedStepValue = steps ?? 0;
+  const hasStepTarget = stepSummary.target > 0;
+  const resolvedStepValue = stepSummary.steps ?? 0;
   const clampedSteps = Math.max(0, resolvedStepValue);
   const stepsProgress =
-    stepsEnabled && hasStepTarget && !stepsLoading && steps !== null
-      ? clampProgress(clampedSteps / stepsTarget)
+    stepSummary.enabled && hasStepTarget && !stepSummary.loading && stepSummary.steps !== null
+      ? clampProgress(clampedSteps / stepSummary.target)
       : 0;
-  const stepsValueText = !stepsEnabled
+  const stepsValueText = !stepSummary.enabled
     ? "Off"
-    : stepsLoading
+    : stepSummary.loading
       ? "..."
-      : steps === null
+      : stepSummary.steps === null
         ? "—"
         : formatStepValue(clampedSteps);
-  const stepsSubText = !stepsEnabled
+  const stepsSubText = !stepSummary.enabled
     ? "Enable"
-    : stepsSummaryMode === "average"
+    : stepSummary.mode === "average"
       ? "Avg/day"
       : hasStepTarget
-        ? `${formatStepValue(clampedSteps)}/${formatStepValue(stepsTarget)}`
+        ? `${formatStepValue(clampedSteps)}/${formatStepValue(stepSummary.target)}`
         : "No goal";
 
   return (
@@ -177,8 +172,8 @@ export default function ProgressOverviewCard({
             size={86}
             strokeWidth={7}
             animateOnMount
-            onPress={!stepsEnabled ? onPressSteps : undefined}
-            testID={!stepsEnabled ? "progress-overview-steps-ring" : undefined}
+            onPress={!stepSummary.enabled ? onPressSteps : undefined}
+            testID={!stepSummary.enabled ? "progress-overview-steps-ring" : undefined}
           />
         </View>
       </View>

@@ -22,6 +22,7 @@ import {
   deriveV2CheckinFormValues,
   type WeeklyCheckinV2Form,
 } from "../models/checkinForm";
+import { deriveSurfaceLoadState } from "../../shared";
 
 type UseCoachCheckinsOptions = {
   coach: ActiveCoach | null;
@@ -408,10 +409,22 @@ export function useCoachCheckins({
     return Boolean(currentCheckin && currentCheckin.weekStart === weekStart);
   }, [currentCheckin, weekStart]);
 
+  const loadingState = deriveSurfaceLoadState({
+    blockingLoad: historyLoading && !hasSeedDataRef.current,
+    hydrated,
+    refreshing,
+    hasUsableSnapshot: hasSeedDataRef.current,
+    mutating: saving,
+  });
+
   return {
     threadId,
     historyLoading,
     refreshing,
+    blockingLoad: loadingState.blockingLoad,
+    hydrated: loadingState.hydrated,
+    hasUsableSnapshot: loadingState.hasUsableSnapshot,
+    mutating: loadingState.mutating,
     saving,
     syncError,
     saveError,

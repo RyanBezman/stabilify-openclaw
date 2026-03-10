@@ -1,7 +1,7 @@
-// @vitest-environment jsdom
-import { renderHook, act } from "@testing-library/react";
+import { act } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_AUDIENCE_HINT } from "../models/audience";
+import { renderTestHook } from "../../../../test/utils/renderHook";
 
 const mocks = vi.hoisted(() => ({
   fetchVisiblePostsForCurrentUser: vi.fn(),
@@ -103,7 +103,7 @@ describe("useFeed", () => {
       data: { signedUrl: "https://cdn.example.com/author-a.jpg" },
     });
 
-    const hook = renderHook(() => useFeed());
+    const hook = renderTestHook(() => useFeed());
     await flushAsyncWork();
 
     expect(mocks.fetchVisiblePostsForCurrentUser).toHaveBeenCalledWith({ limit: 10, cursor: 0 });
@@ -122,7 +122,7 @@ describe("useFeed", () => {
   it("surfaces initial load errors", async () => {
     mocks.fetchVisiblePostsForCurrentUser.mockResolvedValue({ error: "Feed load failed." });
 
-    const hook = renderHook(() => useFeed());
+    const hook = renderTestHook(() => useFeed());
     await flushAsyncWork();
 
     expect(hook.result.current.loading).toBe(false);
@@ -159,7 +159,7 @@ describe("useFeed", () => {
         },
       });
 
-    const hook = renderHook(() => useFeed());
+    const hook = renderTestHook(() => useFeed());
     await flushAsyncWork();
 
     await act(async () => {
@@ -193,7 +193,7 @@ describe("useFeed", () => {
       })
       .mockResolvedValueOnce({ error: "Pagination failed." });
 
-    const hook = renderHook(() => useFeed());
+    const hook = renderTestHook(() => useFeed());
     await flushAsyncWork();
 
     await act(async () => {

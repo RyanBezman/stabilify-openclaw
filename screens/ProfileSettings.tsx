@@ -1,8 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  Alert,
-  Linking,
   Platform,
   ScrollView,
   Switch,
@@ -10,28 +7,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import * as Notifications from "expo-notifications";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import HelperText from "../components/ui/HelperText";
 import OptionPill from "../components/ui/OptionPill";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import ProfileAvatar from "../components/profile/ProfileAvatar";
-import { useProfileSettings } from "../lib/features/profile-settings";
-import { fetchHasActivePushNotificationDevice } from "../lib/data/supportAutomation";
 import {
-  getProfilePhotoSignedUrl,
-  useOwnProfilePhotoActions,
-  useProfilePhotoActionHandlers,
-} from "../lib/features/profile";
-import {
-  profileSettingsEditableFields,
-  type EditableProfileSettingsFieldKey,
-} from "../lib/features/profile-settings/editableFields";
+  useProfileSettingsScreen,
+} from "../lib/features/profile-settings";
+import type { EditableProfileSettingsFieldKey } from "../lib/features/profile-settings/editableFields";
 import type { RootStackParamList } from "../lib/navigation/types";
-import { getExpoProjectId } from "../lib/utils/expo";
 import AppScreen from "../components/ui/AppScreen";
 
 type ProfileSettingsProps = NativeStackScreenProps<RootStackParamList, "ProfileSettings">;
@@ -52,12 +39,6 @@ type SettingsLinkRowProps = {
   onPress: () => void;
   isLast?: boolean;
 };
-
-function isPhoneNudgesPermissionError(message?: string) {
-  if (!message) return false;
-  const normalized = message.toLowerCase();
-  return normalized.includes("notification permission is required");
-}
 
 function SettingsToggleRow({
   title,
@@ -157,14 +138,8 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     updatingPhoneNudges,
     updatingAppleHealthSteps,
     grantingAutoSupportConsent,
-    loadError,
-    refresh,
     displayName,
-    username,
-    bio,
-    avatarPath,
     preferredUnit,
-    timezone,
     accountVisibility,
     progressVisibility,
     socialEnabled,
@@ -172,417 +147,54 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     gymEventShareVisibility,
     postShareVisibility,
     autoSupportEnabled,
-    autoSupportConsentedAt,
-    setAutoSupportEnabled,
     phoneNudgesEnabled,
-    setPhoneNudgesEnabled,
     appleHealthStepsEnabled,
-    setAppleHealthStepsEnabled,
-    dailyStepGoal,
-    grantAutoSupportConsent,
-    updateProfileValues,
-  } = useProfileSettings();
-  const [showAdvancedPrivacy, setShowAdvancedPrivacy] = useState(false);
-  const [sendingTestNotification, setSendingTestNotification] = useState(false);
-  const [sendingDelayedTestNotification, setSendingDelayedTestNotification] = useState(false);
-  const [loadingPushDebugInfo, setLoadingPushDebugInfo] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-
-  const refreshProfileSettingsSurface = useCallback(async () => {
-    const result = await refresh();
-    return result.error ? { error: result.error } : {};
-  }, [refresh]);
-
-  const { photoLoading, uploadPhoto, removePhoto } = useOwnProfilePhotoActions({
-    refreshProfile: refreshProfileSettingsSurface,
-  });
-  const { openPhotoActions } = useProfilePhotoActionHandlers({
-    photoUrl,
+    editableFieldRows,
+    handleAccountVisibilityChange,
+    handleAppleHealthStepsToggle,
+    handleAutoSupportToggle,
+    handleGymEventShareToggle,
+    handlePostShareToggle,
+    handlePreferredUnitChange,
+    handleProgressVisibilityToggle,
+    handleSendDelayedTestNotification,
+    handleSendTestNotification,
+    handleSetPhoneNudgesEnabled,
+    handleShowPushDebugInfo,
+    handleSocialEnabledToggle,
+    handleWeighInShareToggle,
+    loadingPushDebugInfo,
+    openEditableField,
+    openPhotoActions,
     photoLoading,
-    uploadPhoto,
-    removePhoto,
-  });
-
-  useEffect(() => {
-    if (!loadError) return;
-    Alert.alert("Couldn't load profile settings", loadError);
-  }, [loadError]);
-
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-    }, [refresh]),
-  );
-
-  useEffect(() => {
-    let active = true;
-
-    const loadPhotoUrl = async () => {
-      if (!avatarPath) {
-        if (active) {
-          setPhotoUrl(null);
-        }
-        return;
-      }
-
-      const result = await getProfilePhotoSignedUrl(avatarPath);
-      if (!active) {
-        return;
-      }
-
-      setPhotoUrl(result.data?.signedUrl ?? null);
-    };
-
-    void loadPhotoUrl();
-
-    return () => {
-      active = false;
-    };
-  }, [avatarPath]);
-
-  const editableFieldValues = {
-    displayName,
-    username,
-    bio,
-    avatarPath,
-    preferredUnit,
-    timezone,
-    accountVisibility,
-    progressVisibility,
-    socialEnabled,
-    weighInShareVisibility,
-    gymEventShareVisibility,
-    postShareVisibility,
-    autoSupportEnabled,
-    autoSupportConsentedAt,
-    appleHealthStepsEnabled,
-    dailyStepGoal,
-  };
+    photoUrl,
+    sendingDelayedTestNotification,
+    sendingTestNotification,
+    setShowAdvancedPrivacy,
+    showAdvancedPrivacy,
+  } = useProfileSettingsScreen(navigation);
 
   const renderEditableFieldRow = (
-    fieldKey: EditableProfileSettingsFieldKey,
+    row: {
+      fieldKey: EditableProfileSettingsFieldKey;
+      label: string;
+      value: string;
+      usesPlaceholder: boolean;
+    },
     isLast = false,
-  ) => {
-    const field = profileSettingsEditableFields[fieldKey];
-    const preview = field.getPreview(editableFieldValues);
-
-    return (
-      <SettingsEditableFieldRow
-        key={fieldKey}
-        label={field.label}
-        value={preview.value}
-        usesPlaceholder={preview.usesPlaceholder}
-        disabled={loading || saving}
-        onPress={() => {
-          navigation.navigate("ProfileSettingsTextEdit", { fieldKey });
-        }}
-        isLast={isLast}
-      />
-    );
-  };
-
-  const handleImmediateSaveError = (title: string, message?: string) => {
-    if (!message) {
-      return;
-    }
-    Alert.alert(title, message);
-  };
-
-  const handleAccountVisibilityChange = async (next: "private" | "public") => {
-    const nextValues =
-      next === "public"
-        ? {
-            accountVisibility: next,
-            socialEnabled: true,
-            weighInShareVisibility: "followers" as const,
-            gymEventShareVisibility: "followers" as const,
-            postShareVisibility: "followers" as const,
-          }
-        : {
-            accountVisibility: next,
-            socialEnabled: false,
-            weighInShareVisibility: "private" as const,
-            gymEventShareVisibility: "private" as const,
-            postShareVisibility: "private" as const,
-          };
-
-    if (next === "private") {
-      setShowAdvancedPrivacy(false);
-    }
-
-    const result = await updateProfileValues(nextValues);
-    handleImmediateSaveError("Couldn't update profile visibility", result.error);
-  };
-
-  const handleSocialEnabledToggle = async (enabled: boolean) => {
-    const result = await updateProfileValues({ socialEnabled: enabled });
-    handleImmediateSaveError("Couldn't update social features", result.error);
-  };
-
-  const handleWeighInShareToggle = async (enabled: boolean) => {
-    const result = await updateProfileValues({
-      weighInShareVisibility: enabled ? "followers" : "private",
-    });
-    handleImmediateSaveError("Couldn't update weigh-in sharing", result.error);
-  };
-
-  const handleGymEventShareToggle = async (enabled: boolean) => {
-    const result = await updateProfileValues({
-      gymEventShareVisibility: enabled ? "followers" : "private",
-    });
-    handleImmediateSaveError("Couldn't update gym sharing", result.error);
-  };
-
-  const handlePostShareToggle = async (enabled: boolean) => {
-    const result = await updateProfileValues({
-      postShareVisibility: enabled ? "followers" : "private",
-    });
-    handleImmediateSaveError("Couldn't update post sharing", result.error);
-  };
-
-  const handleProgressVisibilityToggle = async (enabled: boolean) => {
-    const result = await updateProfileValues({
-      progressVisibility: enabled ? "public" : "private",
-    });
-    handleImmediateSaveError("Couldn't update progress visibility", result.error);
-  };
-
-  const handlePreferredUnitChange = async (nextUnit: "lb" | "kg") => {
-    const result = await updateProfileValues({ preferredUnit: nextUnit });
-    handleImmediateSaveError("Couldn't update preferred unit", result.error);
-  };
-
-  const handleSetPhoneNudgesEnabled = async (enabled: boolean) => {
-    const result = await setPhoneNudgesEnabled(enabled);
-    if (result.success || !result.error) {
-      return;
-    }
-
-    if (enabled && isPhoneNudgesPermissionError(result.error)) {
-      Alert.alert(
-        "Enable notifications in Settings",
-        "To turn on phone notifications, allow notifications for Stabilify in your device settings.",
-        [
-          { text: "Not now", style: "cancel" },
-          {
-            text: "Open Settings",
-            onPress: () => {
-              void Linking.openSettings();
-            },
-          },
-        ],
-      );
-    }
-  };
-
-  const handleGrantAutoSupportConsent = async (): Promise<boolean> => {
-    const result = await grantAutoSupportConsent();
-    if (!result.success && result.error) {
-      Alert.alert("Couldn't save consent", result.error);
-      return false;
-    }
-    if (!result.success) {
-      return false;
-    }
-
-    Alert.alert(
-      "Consent saved",
-      "Private auto-support is on for future behind-goal triggers. This week's request stays suppressed and won't backfill.",
-    );
-    return true;
-  };
-
-  const handleAppleHealthStepsToggle = async (enabled: boolean) => {
-    const result = await setAppleHealthStepsEnabled(enabled);
-    if (result.success || !result.error) {
-      return;
-    }
-
-    Alert.alert(
-      "Couldn't update Apple Health",
-      result.error,
-      [
-        { text: "OK", style: "cancel" },
-        {
-          text: "Open Settings",
-          onPress: () => {
-            void Linking.openSettings();
-          },
-        },
-      ],
-    );
-  };
-
-  const handleAutoSupportToggle = (enabled: boolean) => {
-    if (!enabled) {
-      void (async () => {
-        const result = await updateProfileValues({ autoSupportEnabled: false });
-        handleImmediateSaveError("Couldn't disable auto support", result.error);
-      })();
-      return;
-    }
-
-    setAutoSupportEnabled(true);
-    Alert.alert(
-      "Allow private auto-support?",
-      "When you're behind, Stabilify can post a private support request to your close friends. It won't share weight, photos, or location details.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => {
-            setAutoSupportEnabled(false);
-          },
-        },
-        {
-          text: "I agree",
-          onPress: () => {
-            void (async () => {
-              const consentSaved = await handleGrantAutoSupportConsent();
-              if (!consentSaved) {
-                setAutoSupportEnabled(false);
-              }
-            })();
-          },
-        },
-      ],
-    );
-  };
-
-  const ensureNotificationPermission = async () => {
-    if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync("default", {
-        name: "default",
-        importance: Notifications.AndroidImportance.HIGH,
-        sound: "default",
-      });
-    }
-
-    const existingPermission = await Notifications.getPermissionsAsync();
-    let notificationStatus = existingPermission.status;
-    if (notificationStatus !== "granted") {
-      const requestedPermission = await Notifications.requestPermissionsAsync();
-      notificationStatus = requestedPermission.status;
-    }
-
-    return notificationStatus;
-  };
-
-  const handleSendTestNotification = async () => {
-    if (sendingTestNotification) {
-      return;
-    }
-
-    setSendingTestNotification(true);
-    try {
-      const notificationStatus = await ensureNotificationPermission();
-
-      if (notificationStatus !== "granted") {
-        Alert.alert(
-          "Notifications not enabled",
-          "Allow notifications for Stabilify to test them from this screen.",
-        );
-        return;
-      }
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Stabilify test notification",
-          body: "Notifications are working in this dev build.",
-          sound: "default",
-        },
-        trigger: null,
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Couldn't schedule a local test notification.";
-      Alert.alert("Test notification failed", message);
-    } finally {
-      setSendingTestNotification(false);
-    }
-  };
-
-  const handleSendDelayedTestNotification = async () => {
-    if (sendingDelayedTestNotification) {
-      return;
-    }
-
-    setSendingDelayedTestNotification(true);
-    try {
-      const notificationStatus = await ensureNotificationPermission();
-      if (notificationStatus !== "granted") {
-        Alert.alert(
-          "Notifications not enabled",
-          "Allow notifications for Stabilify to test them from this screen.",
-        );
-        return;
-      }
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: "Stabilify delayed test",
-          body: "This notification was scheduled 5 seconds ago.",
-          sound: "default",
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: new Date(Date.now() + 5000),
-        },
-      });
-
-      Alert.alert("Scheduled", "A test notification will fire in 5 seconds.");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Couldn't schedule a delayed test notification.";
-      Alert.alert("Delayed test failed", message);
-    } finally {
-      setSendingDelayedTestNotification(false);
-    }
-  };
-
-  const handleShowPushDebugInfo = async () => {
-    if (loadingPushDebugInfo) {
-      return;
-    }
-
-    setLoadingPushDebugInfo(true);
-    try {
-      const permission = await Notifications.getPermissionsAsync();
-      const projectId = getExpoProjectId();
-      const registrationResult = await fetchHasActivePushNotificationDevice();
-      let tokenDetails = "Not requested";
-
-      if (permission.status === "granted") {
-        try {
-          const tokenResult = projectId
-            ? await Notifications.getExpoPushTokenAsync({ projectId })
-            : await Notifications.getExpoPushTokenAsync();
-          tokenDetails = tokenResult.data?.trim() || "Missing token";
-        } catch (error) {
-          tokenDetails =
-            error instanceof Error ? `Error: ${error.message}` : "Error reading Expo token";
-        }
-      }
-
-      Alert.alert(
-        "Push debug info",
-        [
-          `Permission: ${permission.status}`,
-          `Project ID: ${projectId ?? "Missing"}`,
-          `Server registered: ${
-            registrationResult.error
-              ? `Error: ${registrationResult.error}`
-              : registrationResult.data?.hasActiveDevice
-                ? "Yes"
-                : "No"
-          }`,
-          `Expo token: ${tokenDetails}`,
-        ].join("\n"),
-      );
-    } finally {
-      setLoadingPushDebugInfo(false);
-    }
-  };
+  ) => (
+    <SettingsEditableFieldRow
+      key={row.fieldKey}
+      label={row.label}
+      value={row.value}
+      usesPlaceholder={row.usesPlaceholder}
+      disabled={loading || saving}
+      onPress={() => {
+        openEditableField(row.fieldKey);
+      }}
+      isLast={isLast}
+    />
+  );
 
   return (
     <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
@@ -635,9 +247,7 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
               </View>
 
               <View className="mt-6 border-y border-neutral-900 bg-black">
-                {renderEditableFieldRow("displayName")}
-                {renderEditableFieldRow("username")}
-                {renderEditableFieldRow("bio")}
+                {editableFieldRows.slice(0, 3).map((row) => renderEditableFieldRow(row))}
                 <View className="border-b border-neutral-900 px-5 py-4">
                   <View className="flex-row">
                     <View className="w-28 pr-4">
@@ -663,8 +273,8 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
                     </View>
                   </View>
                 </View>
-                {renderEditableFieldRow("timezone")}
-                {renderEditableFieldRow("dailyStepGoal", true)}
+                {renderEditableFieldRow(editableFieldRows[3])}
+                {renderEditableFieldRow(editableFieldRows[4], true)}
               </View>
 
               <Text className="px-5 pb-2 pt-8 text-xs font-semibold uppercase tracking-[1.8px] text-neutral-500">

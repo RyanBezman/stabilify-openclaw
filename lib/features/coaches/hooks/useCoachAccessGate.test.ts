@@ -1,7 +1,7 @@
-// @vitest-environment jsdom
 // @ts-nocheck
-import { renderHook, act } from "@testing-library/react";
+import { act } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderTestHook } from "../../../../test/utils/renderHook";
 
 const mocks = vi.hoisted(() => ({
   fetchMembershipTier: vi.fn(),
@@ -45,7 +45,7 @@ describe("useCoachAccessGate", () => {
       data: { tier: "pro" },
     });
 
-    const hook = renderHook(() => useCoachAccessGate());
+    const hook = renderTestHook(() => useCoachAccessGate());
     await flushAsyncWork();
 
     expect(hook.result.current.viewState).toBe("ready");
@@ -64,7 +64,7 @@ describe("useCoachAccessGate", () => {
         error: "Temporary network issue.",
       });
 
-    const hook = renderHook(() => useCoachAccessGate());
+    const hook = renderTestHook(() => useCoachAccessGate());
     await flushAsyncWork();
 
     await act(async () => {
@@ -83,7 +83,7 @@ describe("useCoachAccessGate", () => {
       data: { tier: "pro" },
     });
 
-    const hook = renderHook(() => useCoachAccessGate());
+    const hook = renderTestHook(() => useCoachAccessGate());
     await flushAsyncWork();
 
     act(() => {
@@ -105,12 +105,12 @@ describe("useCoachAccessGate", () => {
         data: { tier: "pro" },
       });
 
-    const firstMount = renderHook(() => useCoachAccessGate());
+    const firstMount = renderTestHook(() => useCoachAccessGate());
     await flushAsyncWork();
     expect(firstMount.result.current.viewState).toBe("locked");
     firstMount.unmount();
 
-    const secondMount = renderHook(() => useCoachAccessGate());
+    const secondMount = renderTestHook(() => useCoachAccessGate());
     expect(secondMount.result.current.viewState).toBe("gating");
     await flushAsyncWork();
     expect(secondMount.result.current.viewState).toBe("ready");

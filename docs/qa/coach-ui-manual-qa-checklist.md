@@ -54,6 +54,7 @@ Expected:
 - Dashboard root loads (not coach workspace hub).
 - For Pro users, no `Pro required` / `Upgrade to Pro` lock card flashes during initial tier check.
 - When loading dashboard data for an already-selected coach, `Coach Dashboard` header + avatar stay anchored at top while body cards skeletonize.
+- After the dashboard has rendered once, switching tabs away and back must keep the current dashboard content mounted while refresh happens; no full-screen loader or transient lock card should appear on revisit.
 - Dashboard uses full-width app shell (no centered max-width coach column).
 - Dashboard exposes a floating `Chat with Coach` CTA above the tab bar instead of a header chat control.
 - Sections appear in order: `Today`, `Plans`, `This week`.
@@ -136,6 +137,7 @@ Expected:
 Expected:
 - Refresh state appears and completes without duplicate entries.
 - History rows keep full-width spacing and remain readable with long coach summaries.
+- If the overview already has data, revisiting the tab or triggering refresh should keep the current content mounted and use a non-blocking refresh state.
 
 9. Return to dashboard.
 Expected:
@@ -154,3 +156,4 @@ Expected:
 2. Pro users opening `Coaches` do not briefly render the lock card before dashboard content.
 3. `Training` and `Nutrition` cards still open relevant plan screens.
 4. Removing coach from dashboard returns to selection UI.
+5. Once `CoachWorkspace` or the dashboard has rendered usable content, tab revisits do not regress to a full-screen blocking loader unless the content was explicitly invalidated.

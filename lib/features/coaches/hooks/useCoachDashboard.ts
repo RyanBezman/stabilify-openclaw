@@ -12,6 +12,7 @@ import {
 import { formatLocalDate, getWeekRange } from "../../../utils/metrics";
 import { getLocalTimeZone } from "../../../utils/time";
 import { logCoachRequestDiagnostics } from "../models/devDiagnostics";
+import { deriveSurfaceLoadState } from "../../shared";
 
 type DashboardAnalyticsSource = {
   weekStarts: string[];
@@ -47,12 +48,17 @@ export function useCoachDashboard(options: {
     EMPTY_ANALYTICS_SOURCE
   );
   const refreshRequestIdRef = useRef(0);
+  const requestInFlightRef = useRef(false);
   const snapshotSignatureRef = useRef<string | null>(null);
   const analyticsSignatureRef = useRef(EMPTY_ANALYTICS_SIGNATURE);
 
   const refresh = useCallback(async (mode: "load" | "refresh" = "load") => {
+    if (requestInFlightRef.current && mode === "refresh") {
+      return;
+    }
     const requestId = refreshRequestIdRef.current + 1;
     refreshRequestIdRef.current = requestId;
+    requestInFlightRef.current = true;
     logCoachRequestDiagnostics({
       scope: "useCoachDashboard",
       requestId,
@@ -74,6 +80,7 @@ export function useCoachDashboard(options: {
       setAnalyticsSource(EMPTY_ANALYTICS_SOURCE);
       setLoading(false);
       setRefreshing(false);
+      requestInFlightRef.current = false;
       logCoachRequestDiagnostics({
         scope: "useCoachDashboard",
         requestId,
@@ -160,6 +167,7 @@ export function useCoachDashboard(options: {
       if (requestId === refreshRequestIdRef.current) {
         setLoading(false);
         setRefreshing(false);
+        requestInFlightRef.current = false;
       }
     }
   }, [options.coach, options.hydrated, options.specialization]);
@@ -237,9 +245,21 @@ export function useCoachDashboard(options: {
     };
   }, [analyticsSource.adherenceScores, snapshot]);
 
+  const loadingState = deriveSurfaceLoadState({
+    blockingLoad: loading && !snapshot,
+    hydrated: options.hydrated,
+    refreshing: refreshing && Boolean(snapshot),
+    hasUsableSnapshot: Boolean(snapshot),
+    mutating: false,
+  });
+
   return {
     loading,
     refreshing,
+    blockingLoad: loadingState.blockingLoad,
+    hydrated: loadingState.hydrated,
+    hasUsableSnapshot: loadingState.hasUsableSnapshot,
+    mutating: loadingState.mutating,
     error,
     snapshot,
     analytics,

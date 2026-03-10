@@ -74,3 +74,4 @@ Validate events:
 17. Tap `Not now` on suppressed nudge and verify one `support_nudge_deferred` row with `surface` + `deferred_until_local_date`.
 18. Open Home nudge card first time and verify one `private_nudge_opened` row only.
 19. Run `npm test` and `npm run lint:arch`.
+20. With a current-week Home nudge already visible, switch tabs away and back and confirm the Home surface keeps its existing snapshot mounted while background refresh completes.

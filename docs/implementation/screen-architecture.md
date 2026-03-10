@@ -1,6 +1,6 @@
 # Screen Architecture Guide
 
-Last updated: 2026-03-06
+Last updated: 2026-03-10
 
 ## Goal
 - This file defines technical layer boundaries and extraction rules.
@@ -14,7 +14,7 @@ Last updated: 2026-03-06
 
 - Keep feature behavior easy to find and change.
 - Reduce duplication across screens.
-- Keep screens focused on orchestration and composition.
+- Keep screens focused on route params, layout, and composition.
 
 ## Data Contracts
 
@@ -47,6 +47,23 @@ Last updated: 2026-03-06
 - `CoachChat` remains as a temporary compatibility route and must immediately redirect into `CoachWorkspace` with `tab: "chat"`.
 - Route compatibility params (`prefill`, `inputMode`) are carried through `RootStackParamList` and consumed in workspace view-model hooks.
 
+### Shared Loading-State Contract
+- Touched screen-facing hooks should normalize loading into:
+  - `blockingLoad`
+  - `hydrated`
+  - `refreshing`
+  - `mutating`
+  - `hasUsableSnapshot`
+- Full-screen loaders and skeleton-only states are allowed only when `blockingLoad && !hasUsableSnapshot`.
+- `hydrated` means bootstrap/session/cache readiness and must not, by itself, flip a screen back to blocking UI once usable content exists.
+- Focus refresh, tab revisit refresh, and pull-to-refresh should preserve the current snapshot and move the surface into `refreshing`.
+- Hooks that can issue overlapping loads on focus/tab changes must either dedupe the request or ignore stale responses.
+
+### Shared Seams
+- Shared Expo push permission + token + device registration logic belongs in `lib/features/shared/pushNotifications.ts`.
+- Shared screen-loading derivation belongs in `lib/features/shared/surfaceLoadState.ts`.
+- Shared view-model types that collapse route-level branching belong in feature models, for example Home step summaries in `lib/features/dashboard/models/stepSummary.ts`.
+
 ### Extraction Heuristics
 - If logic appears in two screens, move it to `lib/features`.
 - If a screen exceeds ~400 lines and mixes workflow logic with view rendering, extract a feature hook first.
@@ -62,6 +79,7 @@ Last updated: 2026-03-06
 ## UX States
 
 - Screens orchestrate and compose; feature logic lives in hooks/workflows/services.
+- For large surfaces, screens should prefer composition-only behavior and consume route-facing view models from `lib/features/<feature>/index.ts`.
 - Dependency direction remains one-way from UI to data.
 - The app shell owns the full-device background color at the navigation root so top and bottom safe-area regions paint consistently on Dynamic Island, notch, and home-indicator devices.
 - Full-screen routes should use the shared `AppScreen` shell so safe-area padding is applied consistently without clipping the device frame.
@@ -85,3 +103,8 @@ Run `npm run lint:arch` to enforce these dependency boundaries:
 ### Testing Baseline
 - Run `npm run validate` after each major phase.
 - `validate` is the canonical gate: `lint:arch + typecheck + test + lint:unused`.
+- Loading-state regressions to watch for:
+  - tab revisit causing a full-screen loader after usable content already exists,
+  - hydration flags being treated as blocking load,
+  - focus refresh clearing content before new data arrives,
+  - overlapping requests overwriting newer snapshots.

@@ -19,6 +19,7 @@ import {
 } from "../workflows";
 import { fetchCurrentUserId } from "../../auth";
 import {
+  deriveSurfaceLoadState,
   isAsyncWorkflowBusy,
 } from "../../shared";
 import type { UseCoachWorkspaceOptions } from "../types/screen";
@@ -102,6 +103,8 @@ export function useCoachWorkspace({
   const skipCachedSeedForDraftOpenRef = useRef(Boolean(openDraftOnMount));
   const hydrateRequestIdRef = useRef(0);
   const hydrateWorkspaceRef = useRef<() => Promise<void>>(async () => {});
+  const hasHandledInitialFocusRef = useRef(false);
+  const workspaceRequestInFlightRef = useRef(false);
 
   const [composerHeight, setComposerHeight] = useState(0);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -164,9 +167,17 @@ export function useCoachWorkspace({
     chatScrollRef.current?.scrollToEnd({ animated });
   }, []);
 
-  const workspaceLoading =
+  const workspaceBusy =
     (Boolean(coach) && (!hydrated || !historyChecked)) || isAsyncWorkflowBusy(asyncState.workspace);
-  const workspaceSkeletonVisible = workspaceLoading && !workspaceSeeded;
+  const loadingState = deriveSurfaceLoadState({
+    blockingLoad: workspaceBusy && !workspaceSeeded,
+    hydrated,
+    refreshing: workspaceBusy && workspaceSeeded,
+    hasUsableSnapshot: workspaceSeeded,
+    mutating: isAsyncWorkflowBusy(asyncState.send) || planStage !== "idle" || feedbackLogging,
+  });
+  const workspaceLoading = loadingState.blockingLoad || loadingState.refreshing;
+  const workspaceSkeletonVisible = loadingState.blockingLoad;
   const sending = isAsyncWorkflowBusy(asyncState.send);
   const planLoadingVisible = planStage !== "idle";
   const syncError = asyncState.workspace.error;
@@ -414,8 +425,10 @@ export function useCoachWorkspace({
 
   const hydrateWorkspace = useCallback(async () => {
     if (!coach || !hydrated) return;
+    if (workspaceRequestInFlightRef.current) return;
     const requestId = hydrateRequestIdRef.current + 1;
     hydrateRequestIdRef.current = requestId;
+    workspaceRequestInFlightRef.current = true;
     logCoachRequestDiagnostics({
       scope: "useCoachWorkspace/hydrate",
       requestId,
@@ -429,100 +442,102 @@ export function useCoachWorkspace({
 
     const baseIntake =
       specialization === "nutrition" ? defaultNutritionIntake : defaultIntake;
-    const workflowResult = await hydrateCoachWorkspaceWorkflow({
-      coach,
-      specialization,
-      hydrated,
-      defaultIntake: baseIntake,
-      coachIdentityPayload,
-      invokeCoachChat: invokeCoachChatWithRecovery,
-      skipCachedState: skipCachedSeedForDraftOpenRef.current,
-      onCachedState: (state) => {
-        if (requestId !== hydrateRequestIdRef.current) return;
-        setWorkspaceSeeded(true);
-        setActivePlan(state.activePlan);
-        setDraftPlan(state.draftPlan);
-        setShowDraftInPlan((current) => {
-          if (!state.draftPlan) return current;
-          if (!state.activePlan) return true;
-          return current;
-        });
-        setIntake(state.intake);
-        if (specialization === "workout") {
-          setPendingDaysPerWeek(
-            clampDays(
-              (isWorkoutIntake(state.intake) ? state.intake.daysPerWeek : null) ??
-                (isWorkoutPlan(state.activePlan) ? state.activePlan.daysPerWeek : null) ??
-                (isWorkoutPlan(state.draftPlan) ? state.draftPlan.daysPerWeek : null) ??
-                defaultIntake.daysPerWeek
-            )
-          );
-        }
-        if (state.messages.length) {
-          setMessages(state.messages);
-          for (const message of state.messages) {
-            if (message.role === "assistant") markAssistantSeen(message.id);
-          }
-        }
-      },
-    });
-
-    if (requestId !== hydrateRequestIdRef.current) {
-      logCoachRequestDiagnostics({
-        scope: "useCoachWorkspace/hydrate",
-        requestId,
-        phase: "stale",
-      });
-      return;
-    }
-    skipCachedSeedForDraftOpenRef.current = false;
-
-    if (workflowResult.status === "skipped") {
-      logCoachRequestDiagnostics({
-        scope: "useCoachWorkspace/hydrate",
-        requestId,
-        phase: "skip",
-      });
-      return;
-    }
-
-    if (workflowResult.status === "tier_required") {
-      onTierRequired?.();
-      dispatchAsync({ type: "workspace/succeed" });
-      setHistoryChecked(true);
-      setWorkspaceSeeded(true);
-      logCoachRequestDiagnostics({
-        scope: "useCoachWorkspace/hydrate",
-        requestId,
-        phase: "error",
-        details: {
-          message: "tier_required",
-        },
-      });
-      return;
-    }
-
-    if (workflowResult.status === "error") {
-      dispatchAsync({ type: "workspace/fail", error: workflowResult.error.message });
-      setHistoryChecked(true);
-      setWorkspaceSeeded(true);
-      logCoachRequestDiagnostics({
-        scope: "useCoachWorkspace/hydrate",
-        requestId,
-        phase: "error",
-        details: {
-          message: workflowResult.error.message,
-        },
-      });
-      return;
-    }
-
+    let didSucceed = false;
     try {
+      const workflowResult = await hydrateCoachWorkspaceWorkflow({
+        coach,
+        specialization,
+        hydrated,
+        defaultIntake: baseIntake,
+        coachIdentityPayload,
+        invokeCoachChat: invokeCoachChatWithRecovery,
+        skipCachedState: skipCachedSeedForDraftOpenRef.current,
+        onCachedState: (state) => {
+          if (requestId !== hydrateRequestIdRef.current) return;
+          setWorkspaceSeeded(true);
+          setActivePlan(state.activePlan);
+          setDraftPlan(state.draftPlan);
+          setShowDraftInPlan((current) => {
+            if (!state.draftPlan) return current;
+            if (!state.activePlan) return true;
+            return current;
+          });
+          setIntake(state.intake);
+          if (specialization === "workout") {
+            setPendingDaysPerWeek(
+              clampDays(
+                (isWorkoutIntake(state.intake) ? state.intake.daysPerWeek : null) ??
+                  (isWorkoutPlan(state.activePlan) ? state.activePlan.daysPerWeek : null) ??
+                  (isWorkoutPlan(state.draftPlan) ? state.draftPlan.daysPerWeek : null) ??
+                  defaultIntake.daysPerWeek,
+              ),
+            );
+          }
+          if (state.messages.length) {
+            setMessages(state.messages);
+            for (const message of state.messages) {
+              if (message.role === "assistant") markAssistantSeen(message.id);
+            }
+          }
+        },
+      });
+
+      if (requestId !== hydrateRequestIdRef.current) {
+        logCoachRequestDiagnostics({
+          scope: "useCoachWorkspace/hydrate",
+          requestId,
+          phase: "stale",
+        });
+        return;
+      }
+      skipCachedSeedForDraftOpenRef.current = false;
+
+      if (workflowResult.status === "skipped") {
+        logCoachRequestDiagnostics({
+          scope: "useCoachWorkspace/hydrate",
+          requestId,
+          phase: "skip",
+        });
+        return;
+      }
+
+      if (workflowResult.status === "tier_required") {
+        onTierRequired?.();
+        dispatchAsync({ type: "workspace/succeed" });
+        setHistoryChecked(true);
+        setWorkspaceSeeded(true);
+        logCoachRequestDiagnostics({
+          scope: "useCoachWorkspace/hydrate",
+          requestId,
+          phase: "error",
+          details: {
+            message: "tier_required",
+          },
+        });
+        return;
+      }
+
+      if (workflowResult.status === "error") {
+        dispatchAsync({ type: "workspace/fail", error: workflowResult.error.message });
+        setHistoryChecked(true);
+        setWorkspaceSeeded(true);
+        logCoachRequestDiagnostics({
+          scope: "useCoachWorkspace/hydrate",
+          requestId,
+          phase: "error",
+          details: {
+            message: workflowResult.error.message,
+          },
+        });
+        return;
+      }
+
       await applyWorkspaceMutation(workflowResult.payload.remote, {
         replaceMessages: true,
         preserveThreadIdOnNull: false,
       });
       dispatchAsync({ type: "workspace/succeed" });
+      didSucceed = true;
 
       if (
         openDraftHandledRef.current &&
@@ -533,13 +548,16 @@ export function useCoachWorkspace({
       }
     } finally {
       if (requestId === hydrateRequestIdRef.current) {
-        setHistoryChecked(true);
-        setWorkspaceSeeded(true);
-        logCoachRequestDiagnostics({
-          scope: "useCoachWorkspace/hydrate",
-          requestId,
-          phase: "success",
-        });
+        if (didSucceed) {
+          setHistoryChecked(true);
+          setWorkspaceSeeded(true);
+          logCoachRequestDiagnostics({
+            scope: "useCoachWorkspace/hydrate",
+            requestId,
+            phase: "success",
+          });
+        }
+        workspaceRequestInFlightRef.current = false;
       }
     }
   }, [
@@ -552,11 +570,16 @@ export function useCoachWorkspace({
     markAssistantSeen,
     onTierRequired,
     specialization,
+    workspaceRequestInFlightRef,
   ]);
 
   useEffect(() => {
     hydrateWorkspaceRef.current = hydrateWorkspace;
   });
+
+  useEffect(() => {
+    hasHandledInitialFocusRef.current = false;
+  }, [coach?.gender, coach?.personality, hydrated, specialization]);
 
   useEffect(() => {
     if (!coach || !hydrated) return;
@@ -566,8 +589,12 @@ export function useCoachWorkspace({
   useFocusEffect(
     useCallback(() => {
       if (!coach || !hydrated) return;
+      if (!hasHandledInitialFocusRef.current) {
+        hasHandledInitialFocusRef.current = true;
+        return;
+      }
       void hydrateWorkspaceRef.current();
-    }, [coach, hydrated])
+    }, [coach?.gender, coach?.personality, hydrated, specialization])
   );
 
   useEffect(() => {
@@ -1074,6 +1101,11 @@ export function useCoachWorkspace({
     messages,
     workspaceLoading,
     workspaceSkeletonVisible,
+    blockingLoad: loadingState.blockingLoad,
+    refreshingWorkspace: loadingState.refreshing,
+    hasUsableSnapshot: loadingState.hasUsableSnapshot,
+    mutating: loadingState.mutating,
+    hydrated: loadingState.hydrated,
     workspaceStatus: asyncState.workspace.status,
     syncError,
     sendError,

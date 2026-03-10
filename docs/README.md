@@ -1,6 +1,6 @@
 # Documentation Index
 
-Last updated: 2026-03-02
+Last updated: 2026-03-10
 
 ## Purpose
 
@@ -18,18 +18,19 @@ Single index for product policy, implementation contracts, QA runbooks, and anal
 1. `AGENTS.md`
 2. `docs/product/app-overview.md`
 3. `docs/product/builder-context.md`
-4. `docs/product/product-foundation.md`
-5. `docs/product/accountability-and-social.md`
-6. `docs/product/pro-coaching-and-safety.md`
-7. `docs/product/roadmap-and-governance.md`
-8. `docs/product/open-questions.md`
-9. `docs/implementation/screen-architecture.md`
-10. `docs/implementation/app-surface-strategy.md`
-11. `docs/implementation/coach-system-plan.md`
-12. `docs/implementation/adr-0001-policy-priority-split.md`
-13. `docs/qa/coach-ui-manual-qa-checklist.md`
-14. `docs/analytics/event-registry.md` (when analytics is affected)
-15. `docs/analytics/tracking-changelog.md` (when analytics is affected)
+4. `docs/implementation/repo-navigation-map.md`
+5. `docs/product/product-foundation.md`
+6. `docs/product/accountability-and-social.md`
+7. `docs/product/pro-coaching-and-safety.md`
+8. `docs/product/roadmap-and-governance.md`
+9. `docs/product/open-questions.md`
+10. `docs/implementation/screen-architecture.md`
+11. `docs/implementation/app-surface-strategy.md`
+12. `docs/implementation/coach-system-plan.md`
+13. `docs/implementation/adr-0001-policy-priority-split.md`
+14. `docs/qa/coach-ui-manual-qa-checklist.md`
+15. `docs/analytics/event-registry.md` (when analytics is affected)
+16. `docs/analytics/tracking-changelog.md` (when analytics is affected)
 
 ## Canonical Product Files
 

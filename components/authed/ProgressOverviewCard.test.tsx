@@ -166,6 +166,13 @@ function renderCard(overrides?: Partial<ProgressOverviewCardProps>) {
     gymLastStatusReason: "missing_photo",
     gymLastDistanceMeters: 120,
     preferredUnit: "lb",
+    stepSummary: {
+      enabled: false,
+      loading: false,
+      mode: "today",
+      steps: null,
+      target: 10000,
+    },
     ...overrides,
   };
 
@@ -235,8 +242,13 @@ describe("ProgressOverviewCard", () => {
 
   it("renders tap-to-enable copy for disabled steps and forwards presses", () => {
     const { root, onPressSteps } = renderCard({
-      stepsEnabled: false,
-      steps: null,
+      stepSummary: {
+        enabled: false,
+        loading: false,
+        mode: "today",
+        steps: null,
+        target: 10000,
+      },
     });
     const textValues = getTextValues(root);
 
@@ -252,9 +264,13 @@ describe("ProgressOverviewCard", () => {
 
   it("renders the configured step target when enabled", () => {
     const { root } = renderCard({
-      stepsEnabled: true,
-      steps: 8400,
-      stepsTarget: 12000,
+      stepSummary: {
+        enabled: true,
+        loading: false,
+        mode: "today",
+        steps: 8400,
+        target: 12000,
+      },
     });
     const textValues = getTextValues(root);
 
@@ -268,10 +284,13 @@ describe("ProgressOverviewCard", () => {
 
   it("shows average-daily copy for non-default step summaries", () => {
     const { root } = renderCard({
-      stepsEnabled: true,
-      steps: 8400,
-      stepsTarget: 12000,
-      stepsSummaryMode: "average",
+      stepSummary: {
+        enabled: true,
+        loading: false,
+        mode: "average",
+        steps: 8400,
+        target: 12000,
+      },
     });
     const textValues = getTextValues(root);
 

@@ -1,9 +1,9 @@
-// @vitest-environment jsdom
-import { renderHook, act } from "@testing-library/react";
+import { act } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Dispatch, SetStateAction } from "react";
 import type { ViewerFollowState } from "../../../data/relationships";
 import type { UserDirectoryRow } from "../../../data/userDirectory";
+import { renderTestHook } from "../../../../test/utils/renderHook";
 
 const mocks = vi.hoisted(() => ({
   Alert: {
@@ -78,7 +78,7 @@ describe("useUserFollowActions", () => {
     const setFollowState = vi.fn<(value: SetStateAction<ViewerFollowState>) => void>();
     const setFollowersCount = vi.fn<(value: SetStateAction<number>) => void>();
 
-    const hook = renderHook((props: FollowHarnessProps) => useUserFollowActions({
+    const hook = renderTestHook((props: FollowHarnessProps) => useUserFollowActions({
       targetUserId: "target-1",
       profile: props.profile,
       followState: props.followState,
@@ -111,7 +111,7 @@ describe("useUserFollowActions", () => {
     const setFollowState = vi.fn<(value: SetStateAction<ViewerFollowState>) => void>();
     const setFollowersCount = vi.fn<(value: SetStateAction<number>) => void>();
 
-    const hook = renderHook((props: FollowHarnessProps) => useUserFollowActions({
+    const hook = renderTestHook((props: FollowHarnessProps) => useUserFollowActions({
       targetUserId: "target-1",
       profile: props.profile,
       followState: props.followState,
@@ -148,7 +148,7 @@ describe("useUserFollowActions", () => {
     const setFollowState = vi.fn<(value: SetStateAction<ViewerFollowState>) => void>();
     const setFollowersCount = vi.fn<(value: SetStateAction<number>) => void>();
 
-    const hook = renderHook((props: FollowHarnessProps) => useUserFollowActions({
+    const hook = renderTestHook((props: FollowHarnessProps) => useUserFollowActions({
       targetUserId: "target-1",
       profile: props.profile,
       followState: props.followState,
@@ -183,7 +183,7 @@ describe("useUserFollowActions", () => {
     const setFollowState = vi.fn<(value: SetStateAction<ViewerFollowState>) => void>();
     const setFollowersCount = vi.fn<(value: SetStateAction<number>) => void>();
 
-    const hook = renderHook((props: FollowHarnessProps) => useUserFollowActions({
+    const hook = renderTestHook((props: FollowHarnessProps) => useUserFollowActions({
       targetUserId: "target-1",
       profile: props.profile,
       followState: props.followState,

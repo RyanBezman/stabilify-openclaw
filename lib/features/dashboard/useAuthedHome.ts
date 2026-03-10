@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { Platform } from "react-native";
-import * as Notifications from "expo-notifications";
 import {
   fetchAppleHealthDailyStepAverage,
   fetchAppleHealthTodayStepCount,
@@ -22,7 +21,6 @@ import {
   getConsistencyWindow,
   getCurrentStreak,
 } from "../../utils/metrics";
-import { getExpoProjectId } from "../../utils/expo";
 import type { ProfileSummary } from "../profile";
 import {
   allowAutoSupportWithConsent,
@@ -30,10 +28,18 @@ import {
   fetchCurrentWeekSupportRequest,
   fetchHasActivePushNotificationDevice,
   markSupportNudgeOpened,
-  registerPushNotificationDevice,
   setAutoSupportEnabled,
   type CurrentWeekSupportRequest,
 } from "../../data/supportAutomation";
+import {
+  deriveSurfaceLoadState,
+  registerCurrentPushDevice,
+} from "../shared";
+import {
+  createStepSummary,
+  resolveStepSummaryMode,
+  type StepSummary,
+} from "./models/stepSummary";
 
 export type HomeConsistencyOption = {
   id: string;
@@ -69,55 +75,10 @@ export type SupportNudgeDisplayVariant =
   | "disabled"
   | "published";
 
-async function requestExpoPushToken(): Promise<{ token?: string; error?: string }> {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.DEFAULT,
-    });
-  }
-
-  const currentPermission = await Notifications.getPermissionsAsync();
-  let finalStatus = currentPermission.status;
-  if (finalStatus !== "granted") {
-    const request = await Notifications.requestPermissionsAsync();
-    finalStatus = request.status;
-  }
-
-  if (finalStatus !== "granted") {
-    return {
-      error: "Phone notification permission is required to enable phone notifications.",
-    };
-  }
-
-  try {
-    const configuredProjectId = getExpoProjectId();
-    const tokenResult = configuredProjectId
-      ? await Notifications.getExpoPushTokenAsync({ projectId: configuredProjectId })
-      : await Notifications.getExpoPushTokenAsync();
-    const token = tokenResult.data?.trim();
-    if (!token) {
-      return { error: "Couldn't read Expo push token for this device." };
-    }
-
-    return { token };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Couldn't fetch Expo push token.";
-    if (errorMessage.toLowerCase().includes("projectid")) {
-      return {
-        error:
-          "Push notifications are not configured for this build (missing EXPO_PUBLIC_EXPO_PROJECT_ID).",
-      };
-    }
-
-    return {
-      error: `Couldn't fetch Expo push token: ${errorMessage}`,
-    };
-  }
-}
-
 export function useAuthedHome(user?: AuthedHomeUser | null) {
-  const [loading, setLoading] = useState(true);
+  const [blockingLoad, setBlockingLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<DashboardState>(null);
@@ -135,96 +96,130 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     CONSISTENCY_OPTIONS[0],
   );
   const [showConsistencyMenu, setShowConsistencyMenu] = useState(false);
-  const [stepSummary, setStepSummary] = useState<number | null>(null);
+  const [stepValue, setStepValue] = useState<number | null>(null);
   const [loadingStepSummary, setLoadingStepSummary] = useState(false);
+  const hasUsableSnapshot = dashboard !== null;
+  const loadRequestIdRef = useRef(0);
+  const loadInFlightRef = useRef(false);
+  const focusRefreshRef = useRef<() => Promise<void>>(async () => {});
+  const stepRequestIdRef = useRef(0);
 
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
+  const loadDashboardSurface = useCallback(
+    async (options?: {
+      mode?: "blocking" | "refresh";
+      preserveOnError?: boolean;
+    }): Promise<{ error?: string }> => {
+      const mode = options?.mode ?? (hasUsableSnapshot ? "refresh" : "blocking");
+      if (loadInFlightRef.current && mode === "refresh") {
+        return {};
+      }
 
-      const load = async () => {
-        setLoading(true);
-        const [dashboardResult, notificationCountResult, supportResult, pushDeviceResult] = await Promise.all([
-          fetchDashboardData(user?.id),
-          fetchActionableNotificationCount(user?.id),
-          fetchCurrentWeekSupportRequest(),
-          fetchHasActivePushNotificationDevice(user?.id),
-        ]);
-        const { data, error } = dashboardResult;
-        if (!active) return;
+      const requestId = loadRequestIdRef.current + 1;
+      loadRequestIdRef.current = requestId;
+      loadInFlightRef.current = true;
+      if (mode === "blocking" || !hasUsableSnapshot) {
+        setBlockingLoad(true);
+        setRefreshing(false);
+      } else {
+        setRefreshing(true);
+      }
+      try {
+        const [dashboardResult, notificationCountResult, supportResult, pushDeviceResult] =
+          await Promise.all([
+            fetchDashboardData(user?.id),
+            fetchActionableNotificationCount(user?.id),
+            fetchCurrentWeekSupportRequest(),
+            fetchHasActivePushNotificationDevice(user?.id),
+          ]);
 
-        if (!notificationCountResult.error) {
-          setNotificationCount(notificationCountResult.data?.count ?? 0);
-        } else {
+        if (requestId !== loadRequestIdRef.current) {
+          return {};
+        }
+
+        if (!notificationCountResult?.error) {
+          setNotificationCount(notificationCountResult?.data?.count ?? 0);
+        } else if (!hasUsableSnapshot) {
           setNotificationCount(0);
         }
 
-        if (!supportResult.error) {
-          setSupportRequest(supportResult.data ?? null);
-        } else {
+        if (!supportResult?.error) {
+          setSupportRequest(supportResult?.data ?? null);
+        } else if (!hasUsableSnapshot) {
           setSupportRequest(null);
         }
 
-        if (!pushDeviceResult.error) {
-          setPhoneNudgesEnabled(pushDeviceResult.data?.hasActiveDevice ?? false);
-        } else {
+        if (!pushDeviceResult?.error) {
+          setPhoneNudgesEnabled(pushDeviceResult?.data?.hasActiveDevice ?? false);
+        } else if (!hasUsableSnapshot) {
           setPhoneNudgesEnabled(false);
         }
 
+        const { data, error } = dashboardResult;
         if (error) {
           setDashboardError(error);
-          setDashboard(null);
-          setProfilePhotoUrl(null);
-          setTodayGymValidationRequest(null);
-        } else {
-          setDashboardError(null);
-          const nextDashboard = data ?? null;
-          setDashboard(nextDashboard);
-          const avatarPath = nextDashboard?.profile?.avatarPath ?? null;
-          if (!avatarPath) {
+          if (!options?.preserveOnError && !hasUsableSnapshot) {
+            setDashboard(null);
             setProfilePhotoUrl(null);
-          } else {
-            const signedRes = await getProfilePhotoSignedUrl(avatarPath);
-            if (!active) return;
-            setProfilePhotoUrl(
-              signedRes.error || !signedRes.data?.signedUrl ? null : signedRes.data.signedUrl,
-            );
-          }
-
-          const timeZoneForToday = nextDashboard?.profile?.timezone ?? getLocalTimeZone();
-          const todaySessionDate = formatLocalDate(new Date(), timeZoneForToday);
-          const todaySession = nextDashboard?.gymSessions.find(
-            (session) => session.sessionDate === todaySessionDate
-          );
-
-          if (todaySession?.status === "provisional") {
-            const validationRequestResult = await fetchGymSessionValidationRequestForSession(
-              todaySession.id,
-              user?.id
-            );
-            if (!active) return;
-            if (validationRequestResult.error) {
-              setTodayGymValidationRequest(null);
-            } else {
-              setTodayGymValidationRequest(validationRequestResult.data ?? null);
-            }
-          } else {
             setTodayGymValidationRequest(null);
           }
+          return { error };
         }
 
-        if (supportResult.data?.id && !supportResult.data.nudgeOpenedAt) {
+        setDashboardError(null);
+        const nextDashboard = data ?? null;
+        setDashboard(nextDashboard);
+
+        const avatarPath = nextDashboard?.profile?.avatarPath ?? null;
+        if (!avatarPath) {
+          setProfilePhotoUrl(null);
+        } else {
+          const signedRes = await getProfilePhotoSignedUrl(avatarPath);
+          if (requestId !== loadRequestIdRef.current) {
+            return {};
+          }
+          setProfilePhotoUrl(
+            signedRes.error || !signedRes.data?.signedUrl ? null : signedRes.data.signedUrl,
+          );
+        }
+
+        const timeZoneForToday = nextDashboard?.profile?.timezone ?? getLocalTimeZone();
+        const todaySessionDate = formatLocalDate(new Date(), timeZoneForToday);
+        const todaySession = nextDashboard?.gymSessions.find(
+          (session) => session.sessionDate === todaySessionDate,
+        );
+
+        if (todaySession?.status === "provisional") {
+          const validationRequestResult = await fetchGymSessionValidationRequestForSession(
+            todaySession.id,
+            user?.id,
+          );
+          if (requestId !== loadRequestIdRef.current) {
+            return {};
+          }
+          if (validationRequestResult.error) {
+            setTodayGymValidationRequest(null);
+          } else {
+            setTodayGymValidationRequest(validationRequestResult.data ?? null);
+          }
+        } else {
+          setTodayGymValidationRequest(null);
+        }
+
+        if (supportResult?.data?.id && !supportResult.data.nudgeOpenedAt) {
           const openedResult = await markSupportNudgeOpened({
             requestId: supportResult.data.id,
             surface: "home",
           });
-          if (!active) return;
+          if (requestId !== loadRequestIdRef.current) {
+            return {};
+          }
 
           if (!openedResult.error && openedResult.data) {
             setSupportRequest((previous) => {
               if (!previous || previous.id !== supportResult.data?.id) {
                 return previous;
               }
+
               return {
                 ...previous,
                 nudgeOpenedAt: openedResult.data.nudgeOpenedAt,
@@ -233,14 +228,30 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
             });
           }
         }
-        setLoading(false);
-      };
 
-      void load();
+        return {};
+      } finally {
+        if (requestId === loadRequestIdRef.current) {
+          setBlockingLoad(false);
+          setRefreshing(false);
+          setHydrated(true);
+          loadInFlightRef.current = false;
+        }
+      }
+    },
+    [hasUsableSnapshot, user?.id],
+  );
 
-      return () => {
-        active = false;
-      };
+  useEffect(() => {
+    focusRefreshRef.current = async () => {
+      const nextMode = hasUsableSnapshot ? "refresh" : "blocking";
+      await loadDashboardSurface({ mode: nextMode, preserveOnError: hasUsableSnapshot });
+    };
+  }, [hasUsableSnapshot, loadDashboardSurface]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void focusRefreshRef.current();
     }, [user?.id]),
   );
 
@@ -302,49 +313,58 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     ? `Reminds at ${routine.reminderTime}`
     : "No reminder";
   const appleHealthStepsEnabled = dashboard?.profile?.appleHealthStepsEnabled ?? false;
-  const stepSummaryMode = consistencyOption.id === "7d" ? "today" : "average";
+  const stepSummaryMode = resolveStepSummaryMode(consistencyOption.id);
 
   useEffect(() => {
-    let active = true;
-
     if (!appleHealthStepsEnabled || Platform.OS !== "ios") {
-      setStepSummary(null);
+      stepRequestIdRef.current += 1;
+      setStepValue(null);
       setLoadingStepSummary(false);
-      return () => {
-        active = false;
-      };
+      return;
     }
 
+    const requestId = stepRequestIdRef.current + 1;
+    stepRequestIdRef.current = requestId;
     setLoadingStepSummary(true);
 
     const loadStepSummary = async () => {
-      const stepResult =
-        stepSummaryMode === "today"
-          ? await fetchAppleHealthTodayStepCount()
-          : await fetchAppleHealthDailyStepAverage(consistencyOption.days);
+      if (stepSummaryMode === "today") {
+        const stepResult = await fetchAppleHealthTodayStepCount();
+        if (requestId !== stepRequestIdRef.current) {
+          return;
+        }
 
-      if (!active) {
+        setStepValue(stepResult.error || !stepResult.data ? null : stepResult.data.steps);
+        setLoadingStepSummary(false);
         return;
       }
 
-      if (stepResult.error) {
-        setStepSummary(null);
-      } else if (stepSummaryMode === "today") {
-        setStepSummary(stepResult.data?.steps ?? null);
-      } else {
-        setStepSummary(stepResult.data?.averageDailySteps ?? null);
+      const stepResult = await fetchAppleHealthDailyStepAverage(consistencyOption.days);
+      if (requestId !== stepRequestIdRef.current) {
+        return;
       }
+
+      setStepValue(
+        stepResult.error || !stepResult.data ? null : stepResult.data.averageDailySteps,
+      );
       setLoadingStepSummary(false);
     };
 
     void loadStepSummary();
-
-    return () => {
-      active = false;
-    };
   }, [appleHealthStepsEnabled, consistencyOption.days, stepSummaryMode]);
 
-  const showSkeleton = loading && !dashboard && !dashboardError;
+  const loadingState = deriveSurfaceLoadState({
+    blockingLoad,
+    hydrated,
+    refreshing,
+    hasUsableSnapshot,
+    mutating:
+      supportActionBusy ||
+      enablingPhoneNudges ||
+      requestingGymValidation ||
+      signingOut,
+  });
+  const showSkeleton = loadingState.blockingLoad;
 
   const streakDays = useMemo(
     () => getCurrentStreak(weighIns, timeZone),
@@ -666,83 +686,57 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     }
 
     setEnablingPhoneNudges(true);
-    const tokenResult = await requestExpoPushToken();
-    if (tokenResult.error || !tokenResult.token) {
+    const registrationResult = await registerCurrentPushDevice(user?.id);
+    if (registrationResult.error) {
       setEnablingPhoneNudges(false);
       return {
         success: false,
-        error: tokenResult.error ?? "Couldn't access push token.",
+        error: registrationResult.error,
       };
     }
-
-    const registrationResult = await registerPushNotificationDevice({
-      expoPushToken: tokenResult.token,
-      platform: Platform.OS,
-      appVersion: process.env.EXPO_PUBLIC_APP_VERSION ?? null,
-    });
     setEnablingPhoneNudges(false);
-
-    if (registrationResult.error) {
-      return { success: false, error: registrationResult.error };
-    }
 
     await refreshSupportAutomation();
     return { success: true };
   }, [enablingPhoneNudges, refreshSupportAutomation]);
 
   const refreshDashboard = useCallback(
-    async (options?: { preserveOnError?: boolean }): Promise<{ error?: string }> => {
-      const result = await fetchDashboardData(user?.id);
-      const { data, error } = result;
-
-      if (error) {
-        if (!options?.preserveOnError) {
-          setDashboardError(error);
-        }
-        return { error };
-      }
-
-      setDashboardError(null);
-      const nextDashboard = data ?? null;
-      setDashboard(nextDashboard);
-      const avatarPath = nextDashboard?.profile?.avatarPath ?? null;
-      if (!avatarPath) {
-        setProfilePhotoUrl(null);
-      } else {
-        const signedRes = await getProfilePhotoSignedUrl(avatarPath);
-        if (signedRes.error || !signedRes.data?.signedUrl) {
-          setProfilePhotoUrl(null);
-        } else {
-          setProfilePhotoUrl(signedRes.data.signedUrl);
-        }
-      }
-
-      const timeZoneForToday = nextDashboard?.profile?.timezone ?? getLocalTimeZone();
-      const todaySessionDate = formatLocalDate(new Date(), timeZoneForToday);
-      const todaySession = nextDashboard?.gymSessions.find(
-        (session) => session.sessionDate === todaySessionDate,
-      );
-
-      if (todaySession?.status === "provisional") {
-        const validationRequestResult = await fetchGymSessionValidationRequestForSession(
-          todaySession.id,
-          user?.id,
-        );
-        if (validationRequestResult.error) {
-          setTodayGymValidationRequest(null);
-        } else {
-          setTodayGymValidationRequest(validationRequestResult.data ?? null);
-        }
-      } else {
-        setTodayGymValidationRequest(null);
-      }
-
-      return {};
+    async (options?: {
+      preserveOnError?: boolean;
+      blocking?: boolean;
+    }): Promise<{ error?: string }> => {
+      return loadDashboardSurface({
+        mode: options?.blocking ? "blocking" : hasUsableSnapshot ? "refresh" : "blocking",
+        preserveOnError: options?.preserveOnError ?? hasUsableSnapshot,
+      });
     },
-    [user?.id],
+    [hasUsableSnapshot, loadDashboardSurface],
+  );
+
+  const stepSummary = useMemo<StepSummary>(
+    () =>
+      createStepSummary({
+        enabled: appleHealthStepsEnabled,
+        loading: loadingStepSummary,
+        mode: stepSummaryMode,
+        steps: stepValue,
+        target: dashboard?.profile?.dailyStepGoal ?? DEFAULT_DAILY_STEP_TARGET,
+      }),
+    [
+      appleHealthStepsEnabled,
+      dashboard?.profile?.dailyStepGoal,
+      loadingStepSummary,
+      stepSummaryMode,
+      stepValue,
+    ],
   );
 
   return {
+    blockingLoad: loadingState.blockingLoad,
+    hydrated: loadingState.hydrated,
+    refreshing: loadingState.refreshing,
+    hasUsableSnapshot: loadingState.hasUsableSnapshot,
+    mutating: loadingState.mutating,
     signingOut,
     dashboardError,
     showSkeleton,
@@ -763,9 +757,6 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     requestingGymValidation,
     unit,
     stepSummary,
-    loadingStepSummary,
-    stepSummaryMode,
-    stepTarget: dashboard?.profile?.dailyStepGoal ?? DEFAULT_DAILY_STEP_TARGET,
     appleHealthStepsEnabled,
     consistencyOptions: CONSISTENCY_OPTIONS,
     consistencyOption,

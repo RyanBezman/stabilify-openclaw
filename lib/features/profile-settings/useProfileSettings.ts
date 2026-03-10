@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Platform } from "react-native";
-import * as Notifications from "expo-notifications";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { requestAppleHealthStepReadAccess } from "../../data/appleHealth";
 import type {
   AccountVisibility,
@@ -11,15 +10,17 @@ import type {
 import {
   allowAutoSupportWithConsent,
   fetchHasActivePushNotificationDevice,
-  registerPushNotificationDevice,
   setPhoneNudgesEnabled as setPhoneNudgesEnabledRemote,
 } from "../../data/supportAutomation";
 import {
   fetchProfileSettingsValues,
   saveProfileSettingsValues,
 } from "./data";
-import { isSessionRequired } from "../shared";
-import { getExpoProjectId } from "../../utils/expo";
+import {
+  deriveSurfaceLoadState,
+  isSessionRequired,
+  registerCurrentPushDevice,
+} from "../shared";
 import type { ProfileSettingsValues } from "./data";
 
 type ProfileSettingsActionResult = {
@@ -27,55 +28,11 @@ type ProfileSettingsActionResult = {
   error?: string;
 };
 
-async function requestExpoPushToken(): Promise<{ token?: string; error?: string }> {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.DEFAULT,
-    });
-  }
-
-  const currentPermission = await Notifications.getPermissionsAsync();
-  let finalStatus = currentPermission.status;
-  if (finalStatus !== "granted") {
-    const request = await Notifications.requestPermissionsAsync();
-    finalStatus = request.status;
-  }
-
-  if (finalStatus !== "granted") {
-    return {
-      error: "Phone notification permission is required to enable phone notifications.",
-    };
-  }
-
-  try {
-    const configuredProjectId = getExpoProjectId();
-    const tokenResult = configuredProjectId
-      ? await Notifications.getExpoPushTokenAsync({ projectId: configuredProjectId })
-      : await Notifications.getExpoPushTokenAsync();
-    const token = tokenResult.data?.trim();
-    if (!token) {
-      return { error: "Couldn't read Expo push token for this device." };
-    }
-
-    return { token };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Couldn't fetch Expo push token.";
-    if (errorMessage.toLowerCase().includes("projectid")) {
-      return {
-        error:
-          "Push notifications are not configured for this build (missing EXPO_PUBLIC_EXPO_PROJECT_ID).",
-      };
-    }
-
-    return {
-      error: `Couldn't fetch Expo push token: ${errorMessage}`,
-    };
-  }
-}
-
 export function useProfileSettings() {
-  const [loading, setLoading] = useState(true);
+  const [blockingLoad, setBlockingLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const [hasUsableSnapshot, setHasUsableSnapshot] = useState(false);
   const [saving, setSaving] = useState(false);
   const [updatingPhoneNudges, setUpdatingPhoneNudges] = useState(false);
   const [grantingAutoSupportConsent, setGrantingAutoSupportConsent] = useState(false);
@@ -102,6 +59,10 @@ export function useProfileSettings() {
   const [appleHealthStepsEnabled, setAppleHealthStepsEnabledState] = useState(false);
   const [dailyStepGoal, setDailyStepGoal] = useState(10000);
   const [updatingAppleHealthSteps, setUpdatingAppleHealthSteps] = useState(false);
+  const refreshRequestIdRef = useRef(0);
+  const focusRefreshRef = useRef<() => Promise<void>>(async () => {});
+  const hasHandledInitialFocusRef = useRef(false);
+  const hasUsableSnapshotRef = useRef(false);
 
   const applyProfileSettings = useCallback((values: ProfileSettingsValues) => {
     setDisplayName(values.displayName);
@@ -161,42 +122,97 @@ export function useProfileSettings() {
     ],
   );
 
-  const refresh = useCallback(async (): Promise<ProfileSettingsActionResult> => {
-    setLoading(true);
-    const [profileSettingsResult, pushDeviceResult] = await Promise.all([
-      fetchProfileSettingsValues(),
-      fetchHasActivePushNotificationDevice(),
-    ]);
-    const { data, error, code } = profileSettingsResult;
+  useEffect(() => {
+    hasUsableSnapshotRef.current = hasUsableSnapshot;
+  }, [hasUsableSnapshot]);
 
-    if (isSessionRequired({ code })) {
-      setLoadError("Please sign in again.");
-      setLoading(false);
-      return { success: false, error: "Please sign in again." };
-    }
+  const refresh = useCallback(
+    async (options?: {
+      blocking?: boolean;
+      preserveOnError?: boolean;
+    }): Promise<ProfileSettingsActionResult> => {
+      const requestId = refreshRequestIdRef.current + 1;
+      refreshRequestIdRef.current = requestId;
+      const shouldBlock = options?.blocking ?? !hasUsableSnapshotRef.current;
 
-    if (error || !data) {
-      setLoadError(error ?? "Couldn't load profile settings.");
-      setLoading(false);
-      return { success: false, error: error ?? "Couldn't load profile settings." };
-    }
+      if (shouldBlock) {
+        setBlockingLoad(true);
+        setRefreshing(false);
+      } else {
+        setRefreshing(true);
+      }
 
-    setLoadError(null);
-    applyProfileSettings(data);
+      try {
+        const [profileSettingsResult, pushDeviceResult] = await Promise.all([
+          fetchProfileSettingsValues(),
+          fetchHasActivePushNotificationDevice(),
+        ]);
+        if (requestId !== refreshRequestIdRef.current) {
+          return { success: false };
+        }
 
-    if (!pushDeviceResult.error) {
-      setPhoneNudgesEnabledState(pushDeviceResult.data?.hasActiveDevice ?? false);
-    } else {
-      setPhoneNudgesEnabledState(false);
-    }
+        const { data, error, code } = profileSettingsResult;
 
-    setLoading(false);
-    return { success: true };
-  }, [applyProfileSettings]);
+        if (isSessionRequired({ code })) {
+          if (!hasUsableSnapshotRef.current || !options?.preserveOnError) {
+            setLoadError("Please sign in again.");
+          }
+          return { success: false, error: "Please sign in again." };
+        }
+
+        if (error || !data) {
+          if (!hasUsableSnapshotRef.current || !options?.preserveOnError) {
+            setLoadError(error ?? "Couldn't load profile settings.");
+          }
+          return {
+            success: false,
+            error: error ?? "Couldn't load profile settings.",
+          };
+        }
+
+        setLoadError(null);
+        applyProfileSettings(data);
+        setHasUsableSnapshot(true);
+
+        if (!pushDeviceResult.error) {
+          setPhoneNudgesEnabledState(pushDeviceResult.data?.hasActiveDevice ?? false);
+        } else if (!hasUsableSnapshotRef.current) {
+          setPhoneNudgesEnabledState(false);
+        }
+
+        return { success: true };
+      } finally {
+        if (requestId === refreshRequestIdRef.current) {
+          setBlockingLoad(false);
+          setRefreshing(false);
+          setHydrated(true);
+        }
+      }
+    },
+    [applyProfileSettings],
+  );
 
   useEffect(() => {
-    void refresh();
+    hasHandledInitialFocusRef.current = false;
+    void refresh({ blocking: true });
   }, [refresh]);
+
+  useEffect(() => {
+    focusRefreshRef.current = async () => {
+      await refresh({ blocking: false, preserveOnError: true });
+    };
+  }, [refresh]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasHandledInitialFocusRef.current) {
+        hasHandledInitialFocusRef.current = true;
+        return;
+      }
+
+      void focusRefreshRef.current();
+    }, []),
+  );
 
   const save = useCallback(async () => {
     if (saving) {
@@ -305,24 +321,13 @@ export function useProfileSettings() {
           return { success: true };
         }
 
-        const tokenResult = await requestExpoPushToken();
-        if (tokenResult.error || !tokenResult.token) {
+        const registrationResult = await registerCurrentPushDevice();
+        if (registrationResult.error) {
           setPhoneNudgesEnabledState(previousEnabled);
           return {
             success: false,
-            error: tokenResult.error ?? "Couldn't access push token.",
+            error: registrationResult.error,
           };
-        }
-
-        const registrationResult = await registerPushNotificationDevice({
-          expoPushToken: tokenResult.token,
-          platform: Platform.OS,
-          appVersion: process.env.EXPO_PUBLIC_APP_VERSION ?? null,
-        });
-
-        if (registrationResult.error) {
-          setPhoneNudgesEnabledState(previousEnabled);
-          return { success: false, error: registrationResult.error };
         }
 
         const pushDeviceResult = await fetchHasActivePushNotificationDevice();
@@ -363,8 +368,25 @@ export function useProfileSettings() {
     [updateProfileValues, updatingAppleHealthSteps],
   );
 
+  const loadingState = deriveSurfaceLoadState({
+    blockingLoad,
+    hydrated,
+    refreshing,
+    hasUsableSnapshot,
+    mutating:
+      saving ||
+      updatingPhoneNudges ||
+      updatingAppleHealthSteps ||
+      grantingAutoSupportConsent,
+  });
+
   return {
-    loading,
+    loading: loadingState.blockingLoad,
+    blockingLoad: loadingState.blockingLoad,
+    hydrated: loadingState.hydrated,
+    refreshing: loadingState.refreshing,
+    hasUsableSnapshot: loadingState.hasUsableSnapshot,
+    mutating: loadingState.mutating,
     saving,
     updatingPhoneNudges,
     updatingAppleHealthSteps,

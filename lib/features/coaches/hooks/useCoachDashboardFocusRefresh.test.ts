@@ -1,7 +1,6 @@
-// @vitest-environment jsdom
 // @ts-nocheck
-import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderTestHook } from "../../../../test/utils/renderHook";
 
 vi.mock("@react-navigation/native", async () => {
   const ReactModule = await vi.importActual<typeof import("react")>("react");
@@ -28,7 +27,7 @@ describe("useCoachDashboardFocusRefresh", () => {
   it("runs refresh once per focus callback identity and does not rerun on equivalent rerenders", () => {
     const refreshDashboard = vi.fn(async () => undefined);
 
-    const hook = renderHook((props: HarnessProps) => useCoachDashboardFocusRefresh(props), {
+    const hook = renderTestHook((props: HarnessProps) => useCoachDashboardFocusRefresh(props), {
       initialProps: {
         coachIdentityKey: "woman:hype",
         forcePicker: false,
@@ -57,7 +56,7 @@ describe("useCoachDashboardFocusRefresh", () => {
   it("skips refresh when there is no coach identity or picker is forced", () => {
     const refreshDashboard = vi.fn(async () => undefined);
 
-    const hook = renderHook((props: HarnessProps) => useCoachDashboardFocusRefresh(props), {
+    const hook = renderTestHook((props: HarnessProps) => useCoachDashboardFocusRefresh(props), {
       initialProps: {
         coachIdentityKey: null,
         forcePicker: false,

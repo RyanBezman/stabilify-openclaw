@@ -24,11 +24,11 @@ import InlineGymSessionCaptureCard from "../components/authed/InlineGymSessionCa
 import GymSessionAnalyzingCard from "../components/authed/GymSessionAnalyzingCard";
 import GymValidationNoteModal from "../components/authed/GymValidationNoteModal";
 import Card from "../components/ui/Card";
-import { getGymSessionStatusReasonCopy } from "../lib/data/gymSessionStatusReason";
-import type { GymSessionStatus, GymSessionStatusReason } from "../lib/data/types";
-import { requestGymSessionValidation } from "../lib/data/gymSessionValidation";
-import { formatDistance } from "../lib/utils/distance";
-import { useAuthedHome, type AuthedHomeUser } from "../lib/features/dashboard";
+import {
+  useAuthedHome,
+  useAuthedHomeGymFlow,
+  type AuthedHomeUser,
+} from "../lib/features/dashboard";
 import type { AuthedTabParamList, RootStackParamList } from "../lib/navigation/types";
 import {
   FLOATING_TAB_SCREEN_SAFE_AREA_EDGES,
@@ -36,9 +36,6 @@ import {
 } from "../lib/navigation/useFloatingTabBarLayout";
 import AppScreen from "../components/ui/AppScreen";
 
-const ANALYSIS_INITIAL_PROGRESS = 0.17;
-const ANALYSIS_PENDING_CAP = 0.92;
-const ANALYSIS_RAMP_MS = 3200;
 const GYM_FLOW_HEIGHT_RATIO = 0.42;
 const GYM_FLOW_MIN_HEIGHT = 300;
 const GYM_FLOW_MAX_HEIGHT = 360;
@@ -53,21 +50,6 @@ function clamp(value: number, minimum: number, maximum: number) {
   return value;
 }
 
-type GymSessionAnalysisState = {
-  photoUri: string;
-  startedAtMs: number;
-  progress: number;
-  result:
-    | {
-        phase: "verified" | "rejected";
-        reason: string;
-        sessionId: string | null;
-        canRequestCloseFriendValidation: boolean;
-        validationRequested: boolean;
-      }
-    | null;
-};
-
 type AuthedHomeProps = CompositeScreenProps<
   BottomTabScreenProps<AuthedTabParamList, "Today">,
   NativeStackScreenProps<RootStackParamList>
@@ -81,14 +63,7 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
   const scrollViewRef = useRef<ScrollView | null>(null);
   const gymFlowCardYRef = useRef<number | null>(null);
   const previousGymFlowActiveRef = useRef(false);
-  const [showValidationNoteModal, setShowValidationNoteModal] = useState(false);
-  const [validationNote, setValidationNote] = useState("");
-  const [showInlineGymCapture, setShowInlineGymCapture] = useState(false);
   const [shouldAutoScrollGymFlow, setShouldAutoScrollGymFlow] = useState(false);
-  const [requestingCloseFriendValidation, setRequestingCloseFriendValidation] = useState(false);
-  const [gymSessionAnalysis, setGymSessionAnalysis] = useState<GymSessionAnalysisState | null>(
-    null,
-  );
   const {
     dashboardError,
     showSkeleton,
@@ -108,10 +83,6 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
     requestingGymValidation,
     unit,
     stepSummary,
-    loadingStepSummary,
-    stepSummaryMode,
-    stepTarget,
-    appleHealthStepsEnabled,
     consistencyOptions,
     consistencyOption,
     showConsistencyMenu,
@@ -129,14 +100,22 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
     enablePhoneNudges,
     refreshDashboard,
   } = useAuthedHome(user);
+  const gymFlow = useAuthedHomeGymFlow({
+    analyzeRequest: route.params?.gymSessionAnalyze,
+    clearAnalyzeRequest: () => navigation.setParams({ gymSessionAnalyze: undefined }),
+    hasGymLocation,
+    refreshDashboard,
+    requestGymValidationForToday,
+    todayGymSession,
+    unit,
+    userId: user?.id,
+  });
   const gymFlowCardHeight = clamp(
     Math.round(windowHeight * GYM_FLOW_HEIGHT_RATIO),
     GYM_FLOW_MIN_HEIGHT,
     GYM_FLOW_MAX_HEIGHT,
   );
-  const hasVerifiedGymSessionToday = todayGymSession?.status === "verified";
-  const canStartGymSessionCapture = hasGymLocation && !hasVerifiedGymSessionToday;
-  const isGymFlowActive = showInlineGymCapture || Boolean(gymSessionAnalysis);
+  const isGymFlowActive = gymFlow.isGymFlowActive;
   const scrollToGymFlowCard = useCallback(() => {
     if (gymFlowCardYRef.current === null) {
       return false;
@@ -148,137 +127,6 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
     });
     return true;
   }, []);
-  const gymSessionAnalyzeParam = route.params?.gymSessionAnalyze;
-  const startGymSessionAnalysis = useCallback((
-    photoUri: string,
-    startedAtMs?: number,
-  ) => {
-    setGymSessionAnalysis({
-      photoUri,
-      startedAtMs: startedAtMs ?? Date.now(),
-      progress: ANALYSIS_INITIAL_PROGRESS,
-      result: null,
-    });
-  }, []);
-
-  const resolveGymSessionAnalysis = useCallback(
-    (
-      sessionId: string,
-      status: GymSessionStatus,
-      statusReason: GymSessionStatusReason | null,
-      distanceMeters: number | null,
-    ) => {
-      const reasonCopy = getGymSessionStatusReasonCopy(statusReason);
-      const reason =
-        status === "verified"
-          ? "Your session is verified and counts toward your weekly progress."
-          : statusReason === "outside_radius" && distanceMeters !== null
-            ? `You're ${formatDistance(distanceMeters, unit)} from your gym. Ask close friends to validate or retry at your gym location.`
-            : reasonCopy?.actionText
-            ? `${reasonCopy.reasonText} ${reasonCopy.actionText}`
-            : reasonCopy?.reasonText ?? "We couldn't verify this session.";
-
-      setGymSessionAnalysis((previous) => {
-        if (!previous) {
-          return previous;
-        }
-
-        return {
-          ...previous,
-          progress: 1,
-          result: {
-            phase: status === "verified" ? "verified" : "rejected",
-            reason,
-            sessionId,
-            canRequestCloseFriendValidation: status === "provisional",
-            validationRequested: false,
-          },
-        };
-      });
-    },
-    [unit],
-  );
-
-  const handleRequestCloseFriendValidationFromCard = useCallback(async () => {
-    if (requestingCloseFriendValidation) {
-      return;
-    }
-
-    const sessionId = gymSessionAnalysis?.result?.sessionId;
-    if (!sessionId) {
-      return;
-    }
-
-    setRequestingCloseFriendValidation(true);
-    const result = await requestGymSessionValidation(sessionId, { userId: user?.id });
-    setRequestingCloseFriendValidation(false);
-
-    if (result.error) {
-      Alert.alert("Couldn't request validation", result.error);
-      return;
-    }
-
-    setGymSessionAnalysis((previous) => {
-      if (!previous?.result) {
-        return previous;
-      }
-
-      return {
-        ...previous,
-        result: {
-          ...previous.result,
-          validationRequested: true,
-          canRequestCloseFriendValidation: false,
-        },
-      };
-    });
-  }, [gymSessionAnalysis?.result?.sessionId, requestingCloseFriendValidation, user?.id]);
-
-  useEffect(() => {
-    if (!gymSessionAnalyzeParam?.photoUri) {
-      return;
-    }
-
-    const parsedStartedAt = Date.parse(gymSessionAnalyzeParam.startedAt);
-    const startedAtMs = Number.isNaN(parsedStartedAt) ? undefined : parsedStartedAt;
-    startGymSessionAnalysis(gymSessionAnalyzeParam.photoUri, startedAtMs);
-    navigation.setParams({ gymSessionAnalyze: undefined });
-  }, [gymSessionAnalyzeParam, navigation, startGymSessionAnalysis]);
-
-  useEffect(() => {
-    if (!gymSessionAnalysis || gymSessionAnalysis.result) {
-      return;
-    }
-
-    const intervalId = setInterval(() => {
-      setGymSessionAnalysis((previous) => {
-        if (!previous) {
-          return previous;
-        }
-
-        const elapsedMs = Math.max(0, Date.now() - previous.startedAtMs);
-        const projectedProgress =
-          ANALYSIS_INITIAL_PROGRESS +
-          (elapsedMs / ANALYSIS_RAMP_MS) *
-            (ANALYSIS_PENDING_CAP - ANALYSIS_INITIAL_PROGRESS);
-        const nextProgress = Math.min(
-          ANALYSIS_PENDING_CAP,
-          Math.max(previous.progress, projectedProgress),
-        );
-
-        if (nextProgress === previous.progress) {
-          return previous;
-        }
-
-        return {
-          ...previous,
-          progress: nextProgress,
-        };
-      });
-    }, 250);
-
-    return () => clearInterval(intervalId);
-  }, [gymSessionAnalysis?.result, gymSessionAnalysis?.startedAtMs]);
 
   useEffect(() => {
     if (isGymFlowActive && !previousGymFlowActiveRef.current) {
@@ -297,19 +145,22 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
     setShouldAutoScrollGymFlow(false);
   }, [scrollToGymFlowCard, shouldAutoScrollGymFlow]);
 
-  const handleGymFlowCardLayout = useCallback((event: LayoutChangeEvent) => {
-    gymFlowCardYRef.current = event.nativeEvent.layout.y;
-    if (!shouldAutoScrollGymFlow) {
-      return;
-    }
-    if (!scrollToGymFlowCard()) {
-      return;
-    }
-    setShouldAutoScrollGymFlow(false);
-  }, [scrollToGymFlowCard, shouldAutoScrollGymFlow]);
+  const handleGymFlowCardLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      gymFlowCardYRef.current = event.nativeEvent.layout.y;
+      if (!shouldAutoScrollGymFlow) {
+        return;
+      }
+      if (!scrollToGymFlowCard()) {
+        return;
+      }
+      setShouldAutoScrollGymFlow(false);
+    },
+    [scrollToGymFlowCard, shouldAutoScrollGymFlow],
+  );
 
   const handleRequestGymValidation = async () => {
-    const result = await requestGymValidationForToday(validationNote);
+    const result = await gymFlow.submitGymValidationRequest();
     if (result.error) {
       Alert.alert("Couldn't request validation", result.error);
       return;
@@ -322,24 +173,25 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
       "Validation requested",
       "Your close friends can now review this provisional session.",
     );
-    setShowValidationNoteModal(false);
-    setValidationNote("");
   };
 
   const handleCloseGymSessionAnalysisCard = useCallback(async () => {
-    const shouldRefreshProgress = Boolean(gymSessionAnalysis?.result);
-    setGymSessionAnalysis(null);
     scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    const result = await gymFlow.closeGymSessionAnalysisCard();
+    if (!result?.error) {
+      return;
+    }
+    Alert.alert("Couldn't refresh progress", result.error);
+  }, [gymFlow]);
 
-    if (!shouldRefreshProgress) {
+  const handleRequestCloseFriendValidationFromCard = useCallback(async () => {
+    const result = await gymFlow.requestCloseFriendValidationFromAnalysis();
+    if (result.success || !result.error) {
       return;
     }
 
-    await new Promise<void>((resolve) => {
-      setTimeout(() => resolve(), 220);
-    });
-    await refreshDashboard({ preserveOnError: true });
-  }, [gymSessionAnalysis?.result, refreshDashboard]);
+    Alert.alert("Couldn't request validation", result.error);
+  }, [gymFlow]);
 
   const handleAllowAutoSupport = async () => {
     const result = await allowAutoSupportFromNudge();
@@ -458,37 +310,29 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
               gymTarget={weeklyGymTarget}
               gymWeekLabel={gymWeekLabel}
               onLogSession={() => {
-                if (!canStartGymSessionCapture) {
+                if (!gymFlow.canStartGymSessionCapture) {
                   return;
                 }
-                setShowInlineGymCapture(true);
+                gymFlow.openInlineGymCapture();
               }}
               onSetupGym={() => navigation.navigate("GymSettings")}
-              logSessionEnabled={canStartGymSessionCapture}
+              logSessionEnabled={gymFlow.canStartGymSessionCapture}
               gymLastStatus={todayGymSession?.status}
               gymLastStatusReason={todayGymSession?.statusReason ?? null}
               validationRequestStatus={todayGymValidationStatus}
               requestValidationLoading={requestingGymValidation}
               gymLastDistanceMeters={todayGymSession?.distanceMeters ?? null}
               preferredUnit={unit}
-              steps={stepSummary}
-              stepsLoading={loadingStepSummary}
-              stepsSummaryMode={stepSummaryMode}
-              stepsTarget={stepTarget}
-              stepsEnabled={appleHealthStepsEnabled}
-              onPressSteps={
-                !appleHealthStepsEnabled
-                  ? () => navigation.navigate("ProfileSettings")
-                  : undefined
-              }
+              stepSummary={stepSummary}
+              onPressSteps={!stepSummary.enabled ? () => navigation.navigate("ProfileSettings") : undefined}
               onRequestValidation={
                 todayGymSession?.status === "provisional"
-                  ? () => setShowValidationNoteModal(true)
+                  ? gymFlow.openValidationNoteModal
                   : undefined
               }
               onRetry={
                 todayGymSession?.status === "provisional"
-                  ? () => setShowInlineGymCapture(true)
+                  ? gymFlow.openInlineGymCapture
                   : undefined
               }
             />
@@ -512,43 +356,43 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
                   <View className="mx-4 border-t border-neutral-800" />
 
                   <TouchableOpacity
-                    activeOpacity={canStartGymSessionCapture || !hasGymLocation ? 0.8 : 1}
+                    activeOpacity={gymFlow.canStartGymSessionCapture || !hasGymLocation ? 0.8 : 1}
                     onPress={() =>
                       !hasGymLocation
                         ? navigation.navigate("GymSettings")
-                        : canStartGymSessionCapture
-                        ? setShowInlineGymCapture(true)
-                        : undefined
+                        : gymFlow.canStartGymSessionCapture
+                          ? gymFlow.openInlineGymCapture()
+                          : undefined
                     }
-                    disabled={hasGymLocation && !canStartGymSessionCapture}
+                    disabled={hasGymLocation && !gymFlow.canStartGymSessionCapture}
                     className="flex-row items-center px-4 py-4"
                   >
                     <View className="flex-1">
                       <Text
                         className={`text-sm font-semibold ${
-                          hasGymLocation && !canStartGymSessionCapture
+                          hasGymLocation && !gymFlow.canStartGymSessionCapture
                             ? "text-neutral-500"
                             : "text-white"
                         }`}
                       >
                         {!hasGymLocation
                           ? "Set gym location"
-                          : canStartGymSessionCapture
+                          : gymFlow.canStartGymSessionCapture
                             ? "Add gym session"
                             : "Gym session logged"}
                       </Text>
                     </View>
                     <View
                       className={`h-7 w-7 items-center justify-center rounded-full ${
-                        hasGymLocation && !canStartGymSessionCapture
+                        hasGymLocation && !gymFlow.canStartGymSessionCapture
                           ? "bg-neutral-900"
                           : "bg-neutral-800"
                       }`}
                     >
                       <Ionicons
-                        name={hasGymLocation && !canStartGymSessionCapture ? "checkmark" : "add"}
+                        name={hasGymLocation && !gymFlow.canStartGymSessionCapture ? "checkmark" : "add"}
                         size={16}
-                        color={hasGymLocation && !canStartGymSessionCapture ? "#a3a3a3" : "#ffffff"}
+                        color={hasGymLocation && !gymFlow.canStartGymSessionCapture ? "#a3a3a3" : "#ffffff"}
                       />
                     </View>
                   </TouchableOpacity>
@@ -558,20 +402,19 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
 
             {isGymFlowActive ? (
               <View onLayout={handleGymFlowCardLayout}>
-                {showInlineGymCapture ? (
+                {gymFlow.showInlineGymCapture ? (
                   <InlineGymSessionCaptureCard
                     cardHeight={gymFlowCardHeight}
-                    onCancel={() => setShowInlineGymCapture(false)}
+                    onCancel={() => gymFlow.setShowInlineGymCapture(false)}
                     onSaved={({ photoUri }) => {
-                      setShowInlineGymCapture(false);
-                      startGymSessionAnalysis(photoUri);
+                      gymFlow.setShowInlineGymCapture(false);
+                      gymFlow.startGymSessionAnalysis(photoUri);
                     }}
                     onSaveFailed={() => {
-                      setGymSessionAnalysis(null);
-                      setShowInlineGymCapture(true);
+                      gymFlow.setShowInlineGymCapture(true);
                     }}
                     onSaveResolved={({ sessionId, status, statusReason, distanceMeters }) => {
-                      resolveGymSessionAnalysis(
+                      gymFlow.resolveGymSessionAnalysis(
                         sessionId,
                         status,
                         statusReason,
@@ -581,18 +424,18 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
                   />
                 ) : null}
 
-                {!showInlineGymCapture && gymSessionAnalysis ? (
+                {!gymFlow.showInlineGymCapture && gymFlow.gymSessionAnalysis ? (
                   <GymSessionAnalyzingCard
                     cardHeight={gymFlowCardHeight}
-                    photoUri={gymSessionAnalysis.photoUri}
-                    progress={gymSessionAnalysis.progress}
-                    phase={gymSessionAnalysis.result?.phase ?? "analyzing"}
-                    reason={gymSessionAnalysis.result?.reason ?? null}
+                    photoUri={gymFlow.gymSessionAnalysis.photoUri}
+                    progress={gymFlow.gymSessionAnalysis.progress}
+                    phase={gymFlow.gymSessionAnalysis.result?.phase ?? "analyzing"}
+                    reason={gymFlow.gymSessionAnalysis.result?.reason ?? null}
                     showCloseFriendValidation={
-                      gymSessionAnalysis.result?.canRequestCloseFriendValidation ?? false
+                      gymFlow.gymSessionAnalysis.result?.canRequestCloseFriendValidation ?? false
                     }
-                    validationRequesting={requestingCloseFriendValidation}
-                    validationRequested={gymSessionAnalysis.result?.validationRequested ?? false}
+                    validationRequesting={gymFlow.requestingCloseFriendValidation}
+                    validationRequested={gymFlow.gymSessionAnalysis.result?.validationRequested ?? false}
                     onRequestCloseFriendValidation={() =>
                       void handleRequestCloseFriendValidationFromCard()
                     }
@@ -615,11 +458,11 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
       </ScrollView>
 
       <GymValidationNoteModal
-        visible={showValidationNoteModal}
-        note={validationNote}
+        visible={gymFlow.showValidationNoteModal}
+        note={gymFlow.validationNote}
         requesting={requestingGymValidation}
-        onClose={() => setShowValidationNoteModal(false)}
-        onChangeNote={setValidationNote}
+        onClose={gymFlow.closeValidationNoteModal}
+        onChangeNote={gymFlow.setValidationNote}
         onSubmit={handleRequestGymValidation}
       />
     </AppScreen>
