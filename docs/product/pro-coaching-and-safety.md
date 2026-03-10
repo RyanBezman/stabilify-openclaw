@@ -1,6 +1,6 @@
 # Pro Coaching and Safety Policy
 
-Last updated: 2026-03-04
+Last updated: 2026-03-10
 
 ## Goal
 
@@ -23,7 +23,9 @@ Define Pro-tier coaching boundaries, quality defaults, and safety behavior.
 - Weekly check-in UX policy:
   - use an onboarding-style step-by-step wizard for active weekly check-ins,
   - keep overview/history outside the wizard,
-  - do not show the full check-in input set in one long form on the overview screen.
+  - do not show the full check-in input set in one long form on the overview screen,
+  - use example placeholders instead of prefilled typed answers for new check-ins,
+  - keep the review step styled like a completed read-only form with section-level edit affordances.
 - AI quality policy in Pro coach flows: prefer higher response quality over lower cost when safety is satisfied.
 - Weekly adjustment application: require explicit user acceptance before plan promotion.
 
@@ -57,4 +59,5 @@ If `safety_blocked = true`, no plan-adjustment payload is applied.
 - No plan diff should be applied while safety-blocked.
 - Weekly plan updates must remain pending until user acceptance.
 - Weekly check-in should present one guided step at a time and end with a review step before submit.
+- Weekly check-in should keep focused multiline responses visible above the keyboard and bottom CTA.
 - Onboarding results review must show both tracks and clearly indicate generated vs not-generated states when user chose a single-track start.

@@ -102,21 +102,26 @@ Expected:
   - review
 - `Back` returns to the prior step; backing out of the first step exits to overview mode.
 - Previously entered values remain in memory when closing and reopening the wizard during the same screen session.
-- Review step shows editable summary cards and submit CTA.
+- Review step shows a read-only completed-form layout with section `Edit` actions and submit CTA.
 - Wizard includes the full v2 input set across steps:
   - weight, waist optional, body composition changes
   - progress photo prompted, training difficulty
   - energy/recovery/sleep/stress ratings
   - adherence percent + subjective
   - appetite/cravings
+  - stomach / digestion notes
   - goal progress/PRs, consistency notes
   - schedule constraints next week
   - injury/pain + red-flag prompt
-  - optional blockers
+- New check-ins use example placeholders for typed inputs instead of prefilled answers.
+- Focusing a multiline field such as `Appetite and cravings` keeps the active input visible above the keyboard and bottom CTA.
+- Step-level choice buttons stay visually secondary, while the bottom `Continue` button remains the only strong primary CTA.
+- Recovery step renders compact scale cards for energy, recovery, sleep quality, and stress without wrapping into a messy grid.
 
 6. Submit a new weekly check-in.
 Expected:
 - Review-step submit succeeds with onboarding-style loading overlay.
+- Loading overlay progress stays below `100%` until the submit flow is actually complete.
 - Screen returns to overview mode with success banner.
 - History shows newest entry first.
 - Existing current-week entry switches to edit/update behavior.

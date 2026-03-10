@@ -52,9 +52,11 @@ Last updated: 2026-03-10
   - `next_week`
   - `pain_safety`
   - `review`
-- Review step shows editable summary sections and is the only place the final submit action appears.
+- Review step shows a completed read-only form layout with editable sections and is the only place the final submit action appears.
 - Overview mode never renders the full check-in field set all at once.
-- Input set includes: current weight, optional waist/measurement/photo prompt, goal progress, training difficulty (`too_easy|right|too_hard`), nutrition adherence (percent or subjective), appetite/cravings, energy (1-5), recovery (1-5), sleep average hours and quality (1-5), stress (1-5), upcoming schedule constraints, injury/pain screen.
+- Input set includes: current weight, optional waist/measurement/photo prompt, goal progress, training difficulty (`too_easy|right|too_hard`), nutrition adherence (percent or subjective), appetite/cravings, stomach/digestion notes, energy (1-5), recovery (1-5), sleep average hours and quality (1-5), stress (1-5), upcoming schedule constraints, injury/pain screen.
+- New weekly check-ins do not prefill typed text/number responses; they use example placeholders instead.
+- Wizard multiline fields scroll above the keyboard while focused so the active answer remains visible.
 - Output set includes: adjusted `WorkoutPlan` when needed, adjusted `NutritionTargets` and optional `MealPlan` when needed, 1-3 focus habits, short motivational summary in unified voice.
 
 ### Architecture Spec (One identity, Two specialists, Coordinator)

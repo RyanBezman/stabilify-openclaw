@@ -24,6 +24,7 @@ export type WeeklyCheckinV2Form = {
   trainingDifficulty: WeeklyCheckinDifficulty;
   nutritionAdherenceSubjective: WeeklyCheckinAdherenceSubjective | null;
   appetiteCravings: string;
+  foodDigestionNotes: string;
   recoveryRating: WeeklyCheckinRating;
   sleepAvgHours: string;
   sleepQuality: WeeklyCheckinRating;
@@ -50,7 +51,7 @@ export const MAX_CURRENT_WEIGHT_LB = Number(
 export const CHECKINS_DEFAULT_ENERGY = 3;
 export const CHECKINS_DEFAULT_ADHERENCE = "100";
 export const CHECKINS_DEFAULT_V2_FORM: WeeklyCheckinV2Form = {
-  currentWeight: "176.4",
+  currentWeight: "",
   waistCm: "",
   progressPhotoPrompted: false,
   strengthPRs: "",
@@ -59,8 +60,9 @@ export const CHECKINS_DEFAULT_V2_FORM: WeeklyCheckinV2Form = {
   trainingDifficulty: "right",
   nutritionAdherenceSubjective: null,
   appetiteCravings: "",
+  foodDigestionNotes: "",
   recoveryRating: 3,
-  sleepAvgHours: "7",
+  sleepAvgHours: "",
   sleepQuality: 3,
   stressLevel: 3,
   scheduleConstraintsNextWeek: "",
@@ -160,6 +162,7 @@ export function deriveV2CheckinFormValues(
     nutritionAdherenceSubjective:
       artifact.nutritionAdherenceSubjective ?? null,
     appetiteCravings: artifact.appetiteCravings,
+    foodDigestionNotes: artifact.foodDigestionNotes,
     recoveryRating: artifact.recoveryRating,
     sleepAvgHours: String(artifact.sleepAvgHours),
     sleepQuality: artifact.sleepQuality,
@@ -265,6 +268,7 @@ export function buildWeeklyCheckinSubmitInput(args: {
       nutritionAdherenceSubjective:
         args.v2Form.nutritionAdherenceSubjective,
       appetiteCravings: args.v2Form.appetiteCravings.trim(),
+      foodDigestionNotes: args.v2Form.foodDigestionNotes.trim(),
       energyRating: normalizedEnergy as WeeklyCheckinRating,
       recoveryRating: args.v2Form.recoveryRating,
       sleepAvgHours: Number(parsedSleepAvgHours.toFixed(1)),

@@ -146,6 +146,29 @@ export function CoachWorkspaceView({
     userTier,
     onTierRequired,
   });
+  const [workoutNotesOpen, setWorkoutNotesOpen] = useState(false);
+  const [workoutScheduleOpen, setWorkoutScheduleOpen] = useState(true);
+  const [expandedWorkoutDays, setExpandedWorkoutDays] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!displayedWorkoutPlan) {
+      setWorkoutNotesOpen(false);
+      setWorkoutScheduleOpen(true);
+      setExpandedWorkoutDays({});
+      return;
+    }
+
+    setWorkoutNotesOpen(false);
+    setWorkoutScheduleOpen(true);
+    setExpandedWorkoutDays(
+      Object.fromEntries(
+        displayedWorkoutPlan.schedule.map((day, index) => [
+          `${day.dayLabel}-${index}`,
+          index === 0,
+        ]),
+      ),
+    );
+  }, [displayedWorkoutPlan]);
 
   useCoachRenderDiagnostics("CoachWorkspaceView", {
     specialization,
@@ -213,7 +236,7 @@ export function CoachWorkspaceView({
   };
 
   return (
-    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={960}>
+    <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={1120}>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -502,121 +525,238 @@ export function CoachWorkspaceView({
                   </Card>
                 )
               ) : isWorkout ? (
-                <Card className="mt-3 p-5">
-                  <View className="flex-row items-start justify-between">
-                    <View className="flex-1">
-                      <Text className="text-lg font-bold text-white">{displayedWorkoutPlan ? displayedWorkoutPlan.title : "No plan yet"}</Text>
-                      <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
-                        {displayedWorkoutPlan
-                          ? `${displayedWorkoutPlan.daysPerWeek} days/week · ${
-                              displayedPlanKind === "current"
-                                ? workoutDraftPlan
-                                  ? "current"
-                                  : "active"
-                                : "new"
-                            }`
-                          : "Create your first plan, then refine it with your coach."}
-                      </Text>
-                    </View>
-                    {displayedPlanKind === "current" ? (
-                      <View className="ml-4 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5">
-                        <Text className="text-xs font-semibold text-emerald-200">{hasToggle ? "CURRENT" : "ACTIVE"}</Text>
+                <View className="mt-3 overflow-hidden">
+                  <View className="px-5 py-5">
+                    <View className="flex-row items-start justify-between gap-3">
+                      <View className="flex-1">
+                        <Text className="text-lg font-bold text-white">
+                          {displayedWorkoutPlan ? displayedWorkoutPlan.title : "No plan yet"}
+                        </Text>
+                        <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
+                          {displayedWorkoutPlan
+                            ? `${displayedWorkoutPlan.daysPerWeek} days/week · ${
+                                displayedPlanKind === "current"
+                                  ? workoutDraftPlan
+                                    ? "current"
+                                    : "active"
+                                  : "new"
+                              }`
+                            : "Create your first plan, then refine it with your coach."}
+                        </Text>
                       </View>
-                    ) : displayedPlanKind === "new" ? (
-                      <View className="ml-4 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5">
-                        <Text className="text-xs font-semibold text-amber-200">NEW</Text>
+                      {displayedWorkoutPlan ? (
+                        displayedPlanKind === "current" ? (
+                          <View className="ml-4 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5">
+                            <Text className="text-xs font-semibold text-emerald-200">
+                              {hasToggle ? "CURRENT" : "ACTIVE"}
+                            </Text>
+                          </View>
+                        ) : (
+                          <View className="ml-4 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5">
+                            <Text className="text-xs font-semibold text-amber-200">NEW</Text>
+                          </View>
+                        )
+                      ) : null}
+                    </View>
+
+                    {workoutActivePlan && workoutDraftPlan ? (
+                      <View className="mt-5 flex-row gap-3">
+                        <OptionPill label="Current" selected={!showDraftInPlan} onPress={() => setShowDraftInPlan(false)} />
+                        <OptionPill label="New" selected={showDraftInPlan} onPress={() => setShowDraftInPlan(true)} />
                       </View>
                     ) : null}
-                  </View>
 
-                  {workoutActivePlan && workoutDraftPlan ? (
-                    <View className="mt-5 flex-row gap-3">
-                      <OptionPill label="Current" selected={!showDraftInPlan} onPress={() => setShowDraftInPlan(false)} />
-                      <OptionPill label="New" selected={showDraftInPlan} onPress={() => setShowDraftInPlan(true)} />
-                    </View>
-                  ) : null}
-
-                  {displayedWorkoutPlan ? (
-                    <View className="mt-5 gap-4">
-                      <View className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
-                        <Text className="text-sm font-semibold text-neutral-300">Notes</Text>
-                        <View className="mt-3 gap-2">
-                          {displayedWorkoutPlan.notes.map((note, noteIndex) => (
-                            <View key={`${note}-${noteIndex}`} className="flex-row items-center">
-                              <View className="mr-3 h-2 w-2 rounded-full bg-violet-500/90" />
-                              <Text className="text-sm text-neutral-300">{note}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      </View>
-
-                      {displayedWorkoutPlan.schedule.map((day, dayIndex) => (
-                        <View
-                          key={`${day.dayLabel}-${dayIndex}`}
-                          className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4"
-                        >
-                          <Text className="text-sm font-semibold text-neutral-300">{day.dayLabel} · {day.focus}</Text>
-                          <View className="mt-3 gap-2">
-                            {day.items.map((item, itemIndex) => (
-                              <View
-                                key={`${day.dayLabel}-${item.name}-${itemIndex}`}
-                                className="flex-row items-start justify-between gap-3"
-                              >
-                                <Text className="flex-1 text-sm leading-5 text-white">{item.name}</Text>
-                                <Text className="shrink-0 text-right text-xs text-neutral-400">
-                                  {item.sets} x {item.reps}
-                                </Text>
-                              </View>
-                            ))}
+                    {displayedWorkoutPlan ? (
+                      <>
+                        <View className="mt-5 flex-row gap-3">
+                          <View className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+                            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-400">
+                              Days / week
+                            </Text>
+                            <Text className="mt-2 text-lg font-semibold text-white">
+                              {displayedWorkoutPlan.daysPerWeek}
+                            </Text>
+                          </View>
+                          <View className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+                            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-400">
+                              Sessions
+                            </Text>
+                            <Text className="mt-2 text-lg font-semibold text-white">
+                              {displayedWorkoutPlan.schedule.length}
+                            </Text>
                           </View>
                         </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Card variant="subtle" className="mt-5 p-5">
-                      <Text className="text-base font-semibold text-white">Build your plan</Text>
-                      <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
-                        Answer a few intake questions and your coach will generate a workout draft you can confirm.
-                      </Text>
-                      <Button
-                        className="mt-4"
-                        title="Create workout plan"
-                        onPress={openPlanIntake}
-                        disabled={planApiUnavailable}
-                      />
-                    </Card>
-                  )}
 
-                  {displayedWorkoutPlan ? (
-                    workoutDraftPlan ? (
-                      <View className="mt-5 flex-row gap-3">
-                        <Button
-                          className="flex-1"
-                          title={workoutActivePlan ? "Keep new plan" : "Save plan"}
-                          onPress={() => void promoteDraftPlan()}
-                          disabled={planBusy}
-                        />
-                        <Button
-                          className="flex-1"
-                          variant="secondary"
-                          title="Discard new"
-                          onPress={() => {
-                            void discardDraftPlan();
-                          }}
-                          disabled={planBusy || planApiUnavailable}
-                        />
-                      </View>
+                        {displayedWorkoutPlan.notes.length ? (
+                          <View className="mt-5">
+                            <TouchableOpacity
+                              activeOpacity={0.85}
+                              onPress={() => setWorkoutNotesOpen((current) => !current)}
+                              className="flex-row items-center justify-between gap-3"
+                            >
+                              <View className="flex-1">
+                                <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-400">
+                                  Notes
+                                </Text>
+                                <Text className="mt-1 text-sm text-neutral-300">
+                                  {displayedWorkoutPlan.notes.length} note{displayedWorkoutPlan.notes.length === 1 ? "" : "s"}
+                                </Text>
+                              </View>
+                              <View className="flex-row items-center gap-2">
+                                <Text className="text-sm font-semibold text-neutral-200">
+                                  {workoutNotesOpen ? "Hide" : "Show"}
+                                </Text>
+                                <Ionicons
+                                  name={workoutNotesOpen ? "chevron-up" : "chevron-down"}
+                                  size={16}
+                                  color="#e5e5e5"
+                                />
+                              </View>
+                            </TouchableOpacity>
+                            {workoutNotesOpen ? (
+                              <View className="mt-3 gap-2">
+                                {displayedWorkoutPlan.notes.map((note, noteIndex) => (
+                                  <Text
+                                    key={`${note}-${noteIndex}`}
+                                    className="text-sm leading-6 text-neutral-200"
+                                  >
+                                    • {note}
+                                  </Text>
+                                ))}
+                              </View>
+                            ) : null}
+                          </View>
+                        ) : null}
+                      </>
                     ) : (
                       <View className="mt-5">
+                        <Text className="text-base font-semibold text-white">Build your plan</Text>
+                        <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
+                          Answer a few intake questions and your coach will generate a workout draft you can confirm.
+                        </Text>
                         <Button
-                          title="Revise days/week"
-                          onPress={openDaysRevision}
-                          disabled={planBusy || planApiUnavailable}
+                          className="mt-4"
+                          title="Create workout plan"
+                          onPress={openPlanIntake}
+                          disabled={planApiUnavailable}
                         />
                       </View>
-                    )
+                    )}
+                  </View>
+
+                  {displayedWorkoutPlan ? (
+                    <>
+                      <View className="border-t border-neutral-900 px-5 py-4">
+                        <TouchableOpacity
+                          activeOpacity={0.85}
+                          onPress={() => setWorkoutScheduleOpen((current) => !current)}
+                          className="flex-row items-center justify-between gap-3"
+                        >
+                          <View className="flex-1">
+                            <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-400">
+                              Weekly schedule
+                            </Text>
+                            <Text className="mt-1 text-sm text-neutral-300">
+                              {displayedWorkoutPlan.schedule.length} day{displayedWorkoutPlan.schedule.length === 1 ? "" : "s"}
+                            </Text>
+                          </View>
+                          <View className="flex-row items-center gap-2">
+                            <Text className="text-sm font-semibold text-neutral-200">
+                              {workoutScheduleOpen ? "Hide" : "Show"}
+                            </Text>
+                            <Ionicons
+                              name={workoutScheduleOpen ? "chevron-up" : "chevron-down"}
+                              size={16}
+                              color="#e5e5e5"
+                            />
+                          </View>
+                        </TouchableOpacity>
+                      </View>
+
+                      {workoutScheduleOpen
+                        ? displayedWorkoutPlan.schedule.map((day, dayIndex) => {
+                            const dayKey = `${day.dayLabel}-${dayIndex}`;
+                            const dayOpen = Boolean(expandedWorkoutDays[dayKey]);
+
+                            return (
+                              <View
+                                key={dayKey}
+                                className={`${dayIndex === 0 ? "" : "border-t border-neutral-900"} px-5 py-4`}
+                              >
+                                <TouchableOpacity
+                                  activeOpacity={0.85}
+                                  onPress={() =>
+                                    setExpandedWorkoutDays((current) => ({
+                                      ...current,
+                                      [dayKey]: !current[dayKey],
+                                    }))
+                                  }
+                                  className="flex-row items-start justify-between gap-3"
+                                >
+                                  <View className="flex-1">
+                                    <Text className="text-sm font-semibold text-neutral-100">
+                                      {day.dayLabel}
+                                    </Text>
+                                    <Text className="mt-1 text-sm text-neutral-300">
+                                      {day.focus} • {day.items.length} exercise{day.items.length === 1 ? "" : "s"}
+                                    </Text>
+                                  </View>
+                                  <Text className="text-sm font-semibold text-neutral-200">
+                                    {dayOpen ? "Hide" : "Show"}
+                                  </Text>
+                                </TouchableOpacity>
+                                {dayOpen ? (
+                                  <View className="mt-3 gap-3">
+                                    {day.items.map((item, itemIndex) => (
+                                      <View
+                                        key={`${day.dayLabel}-${item.name}-${itemIndex}`}
+                                        className="flex-row items-start justify-between gap-3"
+                                      >
+                                        <Text className="flex-1 text-sm leading-6 text-white">
+                                          {item.name}
+                                        </Text>
+                                        <Text className="shrink-0 pt-0.5 text-right text-xs text-neutral-300">
+                                          {item.sets} x {item.reps}
+                                        </Text>
+                                      </View>
+                                    ))}
+                                  </View>
+                                ) : null}
+                              </View>
+                            );
+                          })
+                        : null}
+
+                      <View className="border-t border-neutral-900 px-5 py-5">
+                        {workoutDraftPlan ? (
+                          <View className="flex-row gap-3">
+                            <Button
+                              className="flex-1"
+                              title={workoutActivePlan ? "Keep new plan" : "Save plan"}
+                              onPress={() => void promoteDraftPlan()}
+                              disabled={planBusy}
+                            />
+                            <Button
+                              className="flex-1"
+                              variant="secondary"
+                              title="Discard new"
+                              onPress={() => {
+                                void discardDraftPlan();
+                              }}
+                              disabled={planBusy || planApiUnavailable}
+                            />
+                          </View>
+                        ) : (
+                          <Button
+                            title="Revise days/week"
+                            onPress={openDaysRevision}
+                            disabled={planBusy || planApiUnavailable}
+                          />
+                        )}
+                      </View>
+                    </>
                   ) : null}
-                </Card>
+                </View>
               ) : (
                 <NutritionPlanCard
                   plan={displayedNutritionPlan}

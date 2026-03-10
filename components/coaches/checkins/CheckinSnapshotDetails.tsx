@@ -24,7 +24,7 @@ function formatReportedCheckinWeight(checkin: WeeklyCheckin) {
   return `${lb.toFixed(1)} lb`;
 }
 
-function SnapshotRow({
+function MetricCard({
   label,
   value,
   toneClassName = "text-white",
@@ -36,14 +36,31 @@ function SnapshotRow({
   detail?: string | null;
 }) {
   return (
-    <View className="border-t border-neutral-900 px-5 py-4">
-      <View className="flex-row items-center justify-between gap-4">
-        <View className="min-w-0 flex-1">
-          <Text className="text-[16px] text-neutral-200">{label}</Text>
-          {detail ? <Text className="mt-1 text-sm leading-5 text-neutral-500">{detail}</Text> : null}
-        </View>
-        <Text className={`text-[15px] font-semibold ${toneClassName}`}>{value}</Text>
-      </View>
+    <View className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-900/70 p-4">
+      <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+        {label}
+      </Text>
+      <Text className={`mt-2 text-lg font-semibold ${toneClassName}`}>{value}</Text>
+      {detail ? (
+        <Text className="mt-2 text-sm leading-5 text-neutral-500">{detail}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+function DetailBlock({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <View className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
+      <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+        {label}
+      </Text>
+      <Text className="mt-2 text-sm leading-relaxed text-neutral-200">{value}</Text>
     </View>
   );
 }
@@ -68,35 +85,32 @@ export default function CheckinSnapshotDetails({
   }`;
 
   return (
-    <>
-      <SnapshotRow label="Energy" value={`${checkin.energy}/5`} toneClassName="text-emerald-300" />
-      <SnapshotRow label="Adherence" value={`${checkin.adherencePercent}%`} />
-      <SnapshotRow
-        label="Score"
-        value={String(checkin.adherenceScore ?? checkin.adherencePercent)}
-        toneClassName="text-violet-300"
-      />
-      <SnapshotRow
-        label="Weight trend"
-        value={trendLabel(checkin.weightSnapshot.trend)}
-        toneClassName={trendColorClass(checkin.weightSnapshot.trend)}
-        detail={weightTrendDetail}
-      />
+    <View className="gap-3 px-5 py-5">
+      <View className="flex-row gap-3">
+        <MetricCard label="Energy" value={`${checkin.energy}/5`} toneClassName="text-emerald-300" />
+        <MetricCard label="Adherence" value={`${checkin.adherencePercent}%`} />
+      </View>
+      <View className="flex-row gap-3">
+        <MetricCard
+          label="Score"
+          value={String(checkin.adherenceScore ?? checkin.adherencePercent)}
+          toneClassName="text-violet-300"
+        />
+        <MetricCard
+          label="Weight trend"
+          value={trendLabel(checkin.weightSnapshot.trend)}
+          toneClassName={trendColorClass(checkin.weightSnapshot.trend)}
+          detail={weightTrendDetail}
+        />
+      </View>
       {reportedWeightLabel ? (
-        <SnapshotRow
+        <MetricCard
           label="Reported check-in weight"
           value={reportedWeightLabel}
           toneClassName="text-violet-300"
         />
       ) : null}
-      {summaryText ? (
-        <View className="border-t border-neutral-900 px-5 py-4">
-          <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
-            Coach summary
-          </Text>
-          <Text className="mt-2 text-sm leading-relaxed text-neutral-200">{summaryText}</Text>
-        </View>
-      ) : null}
-    </>
+      {summaryText ? <DetailBlock label="Coach summary" value={summaryText} /> : null}
+    </View>
   );
 }

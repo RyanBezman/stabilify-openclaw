@@ -52,6 +52,7 @@ const DEFAULT_CHECKIN_ARTIFACT: Omit<WeeklyCheckinArtifact, "timestamp" | "curre
   nutritionAdherencePercent: null,
   nutritionAdherenceSubjective: null,
   appetiteCravings: "",
+  foodDigestionNotes: "",
   energyRating: 3,
   recoveryRating: 3,
   sleepAvgHours: 7,
@@ -280,6 +281,7 @@ function createFallbackArtifact(args: {
     nutritionAdherencePercent: args.adherencePercent,
     nutritionAdherenceSubjective: null,
     appetiteCravings: "",
+    foodDigestionNotes: "",
     energyRating: normalizeRating(args.energy, 3),
     recoveryRating: normalizeRating(args.energy, 3),
     sleepAvgHours: 7,
@@ -337,6 +339,7 @@ function parseCheckinArtifact(
     nutritionAdherencePercent: normalizeOptionalNumber(record.nutritionAdherencePercent),
     nutritionAdherenceSubjective: normalizeSubjectiveAdherence(record.nutritionAdherenceSubjective),
     appetiteCravings: normalizeText(record.appetiteCravings, { maxLength: MAX_TEXT_LENGTH }),
+    foodDigestionNotes: normalizeText(record.foodDigestionNotes, { maxLength: MAX_TEXT_LENGTH }),
     energyRating: normalizeRating(record.energyRating, fallback.energyRating),
     recoveryRating: normalizeRating(record.recoveryRating, fallback.recoveryRating),
     sleepAvgHours: clampDecimal(record.sleepAvgHours, 0, 24, fallback.sleepAvgHours, 1),
@@ -594,6 +597,7 @@ function hasExtendedCheckinInput(input: WeeklyCheckinInput) {
     || Object.prototype.hasOwnProperty.call(input, "nutritionAdherencePercent")
     || Object.prototype.hasOwnProperty.call(input, "nutritionAdherenceSubjective")
     || Object.prototype.hasOwnProperty.call(input, "appetiteCravings")
+    || Object.prototype.hasOwnProperty.call(input, "foodDigestionNotes")
     || Object.prototype.hasOwnProperty.call(input, "energyRating")
     || Object.prototype.hasOwnProperty.call(input, "recoveryRating")
     || Object.prototype.hasOwnProperty.call(input, "sleepAvgHours")
@@ -646,6 +650,9 @@ export function normalizeWeeklyCheckinInputV2(input: WeeklyCheckinInput): Weekly
         nutritionAdherencePercent: normalizedNutritionPercent,
         nutritionAdherenceSubjective: normalizedSubjective,
         appetiteCravings: normalizeText(input.appetiteCravings, { maxLength: MAX_TEXT_LENGTH }),
+        foodDigestionNotes: normalizeText(input.foodDigestionNotes, {
+          maxLength: MAX_TEXT_LENGTH,
+        }),
         energyRating: normalizeRating(input.energyRating, normalizedEnergy as WeeklyCheckinRating),
         recoveryRating: normalizeRating(
           input.recoveryRating,
@@ -712,6 +719,7 @@ export async function submitWeeklyCheckinV2(
     checkinPayload.nutritionAdherenceSubjective =
       normalized.nutritionAdherenceSubjective ?? null;
     checkinPayload.appetiteCravings = normalized.appetiteCravings ?? "";
+    checkinPayload.foodDigestionNotes = normalized.foodDigestionNotes ?? "";
     checkinPayload.energyRating = normalized.energyRating ?? normalized.energy;
     checkinPayload.recoveryRating = normalized.recoveryRating ?? normalized.energy;
     checkinPayload.sleepAvgHours = normalized.sleepAvgHours ?? 7;

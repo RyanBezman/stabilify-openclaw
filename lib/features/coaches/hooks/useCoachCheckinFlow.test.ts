@@ -23,6 +23,7 @@ const baseSnapshot: CoachCheckinFlowSnapshot = {
     trainingDifficulty: "right",
     nutritionAdherenceSubjective: "medium",
     appetiteCravings: "",
+    foodDigestionNotes: "",
     recoveryRating: 3,
     sleepAvgHours: "7",
     sleepQuality: 3,
@@ -150,6 +151,35 @@ describe("useCoachCheckinFlow", () => {
 
     expect(hook.current.isReviewStep).toBe(false);
     expect(hook.current.currentStep).toBe("nutrition_recap");
+
+    hook.unmount();
+  });
+
+  it("shows stomach / digestion on the review summary instead of blockers", () => {
+    const hook = renderUseCoachCheckinFlow({
+      ...baseSnapshot,
+      blockers: "Legacy blockers",
+      v2Form: {
+        ...baseSnapshot.v2Form,
+        scheduleConstraintsNextWeek: "Traveling Friday",
+        foodDigestionNotes: "Felt bloated after dinner twice.",
+      },
+    });
+
+    const nextWeekSection = hook.current.reviewSections.find(
+      (section) => section.stepId === "next_week",
+    );
+
+    expect(nextWeekSection?.rows).toEqual([
+      {
+        label: "Schedule constraints",
+        value: "Traveling Friday",
+      },
+      {
+        label: "Stomach / digestion",
+        value: "Felt bloated after dinner twice.",
+      },
+    ]);
 
     hook.unmount();
   });

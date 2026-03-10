@@ -1,4 +1,3 @@
-import { useWindowDimensions } from "react-native";
 import {
   Text,
   TextInput,
@@ -56,49 +55,34 @@ function SectionTitle({
   );
 }
 
-function RatingPicker({
-  value,
-  onChange,
-  labels,
+function SecondaryChoiceButton({
+  label,
+  selected,
+  onPress,
   disabled = false,
 }: {
-  value: WeeklyCheckinRating;
-  onChange: (next: WeeklyCheckinRating) => void;
-  labels: [string, string, string, string, string];
+  label: string;
+  selected: boolean;
+  onPress: () => void;
   disabled?: boolean;
 }) {
-  const values: WeeklyCheckinRating[] = [1, 2, 3, 4, 5];
-  const { width } = useWindowDimensions();
-  const compactLayout = width < 390;
-
   return (
-    <View className="mt-3 flex-row flex-wrap justify-between gap-2">
-      {values.map((entry, index) => {
-        const selected = value === entry;
-        return (
-          <TouchableOpacity
-            key={`${entry}-${labels[index]}`}
-            activeOpacity={0.85}
-            onPress={() => {
-              if (disabled) return;
-              onChange(entry);
-            }}
-            className={`h-12 items-center justify-center rounded-xl border px-2 ${
-              optionButtonClass(selected)
-            } ${disabled ? "opacity-60" : ""}`}
-            style={{ width: compactLayout ? "31.5%" : "19%" }}
-          >
-            <Text
-              className={`text-[11px] font-semibold ${
-                selected ? "text-violet-100" : "text-neutral-300"
-              }`}
-            >
-              {labels[index]}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
+    <TouchableOpacity
+      disabled={disabled}
+      activeOpacity={0.85}
+      onPress={onPress}
+      className={`flex-1 rounded-xl border px-3 py-3 ${
+        optionButtonClass(selected)
+      } ${disabled ? "opacity-60" : ""}`}
+    >
+      <Text
+        className={`text-center text-sm font-semibold ${
+          selected ? "text-violet-100" : "text-neutral-300"
+        }`}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -156,8 +140,6 @@ type Props = {
   setEnergy: (value: number) => void;
   adherencePercent: string;
   setAdherencePercent: (value: string) => void;
-  blockers: string;
-  setBlockers: (value: string) => void;
   v2Form: WeeklyCheckinV2Form;
   updateV2Field: <K extends keyof WeeklyCheckinV2Form>(
     key: K,
@@ -166,6 +148,7 @@ type Props = {
   saving: boolean;
   reviewSections: CoachCheckinReviewSection[];
   onEditStep: (stepId: CoachCheckinReviewSection["stepId"]) => void;
+  onInputFocus?: (target: number) => void;
 };
 
 function MultilineInput({
@@ -173,22 +156,99 @@ function MultilineInput({
   onChangeText,
   editable,
   placeholder,
+  onFocusTarget,
 }: {
   value: string;
   onChangeText: (value: string) => void;
   editable: boolean;
   placeholder: string;
+  onFocusTarget?: (target: number) => void;
 }) {
   return (
     <TextInput
       className="mt-3 min-h-[70px] rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3 text-base text-white"
       value={value}
       onChangeText={onChangeText}
+      onFocus={(event) => {
+        onFocusTarget?.(event.nativeEvent.target);
+      }}
       multiline
       editable={editable}
       placeholder={placeholder}
       placeholderTextColor="#525252"
+      textAlignVertical="top"
     />
+  );
+}
+
+function RatingScaleRow({
+  title,
+  value,
+  onChange,
+  lowLabel,
+  highLabel,
+  valueLabels,
+  disabled = false,
+  withSpacing = true,
+}: {
+  title: string;
+  value: WeeklyCheckinRating;
+  onChange: (next: WeeklyCheckinRating) => void;
+  lowLabel: string;
+  highLabel: string;
+  valueLabels: [string, string, string, string, string];
+  disabled?: boolean;
+  withSpacing?: boolean;
+}) {
+  const values: WeeklyCheckinRating[] = [1, 2, 3, 4, 5];
+
+  return (
+    <View className={withSpacing ? "pt-7" : ""}>
+      <View className="flex-row items-start justify-between gap-3">
+        <View className="flex-1">
+          <Text className="text-sm font-semibold text-neutral-100">{title}</Text>
+          <Text className="mt-1 text-xs text-neutral-500">{valueLabels[value - 1]}</Text>
+        </View>
+        <Text className="text-sm font-semibold text-violet-100">{value}/5</Text>
+      </View>
+
+      <View className="mt-5 flex-row gap-2">
+        {values.map((entry) => {
+          const selected = value === entry;
+          return (
+            <TouchableOpacity
+              key={`${title}-${entry}`}
+              activeOpacity={0.85}
+              disabled={disabled}
+              onPress={() => {
+                if (disabled) return;
+                onChange(entry);
+              }}
+              className={`h-11 flex-1 items-center justify-center rounded-xl border ${
+                optionButtonClass(selected)
+              } ${disabled ? "opacity-60" : ""}`}
+            >
+              <Text
+                className={`text-sm font-semibold ${
+                  selected ? "text-violet-100" : "text-neutral-300"
+                }`}
+              >
+                {entry}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <View className="mt-4 flex-row items-center justify-between gap-4">
+        <Text className="flex-1 text-left text-[11px] font-semibold uppercase tracking-[1.2px] text-neutral-500">
+          {lowLabel}
+        </Text>
+        <Text className="flex-1 text-right text-[11px] font-semibold uppercase tracking-[1.2px] text-neutral-500">
+          {highLabel}
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -200,9 +260,12 @@ function ReviewSummary({
   onEditStep: (stepId: CoachCheckinReviewSection["stepId"]) => void;
 }) {
   return (
-    <View className="gap-4">
-      {sections.map((section) => (
-        <Card key={section.stepId} variant="subtle" className="p-4">
+    <Card variant="subtle" className="overflow-hidden">
+      {sections.map((section, sectionIndex) => (
+        <View
+          key={section.stepId}
+          className={`px-4 py-4 ${sectionIndex === 0 ? "" : "border-t border-neutral-800"}`}
+        >
           <View className="flex-row items-center justify-between">
             <Text className="text-xs font-semibold uppercase tracking-[1.6px] text-neutral-400">
               {section.title}
@@ -213,26 +276,24 @@ function ReviewSummary({
               </Text>
             </TouchableOpacity>
           </View>
-          <View className="mt-2">
+          <View className="mt-3 gap-3">
             {section.rows.map((row, index) => (
               <View
                 key={`${section.stepId}-${row.label}`}
-                className={`gap-2 py-2.5 ${
+                className={`gap-2 pt-3 ${
                   index === 0 ? "" : "border-t border-neutral-800"
                 }`}
               >
                 <Text className="text-xs font-semibold uppercase tracking-[1.4px] text-neutral-500">
                   {row.label}
                 </Text>
-                <Text className="text-sm leading-6 text-neutral-100">
-                  {row.value}
-                </Text>
+                <Text className="text-sm leading-6 text-neutral-100">{row.value}</Text>
               </View>
             ))}
           </View>
-        </Card>
+        </View>
       ))}
-    </View>
+    </Card>
   );
 }
 
@@ -243,13 +304,12 @@ export default function CheckinWizardStepContent({
   setEnergy,
   adherencePercent,
   setAdherencePercent,
-  blockers,
-  setBlockers,
   v2Form,
   updateV2Field,
   saving,
   reviewSections,
   onEditStep,
+  onInputFocus,
 }: Props) {
   const adherenceValue = clampAdherence(Number(adherencePercent));
 
@@ -275,7 +335,7 @@ export default function CheckinWizardStepContent({
           textAlignVertical="center"
           style={SINGLE_LINE_INPUT_STYLE}
           editable={!saving}
-          placeholder="180"
+          placeholder="e.g. 180.4"
           placeholderTextColor="#525252"
         />
 
@@ -290,7 +350,7 @@ export default function CheckinWizardStepContent({
             textAlignVertical="center"
             style={SINGLE_LINE_INPUT_STYLE}
             editable={!saving}
-            placeholder="Optional"
+            placeholder="e.g. 84"
             placeholderTextColor="#525252"
           />
         </View>
@@ -301,7 +361,8 @@ export default function CheckinWizardStepContent({
             value={v2Form.bodyCompChanges}
             onChangeText={(value) => updateV2Field("bodyCompChanges", value)}
             editable={!saving}
-            placeholder="What changed visually or in how your clothes fit?"
+            onFocusTarget={onInputFocus}
+            placeholder="e.g. Midsection looked tighter and shirts fit looser."
           />
         </View>
       </View>
@@ -326,7 +387,7 @@ export default function CheckinWizardStepContent({
               ["right", "Right"],
               ["too_hard", "Too hard"],
             ] as [WeeklyCheckinDifficulty, string][]).map(([value, label]) => (
-              <OptionPill
+              <SecondaryChoiceButton
                 key={value}
                 label={label}
                 selected={v2Form.trainingDifficulty === value}
@@ -345,7 +406,8 @@ export default function CheckinWizardStepContent({
             value={v2Form.strengthPRs}
             onChangeText={(value) => updateV2Field("strengthPRs", value)}
             editable={!saving}
-            placeholder="What moved forward this week?"
+            onFocusTarget={onInputFocus}
+            placeholder="e.g. Added 10 lb to bench and hit all planned sets."
           />
         </View>
 
@@ -355,7 +417,8 @@ export default function CheckinWizardStepContent({
             value={v2Form.consistencyNotes}
             onChangeText={(value) => updateV2Field("consistencyNotes", value)}
             editable={!saving}
-            placeholder="How consistent were you with the plan?"
+            onFocusTarget={onInputFocus}
+            placeholder="e.g. Missed one lift on a travel day, otherwise stayed on plan."
           />
         </View>
       </View>
@@ -422,7 +485,8 @@ export default function CheckinWizardStepContent({
             value={v2Form.appetiteCravings}
             onChangeText={(value) => updateV2Field("appetiteCravings", value)}
             editable={!saving}
-            placeholder="What felt easy or hard to manage?"
+            onFocusTarget={onInputFocus}
+            placeholder="e.g. Hunger was steady, but late-night sweets were tough."
           />
         </View>
       </View>
@@ -432,25 +496,28 @@ export default function CheckinWizardStepContent({
   if (currentStep === "recovery") {
     return (
       <View>
-        <SectionTitle title="Energy (1-5)" />
-        <RatingPicker
+        <RatingScaleRow
+          title="Energy"
           value={energy as WeeklyCheckinRating}
           onChange={(value) => setEnergy(value)}
-          labels={["1", "2", "3", "4", "5"]}
+          lowLabel="Drained"
+          highLabel="Great"
+          valueLabels={["Drained", "Low", "Steady", "Good", "Great"]}
+          disabled={saving}
+          withSpacing={false}
+        />
+
+        <RatingScaleRow
+          title="Recovery"
+          value={v2Form.recoveryRating}
+          onChange={(value) => updateV2Field("recoveryRating", value)}
+          lowLabel="Beat up"
+          highLabel="Recovered"
+          valueLabels={["Beat up", "Heavy", "Okay", "Solid", "Recovered"]}
           disabled={saving}
         />
 
-        <View className="mt-5">
-          <SectionTitle title="Recovery (1-5)" />
-          <RatingPicker
-            value={v2Form.recoveryRating}
-            onChange={(value) => updateV2Field("recoveryRating", value)}
-            labels={["1", "2", "3", "4", "5"]}
-            disabled={saving}
-          />
-        </View>
-
-        <View className="mt-5">
+        <View className="pt-7">
           <SectionTitle title="Sleep average hours" />
           <TextInput
             className="mt-3 h-12 rounded-xl border border-neutral-800 bg-neutral-900 px-3 text-white"
@@ -461,30 +528,30 @@ export default function CheckinWizardStepContent({
             textAlignVertical="center"
             style={SINGLE_LINE_INPUT_STYLE}
             editable={!saving}
-            placeholder="7"
+            placeholder="e.g. 7.5"
             placeholderTextColor="#525252"
           />
         </View>
 
-        <View className="mt-5">
-          <SectionTitle title="Sleep quality (1-5)" />
-          <RatingPicker
-            value={v2Form.sleepQuality}
-            onChange={(value) => updateV2Field("sleepQuality", value)}
-            labels={["1", "2", "3", "4", "5"]}
-            disabled={saving}
-          />
-        </View>
+        <RatingScaleRow
+          title="Sleep quality"
+          value={v2Form.sleepQuality}
+          onChange={(value) => updateV2Field("sleepQuality", value)}
+          lowLabel="Poor"
+          highLabel="Great"
+          valueLabels={["Poor", "Light", "Okay", "Good", "Great"]}
+          disabled={saving}
+        />
 
-        <View className="mt-5">
-          <SectionTitle title="Stress level (1-5)" />
-          <RatingPicker
-            value={v2Form.stressLevel}
-            onChange={(value) => updateV2Field("stressLevel", value)}
-            labels={["1", "2", "3", "4", "5"]}
-            disabled={saving}
-          />
-        </View>
+        <RatingScaleRow
+          title="Stress"
+          value={v2Form.stressLevel}
+          onChange={(value) => updateV2Field("stressLevel", value)}
+          lowLabel="Low"
+          highLabel="High"
+          valueLabels={["Low", "Easy", "Moderate", "High", "Very high"]}
+          disabled={saving}
+        />
       </View>
     );
   }
@@ -499,16 +566,21 @@ export default function CheckinWizardStepContent({
             updateV2Field("scheduleConstraintsNextWeek", value)
           }
           editable={!saving}
-          placeholder="Travel, work, family events, or other pressure points."
+          onFocusTarget={onInputFocus}
+          placeholder="e.g. Traveling Thu-Sat and only have hotel gym access."
         />
 
         <View className="mt-5">
-          <SectionTitle title="Other blockers" helper="Optional" />
+          <SectionTitle
+            title="How has your stomach / digestion felt with this plan?"
+            helper="Optional"
+          />
           <MultilineInput
-            value={blockers}
-            onChangeText={setBlockers}
+            value={v2Form.foodDigestionNotes}
+            onChangeText={(value) => updateV2Field("foodDigestionNotes", value)}
             editable={!saving}
-            placeholder="Anything else to flag from this week."
+            onFocusTarget={onInputFocus}
+            placeholder="e.g. Felt bloated after larger dinners, but breakfast sat fine."
           />
         </View>
       </View>
@@ -531,7 +603,8 @@ export default function CheckinWizardStepContent({
             value={v2Form.injuryDetails}
             onChangeText={(value) => updateV2Field("injuryDetails", value)}
             editable={!saving}
-            placeholder="Where, when, and during which movements do you feel it?"
+            onFocusTarget={onInputFocus}
+            placeholder="e.g. Mild right knee pain on deep squats."
           />
         </View>
       ) : null}

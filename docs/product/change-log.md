@@ -1,5 +1,34 @@
 # Product Policy Change Log
 
+## 2026-03-10 - Weekly check-in wizard polish
+
+### Added
+
+- Weekly check-in create-mode input policy:
+  - typed text and number fields should use example placeholders instead of seeded answers.
+- Weekly check-in interaction policy:
+  - focused multiline inputs must stay visible above the keyboard and bottom CTA.
+- Weekly check-in review presentation policy:
+  - final review should read like a completed form with section-level edit actions.
+
+### Changed
+
+- Weekly check-in nutrition/next-week capture policy:
+  - replace the duplicate `Other blockers` prompt with a stomach/digestion question.
+- Weekly check-in recovery presentation policy:
+  - energy, recovery, sleep quality, and stress should use tighter scale-card controls rather than loose wrapped grids.
+- Weekly check-in loading overlay policy:
+  - progress must not reach `100%` before the submit workflow is actually complete.
+
+### Removed
+
+- Acceptance of prefilled typed answers on brand new weekly check-ins.
+- Acceptance of duplicate next-week/blocker questioning inside the wizard.
+
+### Notes
+
+- Legacy `blockers` data remains supported for stored check-ins, but it is no longer a visible question in the new-create flow.
+
 ## 2026-03-10 - Support consent disclosure copy finalized
 
 ### Added

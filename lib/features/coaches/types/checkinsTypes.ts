@@ -42,6 +42,7 @@ export type WeeklyCheckinArtifact = {
   nutritionAdherencePercent?: number | null;
   nutritionAdherenceSubjective?: WeeklyCheckinAdherenceSubjective | null;
   appetiteCravings: string;
+  foodDigestionNotes: string;
   energyRating: WeeklyCheckinRating;
   recoveryRating: WeeklyCheckinRating;
   sleepAvgHours: number;
@@ -87,6 +88,7 @@ export type WeeklyCheckinInput = {
   nutritionAdherencePercent?: number | null;
   nutritionAdherenceSubjective?: WeeklyCheckinAdherenceSubjective | null;
   appetiteCravings?: string;
+  foodDigestionNotes?: string;
   energyRating?: WeeklyCheckinRating;
   recoveryRating?: WeeklyCheckinRating;
   sleepAvgHours?: number;

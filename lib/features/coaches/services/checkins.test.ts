@@ -520,6 +520,7 @@ describe("checkins service", () => {
         redFlags: false,
       },
       nutritionAdherenceSubjective: "medium",
+      foodDigestionNotes: "  Bloated after larger dinners  ",
     });
 
     expect(normalized).toEqual(
@@ -532,6 +533,7 @@ describe("checkins service", () => {
         trainingDifficulty: "too_hard",
         sleepAvgHours: 7.3,
         nutritionAdherenceSubjective: "medium",
+        foodDigestionNotes: "Bloated after larger dinners",
       })
     );
     expect(normalized.injuryPain).toEqual({
@@ -539,5 +541,131 @@ describe("checkins service", () => {
       details: "Knee pain",
       redFlags: false,
     });
+  });
+
+  it("round-trips digestion notes from payloads and submit requests", async () => {
+    mocks.invokeCoachChat
+      .mockResolvedValueOnce({
+        checkin_week_start: "2026-02-23",
+        checkin_week_end: "2026-03-01",
+        checkin_weight_snapshot: {
+          unit: "lb",
+          entries: 0,
+          startWeight: null,
+          endWeight: null,
+          delta: null,
+          trend: "no_data",
+        },
+        checkin_current: null,
+        checkin_history: [],
+      })
+      .mockResolvedValueOnce({
+        thread_id: "thread-digestion",
+        checkin_week_start: "2026-02-23",
+        checkin_week_end: "2026-03-01",
+        checkin_weight_snapshot: {
+          unit: "lb",
+          entries: 1,
+          startWeight: 180,
+          endWeight: 179.2,
+          delta: -0.8,
+          trend: "down",
+        },
+        checkin_current: {
+          id: "checkin-digestion",
+          week_start: "2026-02-23",
+          week_end: "2026-03-01",
+          energy: 4,
+          adherence_percent: 88,
+          blockers: "Travel week",
+          weight_snapshot: {
+            unit: "lb",
+            entries: 1,
+            startWeight: 180,
+            endWeight: 179.2,
+            delta: -0.8,
+            trend: "down",
+          },
+          checkin_json: {
+            timestamp: "2026-02-26T12:00:00.000Z",
+            currentWeightKg: 81.3,
+            progressPhotoPrompted: false,
+            strengthPRs: "",
+            consistencyNotes: "Stayed on track",
+            bodyCompChanges: "",
+            trainingDifficulty: "right",
+            nutritionAdherencePercent: 88,
+            nutritionAdherenceSubjective: "medium",
+            appetiteCravings: "Late-night sweets were tough.",
+            foodDigestionNotes: "Bloated after larger dinners.",
+            energyRating: 4,
+            recoveryRating: 4,
+            sleepAvgHours: 7.5,
+            sleepQuality: 4,
+            stressLevel: 2,
+            scheduleConstraintsNextWeek: "",
+            injuryPain: {
+              hasPain: false,
+              details: "",
+              redFlags: false,
+            },
+            computedAdherenceScore: 86,
+            linkedPlanVersion: {
+              workoutVersion: null,
+              nutritionVersion: 3,
+            },
+          },
+          created_at: "2026-02-26T12:00:00.000Z",
+          updated_at: "2026-02-26T12:30:00.000Z",
+        },
+        checkin_history: [],
+      });
+
+    await submitNutritionCheckin(
+      {
+        energy: 4,
+        adherencePercent: 88,
+        blockers: "Travel week",
+        currentWeightKg: 81.3,
+        progressPhotoPrompted: false,
+        strengthPRs: "",
+        consistencyNotes: "Stayed on track",
+        bodyCompChanges: "",
+        trainingDifficulty: "right",
+        nutritionAdherencePercent: 88,
+        nutritionAdherenceSubjective: "medium",
+        appetiteCravings: "Late-night sweets were tough.",
+        foodDigestionNotes: "Bloated after larger dinners.",
+        energyRating: 4,
+        recoveryRating: 4,
+        sleepAvgHours: 7.5,
+        sleepQuality: 4,
+        stressLevel: 2,
+        scheduleConstraintsNextWeek: "",
+        injuryPain: {
+          hasPain: false,
+          details: "",
+          redFlags: false,
+        },
+        computedAdherenceScore: 86,
+      },
+      { coach },
+    );
+
+    expect(mocks.invokeCoachChat).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        action: "checkin_submit",
+        checkin: expect.objectContaining({
+          foodDigestionNotes: "Bloated after larger dinners.",
+        }),
+      }),
+    );
+
+    const payload = await fetchNutritionCheckins({ coach, limit: 26 });
+
+    expect(payload.currentCheckin?.checkinArtifact?.foodDigestionNotes).toBe(
+      "Bloated after larger dinners.",
+    );
   });
 });

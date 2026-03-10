@@ -5,13 +5,14 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import CoachFlowHero from "../components/coaches/flow/CoachFlowHero";
 import CoachFlowProgressOverlay from "../components/coaches/flow/CoachFlowProgressOverlay";
 import CoachFlowTopBar from "../components/coaches/flow/CoachFlowTopBar";
 import CheckinWizardStepContent from "../components/coaches/checkins/CheckinWizardStepContent";
@@ -54,6 +55,7 @@ const CHECKIN_LOADING_TIPS = [
   "Your coach is checking whether the nutrition draft needs an update.",
   "Finalizing your latest weekly summary and review state.",
 ] as const;
+const CHECKIN_SUBMIT_PROGRESS_TARGETS = [28, 61, 92] as const;
 
 function weekRangeLabel(weekStart: string, weekEnd: string) {
   if (!weekStart || !weekEnd) return "This week";
@@ -144,25 +146,19 @@ function StatusBanner({
 
 function CurrentWeekSkeleton() {
   return (
-    <Card className="p-5">
+    <Card variant="subtle" className="p-5">
       <View className="flex-row items-center justify-between">
         <SkeletonBlock className="h-4 w-20 rounded-full" />
         <SkeletonBlock className="h-4 w-28 rounded-full" />
       </View>
       <SkeletonBlock className="mt-2 h-3 w-5/6 rounded-full" />
 
-      <View className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900 p-3">
-        <SkeletonBlock className="h-3 w-20 rounded-full" />
-        <View className="mt-2 flex-row gap-2">
-          <SkeletonBlock className="h-6 w-20 rounded-full" />
-          <SkeletonBlock className="h-6 w-20 rounded-full" />
-        </View>
+      <View className="mt-4 flex-row gap-3">
+        <SkeletonBlock className="h-16 flex-1 rounded-2xl" />
+        <SkeletonBlock className="h-16 flex-1 rounded-2xl" />
       </View>
 
-      <View className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3">
-        <SkeletonBlock className="h-3 w-2/3 rounded-full" />
-        <SkeletonBlock className="mt-2 h-3 w-1/2 rounded-full" />
-      </View>
+      <SkeletonBlock className="mt-4 h-16 rounded-2xl" />
     </Card>
   );
 }
@@ -186,57 +182,54 @@ function CurrentWeekEntryCard({
   disabled: boolean;
 }) {
   return (
-    <Card className="p-5">
+    <Card variant="subtle" className="p-5">
       <View className="flex-row items-start justify-between gap-3">
         <View className="flex-1">
-          <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
-            This week
+          <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
+            Weekly window
           </Text>
           <Text className="mt-1 text-base font-semibold text-white">
             {weekRangeLabel(weekStart, weekEnd)}
           </Text>
           <Text className="mt-2 text-sm leading-6 text-neutral-300">
-            Weekly check-ins now run one step at a time, just like coach onboarding.
-            Expect a short guided flow instead of one long form.
+            Short guided flow. One step at a time, then a final review before you submit.
           </Text>
         </View>
-        <View className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5">
-          <Text className="text-[11px] font-semibold uppercase tracking-[1.4px] text-violet-200">
+        <View className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5">
+          <Text className="text-[11px] font-semibold uppercase tracking-[1.4px] text-neutral-300">
             3-5 min
           </Text>
         </View>
       </View>
 
-      <View className="mt-4 rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-3">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
-            Weight trend
-          </Text>
-          <Text className={`text-xs font-semibold ${trendColorClass(weightSnapshot.trend)}`}>
-            {trendLabel(weightSnapshot.trend)}
+      <View className="mt-5 flex-row flex-wrap gap-2">
+        <View className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-2">
+          <Text className="text-xs text-neutral-300">
+            Trend{" "}
+            <Text className={`font-semibold ${trendColorClass(weightSnapshot.trend)}`}>
+              {trendLabel(weightSnapshot.trend)}
+            </Text>
           </Text>
         </View>
-        <View className="mt-2 flex-row flex-wrap gap-2">
-          <View className="rounded-full border border-neutral-700 bg-neutral-950 px-2.5 py-1">
-            <Text className="text-xs text-neutral-300">
-              Start{" "}
-              <Text className="font-semibold text-neutral-100">
-                {weightSnapshot.startWeight === null
-                  ? "-"
-                  : formatWeight(weightSnapshot.startWeight, weightSnapshot.unit)}
-              </Text>
+        <View className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-2">
+          <Text className="text-xs text-neutral-300">
+            Start{" "}
+            <Text className="font-semibold text-neutral-100">
+              {weightSnapshot.startWeight === null
+                ? "-"
+                : formatWeight(weightSnapshot.startWeight, weightSnapshot.unit)}
             </Text>
-          </View>
-          <View className="rounded-full border border-neutral-700 bg-neutral-950 px-2.5 py-1">
-            <Text className="text-xs text-neutral-300">
-              End{" "}
-              <Text className="font-semibold text-neutral-100">
-                {weightSnapshot.endWeight === null
-                  ? "-"
-                  : formatWeight(weightSnapshot.endWeight, weightSnapshot.unit)}
-              </Text>
+          </Text>
+        </View>
+        <View className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-2">
+          <Text className="text-xs text-neutral-300">
+            End{" "}
+            <Text className="font-semibold text-neutral-100">
+              {weightSnapshot.endWeight === null
+                ? "-"
+                : formatWeight(weightSnapshot.endWeight, weightSnapshot.unit)}
             </Text>
-          </View>
+          </Text>
         </View>
       </View>
 
@@ -295,7 +288,6 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     adherencePercent,
     setAdherencePercent,
     blockers,
-    setBlockers,
     currentWeightInputUnit,
     v2Form,
     updateV2Field,
@@ -482,7 +474,8 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     history.length
   );
   const loadingProgressPct = Math.round(
-    ((submittingIndex + 1) / CHECKIN_SUBMIT_PHASES.length) * 100
+    CHECKIN_SUBMIT_PROGRESS_TARGETS[submittingIndex]
+      ?? CHECKIN_SUBMIT_PROGRESS_TARGETS[CHECKIN_SUBMIT_PROGRESS_TARGETS.length - 1]
   );
   const wizardSubmitTitle = currentWeekCheckin
     ? "Update weekly check-in"
@@ -540,6 +533,16 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
       });
     })();
   }, [flow, submitCheckin]);
+
+  const handleWizardInputFocus = useCallback((target: number) => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(
+        target,
+        180,
+        true,
+      );
+    });
+  }, []);
 
   useCoachRenderDiagnostics("CoachCheckinsScreen", {
     specialization,
@@ -629,103 +632,87 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
   if (flow.mode === "wizard") {
     return (
       <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
-        <CoachFlowTopBar
-          stepIndex={flow.stepIndex}
-          totalSteps={flow.totalSteps}
-          progressAnim={progressAnim}
-          currentStepLabel={flow.isReviewStep ? "Review" : "Weekly check-in"}
-          onBack={flow.back}
-        />
-
-        <ScrollView
+        <KeyboardAvoidingView
           className="flex-1"
-          contentContainerClassName="px-5 pb-40 pt-6"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
         >
-          <Animated.View
-            style={{ opacity: fade, transform: [{ translateX: slide }, { scale }] }}
-          >
-            <CoachFlowHero
-              title={flow.stepDefinition.title}
-              subtitle={flow.stepDefinition.subtitle}
-              badgeLabel={flow.isReviewStep ? flow.stepDefinition.badgeLabel ?? null : null}
-            />
-
-            {flow.stepIndex > 1 && !flow.isReviewStep ? (
-              <View className="mt-4 flex-row flex-wrap gap-2">
-                {flow.summaryChips.map((chip) => (
-                  <View
-                    key={chip}
-                    className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5"
-                  >
-                    <Text className="text-[11px] font-semibold text-neutral-300">
-                      {chip}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            ) : null}
-
-            {flow.isReviewStep ? (
-              <View className="mt-6">
-                <CheckinWizardStepContent
-                  currentStep={flow.currentStep}
-                  currentWeightInputUnit={currentWeightInputUnit}
-                  energy={energy}
-                  setEnergy={setEnergy}
-                  adherencePercent={adherencePercent}
-                  setAdherencePercent={setAdherencePercent}
-                  blockers={blockers}
-                  setBlockers={setBlockers}
-                  v2Form={v2Form}
-                  updateV2Field={updateV2Field}
-                  saving={saving}
-                  reviewSections={flow.reviewSections}
-                  onEditStep={flow.goToStep}
-                />
-              </View>
-            ) : (
-              <Card className="mt-6 p-5">
-                <CheckinWizardStepContent
-                  currentStep={flow.currentStep}
-                  currentWeightInputUnit={currentWeightInputUnit}
-                  energy={energy}
-                  setEnergy={setEnergy}
-                  adherencePercent={adherencePercent}
-                  setAdherencePercent={setAdherencePercent}
-                  blockers={blockers}
-                  setBlockers={setBlockers}
-                  v2Form={v2Form}
-                  updateV2Field={updateV2Field}
-                  saving={saving}
-                  reviewSections={flow.reviewSections}
-                  onEditStep={flow.goToStep}
-                />
-              </Card>
-            )}
-
-            {flow.validationError ? (
-              <Text className="mt-3 text-sm font-semibold text-rose-300">
-                {flow.validationError}
-              </Text>
-            ) : null}
-            {flow.isReviewStep && validationMessage ? (
-              <StatusBanner tone="error" message={validationMessage} className="mt-4" />
-            ) : null}
-            {flow.isReviewStep && saveError ? (
-              <StatusBanner tone="error" message={saveError} className="mt-3" />
-            ) : null}
-          </Animated.View>
-        </ScrollView>
-
-        <View className="border-t border-neutral-900 bg-neutral-950 px-5 pb-6 pt-4">
-          <Button
-            title={flow.isReviewStep ? wizardSubmitTitle : "Continue"}
-            onPress={() => (flow.isReviewStep ? handleWizardSubmit() : flow.next())}
-            disabled={!flow.canContinue || saving}
+          <CoachFlowTopBar
+            stepIndex={flow.stepIndex}
+            totalSteps={flow.totalSteps}
+            progressAnim={progressAnim}
+            currentStepLabel={flow.isReviewStep ? "Review" : "Weekly check-in"}
+            onBack={flow.back}
           />
-        </View>
+
+          <ScrollView
+            ref={scrollRef}
+            className="flex-1"
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingTop: 24,
+              paddingBottom: 220,
+            }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={false}
+          >
+            <Animated.View
+              style={{ opacity: fade, transform: [{ translateX: slide }, { scale }] }}
+            >
+              <View className="border-b border-neutral-900 pb-5">
+                <Text className="text-[11px] font-semibold uppercase tracking-[1.5px] text-neutral-500">
+                  {flow.isReviewStep ? "Final step" : `Step ${flow.stepIndex + 1}`}
+                </Text>
+                <Text className="mt-2 text-[28px] font-bold tracking-tight text-white">
+                  {flow.stepDefinition.title}
+                </Text>
+                {flow.stepDefinition.subtitle ? (
+                  <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
+                    {flow.stepDefinition.subtitle}
+                  </Text>
+                ) : null}
+              </View>
+
+              <View className="pt-6">
+                <CheckinWizardStepContent
+                  currentStep={flow.currentStep}
+                  currentWeightInputUnit={currentWeightInputUnit}
+                  energy={energy}
+                  setEnergy={setEnergy}
+                  adherencePercent={adherencePercent}
+                  setAdherencePercent={setAdherencePercent}
+                  v2Form={v2Form}
+                  updateV2Field={updateV2Field}
+                  saving={saving}
+                  reviewSections={flow.reviewSections}
+                  onEditStep={flow.goToStep}
+                  onInputFocus={handleWizardInputFocus}
+                />
+              </View>
+
+              {flow.validationError ? (
+                <Text className="mt-3 text-sm font-semibold text-rose-300">
+                  {flow.validationError}
+                </Text>
+              ) : null}
+              {flow.isReviewStep && validationMessage ? (
+                <StatusBanner tone="error" message={validationMessage} className="mt-4" />
+              ) : null}
+              {flow.isReviewStep && saveError ? (
+                <StatusBanner tone="error" message={saveError} className="mt-3" />
+              ) : null}
+            </Animated.View>
+          </ScrollView>
+
+          <View className="border-t border-neutral-900 bg-neutral-950 px-5 pb-6 pt-4">
+            <Button
+              title={flow.isReviewStep ? wizardSubmitTitle : "Continue"}
+              onPress={() => (flow.isReviewStep ? handleWizardSubmit() : flow.next())}
+              disabled={!flow.canContinue || saving}
+            />
+          </View>
+        </KeyboardAvoidingView>
       </AppScreen>
     );
   }
@@ -761,15 +748,15 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
           />
         ) : null}
 
-        <CurrentWeekCard title="This week" helper="Active check-in">
+        <CurrentWeekCard title="This week" helper="Your latest submission">
           {showCurrentWeekSkeleton ? (
             <CurrentWeekSkeleton />
           ) : currentWeekCheckin ? (
-            <View className="mt-1 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950">
+            <Card variant="subtle" className="overflow-hidden">
               <View className="px-5 py-5">
                 <View className="flex-row items-start justify-between gap-3">
                   <View className="flex-1">
-                    <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
+                    <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
                       Current check-in
                     </Text>
                     <Text className="mt-1 text-base font-semibold text-white">
@@ -786,12 +773,13 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
                     <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-emerald-300">
                       Completed
                     </Text>
-                    <View className="flex-row items-center gap-4">
+                    <View className="flex-row items-center gap-2">
                       <TouchableOpacity
                         onPress={() =>
                           setIsCurrentWeekDetailsOpen((current) => !current)
                         }
                         activeOpacity={0.85}
+                        className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5"
                       >
                         <Text className="text-sm font-semibold text-neutral-200">
                           {isCurrentWeekDetailsOpen ? "Hide details" : "View details"}
@@ -800,6 +788,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
                       <TouchableOpacity
                         onPress={() => openWizard()}
                         activeOpacity={0.85}
+                        className="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1.5"
                       >
                         <Text className="text-sm font-semibold text-violet-300">Edit</Text>
                       </TouchableOpacity>
@@ -810,7 +799,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
 
               {!isCurrentWeekDetailsOpen && currentWeekSummaryPreview ? (
                 <View className="border-t border-neutral-900 px-5 py-4">
-                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-violet-200">
+                  <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
                     Coach summary
                   </Text>
                   <Text className="mt-2 text-sm leading-relaxed text-neutral-200">
@@ -857,7 +846,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
                   />
                 </>
               ) : null}
-            </View>
+            </Card>
           ) : (
             <CurrentWeekEntryCard
               weekStart={weekStart}
@@ -876,8 +865,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
               item.coachSummary?.trim() ?? null,
               100
             );
-            const entryClassName =
-              "mx-5 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950";
+            const entryClassName = "overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950/70";
 
             if (!isExpanded) {
               return (
@@ -885,7 +873,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
                   key={item.id}
                   onPress={() => toggleHistoryCard(item.id)}
                   activeOpacity={0.9}
-                  className={`${entryClassName} mt-3`}
+                  className={entryClassName}
                 >
                   <View className="px-5 py-5">
                     <View className="flex-row items-start justify-between gap-3">
@@ -903,26 +891,27 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
                           </Text>
                         </View>
                       </View>
-                      <Text className="text-sm font-semibold text-violet-300">
-                        View details
-                      </Text>
+                      <View className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5">
+                        <Text className="text-sm font-semibold text-violet-300">
+                          View details
+                        </Text>
+                      </View>
                     </View>
 
-                    <View className="mt-4 flex-row items-start">
-                      <View className="flex-1 pr-4">
+                    <View className="mt-4 flex-row gap-3">
+                      <View className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-900/60 px-4 py-3">
                         <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
                           Adherence
                         </Text>
-                        <Text className="mt-1 text-xl font-semibold text-white">
+                        <Text className="mt-1 text-lg font-semibold text-white">
                           {item.adherencePercent}%
                         </Text>
                       </View>
-                      <View className="w-px self-stretch bg-neutral-900" />
-                      <View className="flex-1 pl-4">
+                      <View className="flex-1 rounded-2xl border border-neutral-800 bg-neutral-900/60 px-4 py-3">
                         <Text className="text-[11px] font-semibold uppercase tracking-[1px] text-neutral-500">
                           Score
                         </Text>
-                        <Text className="mt-1 text-xl font-semibold text-violet-300">
+                        <Text className="mt-1 text-lg font-semibold text-violet-300">
                           {item.adherenceScore ?? item.adherencePercent}
                         </Text>
                       </View>
@@ -944,7 +933,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
             }
 
             return (
-              <View key={item.id} className={`${entryClassName} mt-3 border-violet-500/20`}>
+              <View key={item.id} className={`${entryClassName} border-violet-500/20`}>
                 <View className="px-5 py-5">
                   <View className="flex-row items-start justify-between gap-3">
                     <View className="flex-1">
@@ -964,6 +953,7 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
                     <TouchableOpacity
                       onPress={() => toggleHistoryCard(item.id)}
                       activeOpacity={0.85}
+                      className="rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5"
                     >
                       <Text className="text-sm font-semibold text-violet-300">
                         Hide details

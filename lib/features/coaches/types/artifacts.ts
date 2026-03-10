@@ -107,6 +107,7 @@ export namespace CoachArtifacts {
     nutritionAdherencePercent?: number | null;
     nutritionAdherenceSubjective?: "low" | "medium" | "high" | null;
     appetiteCravings: string;
+    foodDigestionNotes: string;
     energyRating: 1 | 2 | 3 | 4 | 5;
     recoveryRating: 1 | 2 | 3 | 4 | 5;
     sleepAvgHours: number;

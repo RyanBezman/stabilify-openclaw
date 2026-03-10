@@ -142,6 +142,17 @@ function renderUseCoachCheckins(options?: {
   };
 }
 
+function setRequiredTypedInputs(
+  hook: HookValue,
+  overrides?: Partial<{
+    currentWeight: string;
+    sleepAvgHours: string;
+  }>,
+) {
+  hook.updateV2Field("currentWeight", overrides?.currentWeight ?? "180");
+  hook.updateV2Field("sleepAvgHours", overrides?.sleepAvgHours ?? "7");
+}
+
 describe("useCoachCheckins", () => {
   beforeEach(() => {
     __resetCoachCheckinsCacheForTests();
@@ -159,6 +170,28 @@ describe("useCoachCheckins", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("starts new weekly check-ins with blank typed inputs and neutral quick-select defaults", () => {
+    const hook = renderUseCoachCheckins({
+      hydrated: false,
+    });
+
+    expect(hook.current.v2Form.currentWeight).toBe("");
+    expect(hook.current.v2Form.waistCm).toBe("");
+    expect(hook.current.v2Form.strengthPRs).toBe("");
+    expect(hook.current.v2Form.consistencyNotes).toBe("");
+    expect(hook.current.v2Form.bodyCompChanges).toBe("");
+    expect(hook.current.v2Form.appetiteCravings).toBe("");
+    expect(hook.current.v2Form.foodDigestionNotes).toBe("");
+    expect(hook.current.v2Form.sleepAvgHours).toBe("");
+    expect(hook.current.v2Form.scheduleConstraintsNextWeek).toBe("");
+    expect(hook.current.v2Form.trainingDifficulty).toBe("right");
+    expect(hook.current.v2Form.recoveryRating).toBe(3);
+    expect(hook.current.v2Form.sleepQuality).toBe(3);
+    expect(hook.current.v2Form.stressLevel).toBe(3);
+
+    hook.unmount();
   });
 
   it("validates energy bounds before submitting", async () => {
@@ -205,7 +238,7 @@ describe("useCoachCheckins", () => {
     const hook = renderUseCoachCheckins();
 
     act(() => {
-      hook.current.updateV2Field("sleepAvgHours", "25");
+      setRequiredTypedInputs(hook.current, { sleepAvgHours: "25" });
     });
 
     let result: Awaited<ReturnType<HookValue["submitCheckin"]>> | null = null;
@@ -233,6 +266,7 @@ describe("useCoachCheckins", () => {
     const hook = renderUseCoachCheckins();
 
     act(() => {
+      setRequiredTypedInputs(hook.current);
       hook.current.setEnergy(4);
       hook.current.setAdherencePercent("80");
       hook.current.setBlockers("   ");
@@ -353,6 +387,7 @@ describe("useCoachCheckins", () => {
     const hook = renderUseCoachCheckins();
 
     act(() => {
+      setRequiredTypedInputs(hook.current);
       hook.current.setEnergy(4);
       hook.current.setAdherencePercent("80");
       hook.current.setBlockers("Travel week");
@@ -368,6 +403,7 @@ describe("useCoachCheckins", () => {
     expect(hook.current.history[0]?.id).toBe("checkin-1");
 
     act(() => {
+      setRequiredTypedInputs(hook.current);
       hook.current.setEnergy(5);
       hook.current.setAdherencePercent("85");
       hook.current.setBlockers("  Work travel  ");
@@ -410,6 +446,7 @@ describe("useCoachCheckins", () => {
     const hook = renderUseCoachCheckins({ onTierRequired });
 
     act(() => {
+      setRequiredTypedInputs(hook.current);
       hook.current.setEnergy(4);
       hook.current.setAdherencePercent("80");
       hook.current.setBlockers("Travel week");
@@ -493,6 +530,7 @@ describe("useCoachCheckins", () => {
     const hook = renderUseCoachCheckins();
 
     act(() => {
+      setRequiredTypedInputs(hook.current);
       hook.current.setEnergy(3);
       hook.current.setAdherencePercent("72");
       hook.current.setBlockers("Stress eating");
@@ -525,6 +563,7 @@ describe("useCoachCheckins", () => {
     const hook = renderUseCoachCheckins();
 
     act(() => {
+      setRequiredTypedInputs(hook.current);
       hook.current.setEnergy(4);
       hook.current.setAdherencePercent("80");
       hook.current.setBlockers("Travel week");
@@ -666,6 +705,7 @@ describe("useCoachCheckins", () => {
       const hook = renderUseCoachCheckins();
 
       act(() => {
+        setRequiredTypedInputs(hook.current);
         hook.current.setEnergy(4);
         hook.current.setAdherencePercent("80");
         hook.current.setBlockers("Travel week");

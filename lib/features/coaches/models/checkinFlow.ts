@@ -61,33 +61,32 @@ const COACH_CHECKIN_STEP_DEFINITIONS: Record<
   CoachCheckinStepDefinition
 > = {
   body_metrics: {
-    title: "How did your body respond this week?",
-    subtitle: "Capture the key numbers and physical changes before your recap.",
+    title: "Body metrics",
+    subtitle: "Weight, waist, and any visible changes.",
   },
   training_recap: {
-    title: "How did training actually feel?",
-    subtitle: "Note the effort, wins, and consistency that shaped the week.",
+    title: "Training",
+    subtitle: "How workouts felt and what moved forward.",
   },
   nutrition_recap: {
-    title: "How well did nutrition stick?",
-    subtitle: "Share adherence and appetite signals so the next plan stays realistic.",
+    title: "Nutrition",
+    subtitle: "Adherence and appetite this week.",
   },
   recovery: {
-    title: "How recovered did you feel?",
-    subtitle: "Energy, sleep, and stress help your coach read the whole picture.",
+    title: "Recovery",
+    subtitle: "Energy, sleep, and stress.",
   },
   next_week: {
-    title: "What does next week look like?",
-    subtitle: "Flag schedule friction early so your adjustments stay usable.",
+    title: "Next week",
+    subtitle: "Anything likely to affect the plan?",
   },
   pain_safety: {
-    title: "Any pain or red flags to account for?",
-    subtitle: "We use this to route safety guidance before normal adjustments.",
+    title: "Pain check",
+    subtitle: "Flag pain or red-flag symptoms.",
   },
   review: {
-    title: "Review your weekly check-in",
-    subtitle: "Make sure everything looks right before you send it to your coach.",
-    badgeLabel: "ready to submit",
+    title: "Review and submit",
+    subtitle: "Quick check before sending.",
   },
 };
 
@@ -327,8 +326,8 @@ export function buildCoachCheckinReviewSections(
           value: formatOptionalText(snapshot.v2Form.scheduleConstraintsNextWeek),
         },
         {
-          label: "Other blockers",
-          value: formatOptionalText(snapshot.blockers),
+          label: "Stomach / digestion",
+          value: formatOptionalText(snapshot.v2Form.foodDigestionNotes),
         },
       ],
     },
