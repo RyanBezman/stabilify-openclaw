@@ -1,6 +1,6 @@
 # Accountability and Social Policy
 
-Last updated: 2026-03-03
+Last updated: 2026-03-10
 
 ## Goal
 
@@ -30,6 +30,7 @@ Define free-tier accountability behavior, gym proof states, and support escalati
   - explicit user consent is required before first automated support post.
   - enabling auto support from settings requires explicit consent confirmation each time the toggle is turned on.
   - accepting the consent prompt refreshes `auto_support_consent_at` to the latest accepted timestamp.
+  - consent disclosure copy must state that support posts go only to close friends, do not include weight, photo, or location details, and only affect future triggers.
 - Support automation cadence:
   - evaluate support triggers daily (once per user local day),
   - persist at most one support request per Monday-Sunday week,
@@ -147,10 +148,14 @@ Status mapping:
 - Default support message avoids exact weight/location/photo exposure.
 - If explicit consent is missing, show consent prompt and suppress automated posting.
 - Home nudge card states:
-  - consent prompt (`suppressed_prompt`) with `Allow auto-support` + `Not now`,
+  - consent prompt (`suppressed_prompt`) with title `Allow private auto-support?` and CTA `Allow auto-support` + `Not now`,
   - consent acknowledged (`suppressed_acknowledged`) with no same-week backfill reminder,
   - disabled guidance (`disabled`) with re-enable CTA,
   - published confirmation (`published`) with recovery guidance.
+- Required consent copy:
+  - title: `Allow private auto-support?`
+  - disclosure: `When you're behind, Stabilify can post a private support request to your close friends. It won't share weight, photos, or location details.`
+  - saved acknowledgement: `Private auto-support is on for future behind-goal triggers. This week's request stays suppressed and won't backfill.`
 - Home + gym log surfaces must show plain-English reason text for non-verified gym sessions.
 - Home + gym log surfaces must show next-action guidance for each non-verified `status_reason`.
 - Notification entry points:

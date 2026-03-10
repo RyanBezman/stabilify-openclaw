@@ -1,6 +1,6 @@
 # Behind-Goal Support Automation Flow
 
-Last updated: 2026-03-03
+Last updated: 2026-03-10
 
 ## Goal
 
@@ -90,6 +90,10 @@ Implement behind-goal support automation end-to-end with canonical trigger evalu
   - `published`: confirmation + recovery guidance.
 - `Not now` updates server-side deferral and hides suppressed card until next local day.
 - First card view calls `mark_support_nudge_opened(..., 'home')`.
+- Consent copy contract:
+  - title: `Allow private auto-support?`
+  - disclosure: `When you're behind, Stabilify can post a private support request to your close friends. It won't share weight, photos, or location details.`
+  - saved acknowledgement: `Private auto-support is on for future behind-goal triggers. This week's request stays suppressed and won't backfill.`
 
 ### Profile settings
 
@@ -99,6 +103,7 @@ Implement behind-goal support automation end-to-end with canonical trigger evalu
   - agreeing calls `allow_auto_support_with_consent()` (atomic enable + consent write),
   - each accepted confirmation refreshes `auto_support_consent_at` to `now()`,
   - cancel keeps switch `OFF`.
+- Profile settings uses the same consent-disclosure copy as the Home suppressed prompt so the promise is consistent across surfaces.
 - Settings save never grants consent implicitly.
 - Phone notifications are exposed as a settings switch.
 - Turning phone notifications `OFF` deactivates active push-device rows via `set_phone_nudges_enabled(false)`.

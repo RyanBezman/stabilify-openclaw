@@ -47,10 +47,10 @@ export default function SupportNudgeCard({
     <Card className="mb-6 border border-violet-500/30 bg-violet-500/10 p-5">
       {variant === "suppressed_prompt" ? (
         <>
-          <Text className="text-base font-semibold text-white">You&apos;re off pace this week.</Text>
+          <Text className="text-base font-semibold text-white">Allow private auto-support?</Text>
           <Text className="mt-2 text-sm text-violet-100/90">
-            Allow a private close-friends support post when you fall behind. No weight details are
-            shared.
+            When you&apos;re behind, Stabilify can post a private support request to your close
+            friends. It won&apos;t share weight, photos, or location details.
           </Text>
           <Text className="mt-2 text-xs font-medium text-violet-200/80">Reason: {reasonLabel}</Text>
 
@@ -79,8 +79,8 @@ export default function SupportNudgeCard({
         <>
           <Text className="text-base font-semibold text-white">Auto-support is ready.</Text>
           <Text className="mt-2 text-sm text-violet-100/90">
-            Future support triggers can publish to close friends automatically. This week&apos;s
-            request stays suppressed and will not backfill.
+            Private auto-support is on for future behind-goal triggers. This week&apos;s request
+            stays suppressed and won&apos;t backfill.
           </Text>
           <Text className="mt-2 text-xs font-medium text-violet-200/80">Reason: {reasonLabel}</Text>
         </>

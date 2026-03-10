@@ -263,7 +263,7 @@ describe("ProgressOverviewCard", () => {
     const circleStrokes = root
       .findAllByType("Circle")
       .map((node: ReactTestInstance) => String(node.props.stroke));
-    expect(circleStrokes).toContain("#60a5fa");
+    expect(circleStrokes).toContain("#AFCBFF");
   });
 
 });

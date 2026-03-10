@@ -352,7 +352,7 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
 
     Alert.alert(
       "Consent saved",
-      "Auto-support is enabled for future trigger evaluations. This week's request remains suppressed and will not backfill.",
+      "Private auto-support is on for future behind-goal triggers. This week's request stays suppressed and won't backfill.",
     );
   };
 

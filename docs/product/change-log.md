@@ -1,5 +1,27 @@
 # Product Policy Change Log
 
+## 2026-03-10 - Support consent disclosure copy finalized
+
+### Added
+
+- Final explicit support-consent copy policy:
+  - title `Allow private auto-support?`,
+  - disclosure states posts go only to close friends,
+  - disclosure states no weight, photos, or location details are shared,
+  - acknowledgement states the current week's suppressed request stays suppressed and does not backfill.
+
+### Changed
+
+- Home nudge and Profile settings consent prompts now share the same disclosure copy.
+
+### Removed
+
+- Open-ended support-consent copy decision state.
+
+### Notes
+
+- OQ-002 is now decided and reflected in canonical product and implementation docs.
+
 ## 2026-03-09 - Social/account surface visual consistency
 
 ### Added
