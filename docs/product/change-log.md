@@ -1,5 +1,27 @@
 # Product Policy Change Log
 
+## 2026-03-10 - Weekly check-in onboarding-style wizard
+
+### Added
+
+- Weekly check-in presentation policy:
+  - `CoachCheckins` opens with overview/history state,
+  - starting or editing the current week check-in launches a dedicated step-by-step wizard,
+  - wizard flow ends with an explicit review step before submit.
+
+### Changed
+
+- Weekly check-in interaction policy:
+  - replace the single long-form check-in card with the same progressive step-shell pattern used by coach onboarding.
+
+### Removed
+
+- Inline full-form weekly check-in presentation on the overview screen.
+
+### Notes
+
+- This is a frontend flow change only; weekly check-in payloads, save contract, and submit timing remain unchanged.
+
 ## 2026-03-09 - Social/account surface visual consistency
 
 ### Added
