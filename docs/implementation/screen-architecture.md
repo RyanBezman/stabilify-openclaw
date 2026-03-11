@@ -102,7 +102,7 @@ Run `npm run lint:arch` to enforce these dependency boundaries:
 
 ### Testing Baseline
 - Run `npm run validate` after each major phase.
-- `validate` is the canonical gate: `lint:arch + typecheck + test + lint:unused`.
+- `validate` is the canonical gate: `lint:legibility + lint:arch + typecheck + test + lint:unused`.
 - Loading-state regressions to watch for:
   - tab revisit causing a full-screen loader after usable content already exists,
   - hydration flags being treated as blocking load,

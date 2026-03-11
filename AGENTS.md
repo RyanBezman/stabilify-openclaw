@@ -16,6 +16,7 @@
 | Pro coaching model | One unified persona voice across workout + nutrition with specialist internals | `docs/product/pro-coaching-and-safety.md` |
 | Pro safety boundary | Wellness-only guidance, no diagnosis/treatment claims | `docs/product/pro-coaching-and-safety.md` |
 | Roadmap control | Use `Now / Next / Later`; pull-forward allowed only with explicit policy updates | `docs/product/roadmap-and-governance.md` |
+| Agent legibility gate | `npm run lint:legibility` must pass before merge | `docs/implementation/agent-legibility-harness.md` |
 | TypeScript typing | `any` and `unknown` are forbidden in TypeScript code; use concrete domain types, typed payload contracts, and explicit type guards instead | `AGENTS.md` |
 
 ## Source Hierarchy
@@ -41,6 +42,7 @@ If conflicts exist, align lower-level docs and implementation to `AGENTS.md` and
   4. `UX States`
   5. `Analytics`
   6. `QA`
+- Keep docs references machine-checkable (`AGENTS.md`, `docs/README.md`) and run `npm run lint:legibility` after docs edits.
 - Keep durable preferences in `docs/product/builder-context.md`.
 - Track unresolved decisions in `docs/product/open-questions.md`.
 - Record major policy updates in `docs/product/change-log.md`.

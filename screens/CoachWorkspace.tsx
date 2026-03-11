@@ -30,6 +30,7 @@ import type {
 } from "../lib/features/coaches";
 import { useCoachWorkspace } from "../lib/features/coaches";
 import { clearUnifiedCoachOnServer, fetchCoachOnboardingStatus } from "../lib/features/coaches";
+import { getWorkoutPlanViewKey } from "../lib/features/coaches";
 import { fetchCurrentUserId } from "../lib/features/auth";
 import NutritionIntakeCard from "../components/coaches/nutrition/NutritionIntakeCard";
 import NutritionPlanCard from "../components/coaches/nutrition/NutritionPlanCard";
@@ -42,7 +43,6 @@ import {
   resolveCoachWorkspaceEntryState,
   shouldShowCoachWorkspaceBlockingSkeleton,
 } from "../lib/features/coaches/hooks/coachSurfaceLoading";
-import { getWorkoutPlanViewKey } from "../lib/features/coaches/models/planViewKey";
 import AppScreen from "../components/ui/AppScreen";
 
 export function CoachWorkspaceView({

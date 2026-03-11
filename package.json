@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "lint:unused": "knip",
-    "validate": "npm run lint:arch && npm run typecheck && npm test && npm run lint:unused",
+    "lint:legibility": "node scripts/lint-legibility.js",
+    "validate": "npm run lint:legibility && npm run lint:arch && npm run typecheck && npm test && npm run lint:unused",
     "lint:arch": "node scripts/lint-architecture.js",
     "generate-icons": "node scripts/generate-icons.js",
     "seed": "node scripts/seed.js"

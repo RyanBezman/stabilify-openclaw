@@ -9,6 +9,7 @@ export { coachFromSelection } from "./models/catalog";
 export { mapCoachChatRouteToWorkspaceParams } from "./models/coachChatRoute";
 export { isSameCoach } from "./models/identity";
 export { coachPersonalityCopy } from "./models/personalityCopy";
+export { getNutritionPlanViewKey, getWorkoutPlanViewKey } from "./models/planViewKey";
 export { resolveCoachVoiceProfile } from "./models/voiceProfile";
 export { logCoachRequestDiagnostics, useCoachRenderDiagnostics } from "./models/devDiagnostics";
 

@@ -1,4 +1,3 @@
-import type { StorageError } from "@supabase/storage-js";
 import { supabase } from "../supabase";
 import type { GymSessionStatus, GymSessionStatusReason } from "./types";
 import { formatLocalDate } from "../utils/metrics";
@@ -7,6 +6,11 @@ import { recordActivityEvent } from "./activityEvents";
 import { fail, ok, type Result } from "../features/shared";
 
 const GYM_PROOFS_BUCKET = "gym-proofs";
+
+type StorageUploadError = {
+  message: string;
+  statusCode?: number | string | null;
+};
 
 export type GymSessionDefaults = {
   timezone: string;
@@ -63,9 +67,9 @@ function base64ToBytes(base64: string): Uint8Array | null {
   return bytes;
 }
 
-function isMissingStorageBucket(error: StorageError): boolean {
+function isMissingStorageBucket(error: StorageUploadError): boolean {
   const message = error.message.toLowerCase();
-  const statusCode = error.statusCode?.toLowerCase() ?? "";
+  const statusCode = String(error.statusCode ?? "").toLowerCase();
 
   return message.includes("bucket not found") || statusCode === "404";
 }

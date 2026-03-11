@@ -1,5 +1,29 @@
 # Product Policy Change Log
 
+## 2026-03-11 - Agent legibility harness added to merge gate
+
+### Added
+
+- Contributor-governance policy:
+  - `lint:legibility` is now a required merge gate for docs map integrity and section-contract enforcement.
+- Implementation contract:
+  - added `docs/implementation/agent-legibility-harness.md` as the canonical operational guide for agent-readable repo structure checks.
+
+### Changed
+
+- Quality gate policy:
+  - `npm run validate` now executes `lint:legibility` before architecture, typing, tests, and unused export checks.
+- Documentation index policy:
+  - `docs/README.md` read order now includes the legibility harness guide near the top-level contributor map.
+
+### Removed
+
+- Reliance on manual spot-checking for AGENTS/docs reference drift and missing feature-doc section headings.
+
+### Notes
+
+- This is a governance/tooling policy update only; no user-facing product behavior changed.
+
 ## 2026-03-10 - Home summary favors latest logged weigh-in
 
 ### Added

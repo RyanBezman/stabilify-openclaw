@@ -184,6 +184,7 @@ vi.mock("../lib/features/coaches", () => ({
   useCoachRenderDiagnostics: vi.fn(),
   clearUnifiedCoachOnServer: vi.fn(),
   fetchCoachOnboardingStatus: vi.fn(),
+  getWorkoutPlanViewKey: vi.fn((plan: WorkoutPlan | null) => (plan ? JSON.stringify(plan) : "none")),
 }));
 
 vi.mock("../lib/features/coaches/hooks/coachSurfaceLoading", () => ({
