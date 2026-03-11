@@ -1,5 +1,45 @@
 # Product Policy Change Log
 
+## 2026-03-10 - Home summary favors latest logged weigh-in
+
+### Added
+
+- Home summary display policy:
+  - show `Latest weigh-in` with the most recent logged weight when one exists.
+
+### Changed
+
+- Home fallback policy:
+  - `Starting weight` is shown only before the user has logged their first weigh-in.
+
+### Removed
+
+- Home summary behavior that kept showing the original starting weight after newer weigh-ins existed.
+
+### Notes
+
+- Goal progress math already used the latest logged weigh-in; this change aligns the visible summary card with that behavior.
+
+## 2026-03-10 - Apple Health weight import requires explicit save
+
+### Added
+
+- Weigh-in import policy:
+  - iPhone users can pull the latest Apple Health weight into the `Log weigh-in` draft.
+
+### Changed
+
+- Accountability write policy:
+  - Apple Health weight reads do not silently write to Stabilify; the imported draft only affects accountability after an explicit `Save`.
+
+### Removed
+
+- Implicit expectation that Apple Health weight access would auto-sync in the background.
+
+### Notes
+
+- Imported Apple Health samples still use the normal `weigh_ins` save path and same-day replacement rule.
+
 ## 2026-03-10 - Coach switching keeps saved setup
 
 ### Added

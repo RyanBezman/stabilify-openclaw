@@ -89,6 +89,7 @@ Last updated: 2026-03-10
 - `CoachOnboardingResults` reads explicit per-track generated booleans from the onboarding workflow result instead of assuming the requested `planStart` fully succeeded.
 - `CoachOnboardingResults` snapshot hydration must prefer generated nutrition results when available, but fall back to workout snapshot loading when nutrition is unavailable so a partial success never renders as a full-screen error.
 - `CoachWorkspace` is now the canonical plan + chat surface.
+- `CoachWorkspace` plan surfaces default all `Show` / `Hide` sections to collapsed after initial plan hydrate or plan generation. User-opened sections must stay stable across refreshes when the displayed plan content is unchanged, and only reset to collapsed when the displayed plan actually changes.
 - `CoachWorkspace` and `CoachProfile` resolve the selected coach from live `CoachContext` state once hydration settles. `CoachWorkspace` may temporarily use an explicit route coach during initial entry or explicit intake/draft launch so the shell can load immediately, but stale route params must never override the hydrated active selection.
 - `CoachCheckins` now runs as an overview + wizard split: overview holds history/current-week preview; wizard handles the active weekly check-in steps and review.
 - `CoachChat` is a compatibility shim that redirects to `CoachWorkspace` with `tab: "chat"` and carries `prefill`.

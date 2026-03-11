@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   type AlertButton,
@@ -42,6 +42,7 @@ import {
   resolveCoachWorkspaceEntryState,
   shouldShowCoachWorkspaceBlockingSkeleton,
 } from "../lib/features/coaches/hooks/coachSurfaceLoading";
+import { getWorkoutPlanViewKey } from "../lib/features/coaches/models/planViewKey";
 import AppScreen from "../components/ui/AppScreen";
 
 export function CoachWorkspaceView({
@@ -152,28 +153,25 @@ export function CoachWorkspaceView({
     onTierRequired,
   });
   const [workoutNotesOpen, setWorkoutNotesOpen] = useState(false);
-  const [workoutScheduleOpen, setWorkoutScheduleOpen] = useState(true);
+  const [workoutScheduleOpen, setWorkoutScheduleOpen] = useState(false);
   const [expandedWorkoutDays, setExpandedWorkoutDays] = useState<Record<string, boolean>>({});
+  const displayedWorkoutPlanViewKey = useMemo(
+    () => getWorkoutPlanViewKey(displayedWorkoutPlan),
+    [displayedWorkoutPlan],
+  );
 
   useEffect(() => {
     if (!displayedWorkoutPlan) {
       setWorkoutNotesOpen(false);
-      setWorkoutScheduleOpen(true);
+      setWorkoutScheduleOpen(false);
       setExpandedWorkoutDays({});
       return;
     }
 
     setWorkoutNotesOpen(false);
-    setWorkoutScheduleOpen(true);
-    setExpandedWorkoutDays(
-      Object.fromEntries(
-        displayedWorkoutPlan.schedule.map((day, index) => [
-          `${day.dayLabel}-${index}`,
-          index === 0,
-        ]),
-      ),
-    );
-  }, [displayedWorkoutPlan]);
+    setWorkoutScheduleOpen(false);
+    setExpandedWorkoutDays({});
+  }, [displayedWorkoutPlanViewKey]);
 
   useCoachRenderDiagnostics("CoachWorkspaceView", {
     specialization,

@@ -20,6 +20,12 @@ export type SaveCurrentWeighInResult = {
   message?: string;
 };
 
+export type ImportAppleHealthWeightResult = {
+  imported: boolean;
+  error?: string;
+  message?: string;
+};
+
 export type UseLogWeighInResult = {
   initializing: boolean;
   saving: boolean;
@@ -30,6 +36,10 @@ export type UseLogWeighInResult = {
   setWeight: (value: string) => void;
   recordedAt: Date;
   latestWeighIn: LatestWeighIn | null;
+  appleHealthImporting: boolean;
+  appleHealthImportError: string | null;
+  appleHealthImportedSampleLabel: string | null;
+  canImportAppleHealth: boolean;
   showDatePicker: boolean;
   setShowDatePicker: (value: boolean) => void;
   showTimePicker: boolean;
@@ -43,6 +53,7 @@ export type UseLogWeighInResult = {
   closeDatePicker: () => void;
   closeTimePicker: () => void;
   saveCurrentWeighIn: () => Promise<SaveCurrentWeighInResult>;
+  importAppleHealthWeight: () => Promise<ImportAppleHealthWeightResult>;
   useLastWeight: () => void;
   handleDateChange: (_event: unknown, selected?: Date) => void;
   handleTimeChange: (_event: unknown, selected?: Date) => void;
@@ -63,14 +74,16 @@ export type WeightCardProps = {
   weight: string;
   setWeight: (value: string) => void;
   unit: WeightUnit;
-  latestWeighIn: LatestWeighIn | null;
-  onUseLastWeight: () => void;
+  canImportAppleHealth: boolean;
+  appleHealthImporting: boolean;
+  appleHealthImportError: string | null;
+  appleHealthImportedSampleLabel: string | null;
+  onImportAppleHealth: () => void;
 };
 
 export type WhenCardProps = {
   dateLabel: string;
   timeLabel: string;
-  timezone: string;
   onPressDate: () => void;
   onPressTime: () => void;
 };

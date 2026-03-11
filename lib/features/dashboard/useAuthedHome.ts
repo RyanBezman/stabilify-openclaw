@@ -267,6 +267,7 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
   const targetMin = goal?.targetMin ?? null;
   const targetMax = goal?.targetMax ?? null;
   const targetWeight = goal?.targetWeight ?? null;
+  const hasLoggedWeighIn = weighIns.length > 0;
   const currentWeight = useMemo(() => {
     const latestWeighIn = weighIns[0];
     if (!latestWeighIn) {
@@ -417,7 +418,8 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     return "text-neutral-400";
   }, [maintainStatus]);
 
-  const profileStartWeightValue = formatWeight(startWeight);
+  const profileStartWeightLabel = hasLoggedWeighIn ? "Latest weigh-in" : "Starting weight";
+  const profileStartWeightValue = formatWeight(currentWeight);
   const profileTargetLabel = goalType === "maintain" ? "Status" : "To target";
   const profileTargetValue =
     goalType === "maintain"
@@ -432,7 +434,7 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
       photoUrl: profilePhotoUrl,
       goalLabel,
       goalSummary,
-      startWeightLabel: "Starting weight",
+      startWeightLabel: profileStartWeightLabel,
       startWeightValue: profileStartWeightValue,
       targetLabel: profileTargetLabel,
       targetValue: profileTargetValue,
@@ -443,9 +445,11 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
       displayName,
       goalLabel,
       goalSummary,
+      hasLoggedWeighIn,
       initial,
       maintainStatusClassName,
       profilePhotoUrl,
+      profileStartWeightLabel,
       profileStartWeightValue,
       profileTargetLabel,
       profileTargetValue,

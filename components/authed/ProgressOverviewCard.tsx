@@ -68,9 +68,6 @@ function resolveGymRingTone(status?: GymSessionStatus): CircularProgressRingTone
 }
 
 function formatStepValue(value: number): string {
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}k`;
-  }
   return value.toString();
 }
 
@@ -134,7 +131,7 @@ export default function ProgressOverviewCard({
         </TouchableOpacity>
       </View>
 
-      <View className="flex-row items-start gap-2">
+      <View className="flex-row items-start gap-1">
         <View className="flex-1 items-center">
           <CircularProgressRing
             label="Weigh-ins"
@@ -142,7 +139,7 @@ export default function ProgressOverviewCard({
             valueText={`${consistencyPercentLabel}%`}
             subText={`${consistencyDaysWithWeighIns}/${consistencyTotalDays}`}
             tone="violet"
-            size={86}
+            size={90}
             strokeWidth={7}
             animateOnMount
           />
@@ -155,7 +152,7 @@ export default function ProgressOverviewCard({
             valueText={hasGymTarget ? `${Math.round(gymProgress * 100)}%` : "—"}
             subText={hasGymTarget ? `${safeCompleted}/${gymTarget}` : "No goal"}
             tone={resolveGymRingTone(resolvedStatus)}
-            size={86}
+            size={90}
             strokeWidth={7}
             animateOnMount
           />
@@ -169,7 +166,7 @@ export default function ProgressOverviewCard({
             subText={stepsSubText}
             tone="blue"
             progressColor="#AFCBFF"
-            size={86}
+            size={90}
             strokeWidth={7}
             animateOnMount
             onPress={!stepSummary.enabled ? onPressSteps : undefined}

@@ -1,10 +1,12 @@
+import React from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import Button from "../../ui/Button";
 import OptionPill from "../../ui/OptionPill";
 import PlanSurface from "../workspace/PlanSurface";
 import type { NutritionPlan } from "../../../lib/features/coaches";
+import { getNutritionPlanViewKey } from "../../../lib/features/coaches/models/planViewKey";
 
 type NutritionPlanCardProps = {
   plan: NutritionPlan | null;
@@ -117,26 +119,23 @@ export default function NutritionPlanCard({
   planBusy,
   planApiUnavailable,
 }: NutritionPlanCardProps) {
-  const [mealsOpen, setMealsOpen] = useState(true);
+  const [mealsOpen, setMealsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [expandedMeals, setExpandedMeals] = useState<Record<string, boolean>>({});
+  const planViewKey = useMemo(() => getNutritionPlanViewKey(plan), [plan]);
 
   useEffect(() => {
     if (!plan) {
       setExpandedMeals({});
-      setMealsOpen(true);
+      setMealsOpen(false);
       setNotesOpen(false);
       return;
     }
 
-    setMealsOpen(true);
+    setMealsOpen(false);
     setNotesOpen(false);
-    setExpandedMeals(
-      Object.fromEntries(
-        plan.meals.map((meal, index) => [`${meal.name}-${index}`, index === 0]),
-      ),
-    );
-  }, [plan]);
+    setExpandedMeals({});
+  }, [planViewKey]);
 
   if (!plan) {
     return (

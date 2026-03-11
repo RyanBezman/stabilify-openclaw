@@ -1,7 +1,8 @@
 import { Platform } from "react-native";
 import { fail, ok, type Result } from "../features/shared";
+import type { WeightUnit } from "./types";
 
-type AppleHealthKitPermission = "StepCount";
+type AppleHealthKitPermission = "StepCount" | "Weight";
 
 type AppleHealthKitPermissions = {
   permissions: {
@@ -25,10 +26,21 @@ type AppleHealthKitValue = {
   value: number;
 };
 
+type AppleHealthKitWeightValue = AppleHealthKitValue & {
+  startDate: string;
+  endDate: string;
+};
+
 type AppleHealthKitDailyStepSample = {
   value: number;
   startDate: string;
   endDate: string;
+};
+
+type AppleHealthKitWeightUnit = "pound" | "kg";
+
+type AppleHealthKitWeightOptions = {
+  unit: AppleHealthKitWeightUnit;
 };
 
 type AppleHealthKitNativeModule = {
@@ -43,6 +55,10 @@ type AppleHealthKitNativeModule = {
     options: AppleHealthKitStepCountOptions,
     callback: (error: string | null, results: AppleHealthKitValue) => void,
   ) => void;
+  getLatestWeight?: (
+    options: AppleHealthKitWeightOptions,
+    callback: (error: string | null, results: AppleHealthKitWeightValue) => void,
+  ) => void;
   getDailyStepCountSamples?: (
     options: AppleHealthKitDailyStepCountOptions,
     callback: (error: string | null, results: AppleHealthKitDailyStepSample[]) => void,
@@ -52,6 +68,13 @@ type AppleHealthKitNativeModule = {
 const HEALTHKIT_STEP_PERMISSIONS: AppleHealthKitPermissions = {
   permissions: {
     read: ["StepCount"],
+    write: [],
+  },
+};
+
+const HEALTHKIT_WEIGHT_PERMISSIONS: AppleHealthKitPermissions = {
+  permissions: {
+    read: ["Weight"],
     write: [],
   },
 };
@@ -79,7 +102,7 @@ function normalizeHealthErrorMessage(
 
 function ensureIosSupport(): Result<{ supported: true }> {
   if (Platform.OS !== "ios") {
-    return fail("Apple Health step tracking is only supported on iPhone.");
+    return fail("Apple Health is only supported on iPhone.");
   }
   return ok({ supported: true });
 }
@@ -113,7 +136,10 @@ function checkHealthKitAvailability(): Promise<Result<{ available: true }>> {
   });
 }
 
-function initializeHealthKitStepRead(): Promise<Result<{ initialized: true }>> {
+function initializeHealthKitRead(
+  permissions: AppleHealthKitPermissions,
+  fallbackMessage: string,
+): Promise<Result<{ initialized: true }>> {
   return new Promise((resolve) => {
     const moduleResult = getNativeModuleOrFail();
     if (moduleResult.error || !moduleResult.data) {
@@ -121,13 +147,13 @@ function initializeHealthKitStepRead(): Promise<Result<{ initialized: true }>> {
       return;
     }
 
-    moduleResult.data.module.initHealthKit(HEALTHKIT_STEP_PERMISSIONS, (error) => {
+    moduleResult.data.module.initHealthKit(permissions, (error) => {
       if (error) {
         resolve(
           fail(
             normalizeHealthErrorMessage(
               error,
-              "Couldn't access Apple Health step permissions.",
+              fallbackMessage,
             ),
           ),
         );
@@ -136,6 +162,20 @@ function initializeHealthKitStepRead(): Promise<Result<{ initialized: true }>> {
       resolve(ok({ initialized: true }));
     });
   });
+}
+
+function initializeHealthKitStepRead(): Promise<Result<{ initialized: true }>> {
+  return initializeHealthKitRead(
+    HEALTHKIT_STEP_PERMISSIONS,
+    "Couldn't access Apple Health step permissions.",
+  );
+}
+
+function initializeHealthKitWeightRead(): Promise<Result<{ initialized: true }>> {
+  return initializeHealthKitRead(
+    HEALTHKIT_WEIGHT_PERMISSIONS,
+    "Couldn't access Apple Health weight permissions.",
+  );
 }
 
 export async function requestAppleHealthStepReadAccess(): Promise<Result<{ granted: true }>> {
@@ -155,6 +195,98 @@ export async function requestAppleHealthStepReadAccess(): Promise<Result<{ grant
   }
 
   return ok({ granted: true });
+}
+
+export async function requestAppleHealthWeightReadAccess(): Promise<Result<{ granted: true }>> {
+  const supportResult = ensureIosSupport();
+  if (supportResult.error) {
+    return supportResult;
+  }
+
+  const availableResult = await checkHealthKitAvailability();
+  if (availableResult.error) {
+    return availableResult;
+  }
+
+  const initResult = await initializeHealthKitWeightRead();
+  if (initResult.error) {
+    return initResult;
+  }
+
+  return ok({ granted: true });
+}
+
+function resolveAppleHealthWeightUnit(unit: WeightUnit): AppleHealthKitWeightUnit {
+  return unit === "kg" ? "kg" : "pound";
+}
+
+function parseAppleHealthRecordedAt(value: string): Date | null {
+  const recordedAt = new Date(value);
+  return Number.isNaN(recordedAt.getTime()) ? null : recordedAt;
+}
+
+export async function fetchAppleHealthLatestWeight(
+  unit: WeightUnit,
+): Promise<Result<{ weight: number; unit: WeightUnit; recordedAt: Date }>> {
+  const supportResult = ensureIosSupport();
+  if (supportResult.error) {
+    return supportResult;
+  }
+
+  const moduleResult = getNativeModuleOrFail();
+  if (moduleResult.error || !moduleResult.data) {
+    return moduleResult;
+  }
+
+  const getLatestWeight = moduleResult.data.module.getLatestWeight;
+  if (typeof getLatestWeight !== "function") {
+    return fail(
+      "Apple Health weight import is unavailable in this build. Reinstall the latest iOS dev client or production build.",
+    );
+  }
+
+  const accessResult = await requestAppleHealthWeightReadAccess();
+  if (accessResult.error) {
+    return accessResult;
+  }
+
+  return new Promise((resolve) => {
+    getLatestWeight(
+      { unit: resolveAppleHealthWeightUnit(unit) },
+      (error, results) => {
+        if (error) {
+          resolve(
+            fail(
+              normalizeHealthErrorMessage(
+                error,
+                "Couldn't read your latest weight from Apple Health.",
+              ),
+            ),
+          );
+          return;
+        }
+
+        if (!Number.isFinite(results.value) || results.value <= 0) {
+          resolve(fail("Apple Health returned an invalid weight sample."));
+          return;
+        }
+
+        const recordedAt = parseAppleHealthRecordedAt(results.startDate);
+        if (!recordedAt) {
+          resolve(fail("Apple Health returned an invalid weight timestamp."));
+          return;
+        }
+
+        resolve(
+          ok({
+            weight: Math.round(results.value * 10) / 10,
+            unit,
+            recordedAt,
+          }),
+        );
+      },
+    );
+  });
 }
 
 export async function fetchAppleHealthTodayStepCount(): Promise<Result<{ steps: number }>> {

@@ -43,13 +43,14 @@ Validate the Profile Settings flow with drill-in text editing.
 6. Confirm the hero avatar shows the saved profile photo; if no photo exists, confirm initials render from first name and last name when present.
 7. On iPhone, open each text editor and confirm the keyboard keeps the input usable without layout glitches.
 8. On iPhone, confirm the keyboard accessory dismissal control appears while editing `Steps`.
-9. Confirm `Username`, `Timezone`, and `Steps` do not show unnecessary helper copy on the main settings screen.
-10. Confirm the styling feels visually aligned with `Profile` and `Feed` instead of a separate dashboard/admin surface.
-11. Change preferred unit and confirm the selected pill persists after leaving and reopening the screen.
-12. Toggle `Show Progress on public profile` and confirm the switch state persists after reopening the screen.
-13. Toggle `Phone notifications` on and off and confirm the state reflects the device registration result.
-14. Toggle `Track steps` on and off and confirm the setting persists.
-15. Toggle `Auto support post` off and confirm it stays off after reopening the screen.
-16. Toggle `Auto support post` on and confirm consent is still required before the setting stays on.
-17. After the screen has loaded once, switch to another tab and back. Confirm the existing rows, avatar, and section content stay mounted during refresh instead of showing a full-screen blocking loader.
-18. With existing settings visible, trigger a refresh path (tab revisit or pull-to-refresh if available) and confirm in-flight updates do not clear the current snapshot before the refreshed values land.
+9. While editing `Steps`, confirm input cannot exceed `99999`.
+10. Confirm `Username`, `Timezone`, and `Steps` do not show unnecessary helper copy on the main settings screen.
+11. Confirm the styling feels visually aligned with `Profile` and `Feed` instead of a separate dashboard/admin surface.
+12. Change preferred unit and confirm the selected pill persists after leaving and reopening the screen.
+13. Toggle `Show Progress on public profile` and confirm the switch state persists after reopening the screen.
+14. Toggle `Phone notifications` on and off and confirm the state reflects the device registration result.
+15. Toggle `Track steps` on and off and confirm the setting persists.
+16. Toggle `Auto support post` off and confirm it stays off after reopening the screen.
+17. Toggle `Auto support post` on and confirm consent is still required before the setting stays on.
+18. After the screen has loaded once, switch to another tab and back. Confirm the existing rows, avatar, and section content stay mounted during refresh instead of showing a full-screen blocking loader.
+19. With existing settings visible, trigger a refresh path (tab revisit or pull-to-refresh if available) and confirm in-flight updates do not clear the current snapshot before the refreshed values land.

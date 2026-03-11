@@ -134,6 +134,7 @@ Do not include:
 ## UX States
 
 - Home answers daily execution needs.
+- Home profile summary should show the latest logged weigh-in when available, and fall back to the saved starting weight only before the first weigh-in.
 - Feed answers social support/visibility needs.
 - Profile answers identity/archive/settings needs.
 - Feed, Profile, and Profile settings should share one visual family for social/account surfaces:

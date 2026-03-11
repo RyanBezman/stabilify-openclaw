@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform } from "react-native";
+import { fetchAppleHealthLatestWeight } from "../../data/appleHealth";
 import type { WeightUnit } from "../../data/types";
 import { fetchWeighInDefaults, saveWeighIn } from "../../data/weighIns";
 import { formatWeight, parseWeight } from "../../utils/weight";
 import { toDisplayTime, toTimeString } from "../../utils/time";
 import type {
+  ImportAppleHealthWeightResult,
   LatestWeighIn,
   SaveCurrentWeighInResult,
   UseLogWeighInResult,
@@ -28,6 +30,8 @@ const isSameDate = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
+const formatWeightInputValue = (value: number) => String(Number(value.toFixed(1)));
+
 export function useLogWeighIn(): UseLogWeighInResult {
   const [initializing, setInitializing] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,6 +41,13 @@ export function useLogWeighIn(): UseLogWeighInResult {
   const [weight, setWeight] = useState("");
   const [recordedAt, setRecordedAt] = useState(new Date());
   const [latestWeighIn, setLatestWeighIn] = useState<LatestWeighIn | null>(
+    null,
+  );
+  const [appleHealthImporting, setAppleHealthImporting] = useState(false);
+  const [appleHealthImportError, setAppleHealthImportError] = useState<string | null>(
+    null,
+  );
+  const [appleHealthImportedSampleAt, setAppleHealthImportedSampleAt] = useState<Date | null>(
     null,
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -82,6 +93,16 @@ export function useLogWeighIn(): UseLogWeighInResult {
     () => toDisplayTime(toTimeString(recordedAt)),
     [recordedAt],
   );
+  const appleHealthImportedSampleLabel = useMemo(() => {
+    if (!appleHealthImportedSampleAt) {
+      return null;
+    }
+
+    return `${formatLongDate(appleHealthImportedSampleAt)} at ${toDisplayTime(
+      toTimeString(appleHealthImportedSampleAt),
+    )}`;
+  }, [appleHealthImportedSampleAt]);
+  const canImportAppleHealth = Platform.OS === "ios";
 
   const weightValue = parseWeight(weight);
   const isFuture = recordedAt.getTime() > now.getTime();
@@ -137,6 +158,37 @@ export function useLogWeighIn(): UseLogWeighInResult {
     setWeight(latestWeighIn.weight.toString());
   }, [latestWeighIn]);
 
+  const importAppleHealthWeight = useCallback(
+    async (): Promise<ImportAppleHealthWeightResult> => {
+      if (appleHealthImporting) {
+        return { imported: false };
+      }
+
+      setAppleHealthImporting(true);
+      setAppleHealthImportError(null);
+      try {
+        const result = await fetchAppleHealthLatestWeight(unit);
+        if (result.error || !result.data) {
+          const error = result.error ?? "Couldn't read your Apple Health weight.";
+          setAppleHealthImportError(error);
+          return { imported: false, error };
+        }
+
+        setWeight(formatWeightInputValue(result.data.weight));
+        setRecordedAt(result.data.recordedAt);
+        setAppleHealthImportedSampleAt(result.data.recordedAt);
+
+        return {
+          imported: true,
+          message: `Imported ${formatWeight(result.data.weight, unit)} from Apple Health. Review the timestamp, then save.`,
+        };
+      } finally {
+        setAppleHealthImporting(false);
+      }
+    },
+    [appleHealthImporting, unit],
+  );
+
   const saveCurrentWeighIn = useCallback(async (): Promise<SaveCurrentWeighInResult> => {
     if (!canSave || weightValue === null) {
       return { saved: false };
@@ -171,6 +223,10 @@ export function useLogWeighIn(): UseLogWeighInResult {
     setWeight,
     recordedAt,
     latestWeighIn,
+    appleHealthImporting,
+    appleHealthImportError,
+    appleHealthImportedSampleLabel,
+    canImportAppleHealth,
     showDatePicker,
     setShowDatePicker,
     showTimePicker,
@@ -184,6 +240,7 @@ export function useLogWeighIn(): UseLogWeighInResult {
     closeDatePicker,
     closeTimePicker,
     saveCurrentWeighIn,
+    importAppleHealthWeight,
     useLastWeight,
     handleDateChange,
     handleTimeChange,

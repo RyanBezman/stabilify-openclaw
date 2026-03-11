@@ -274,8 +274,8 @@ describe("ProgressOverviewCard", () => {
     });
     const textValues = getTextValues(root);
 
-    expect(textValues).toContain("8.4k");
-    expect(textValues).toContain("8.4k/12.0k");
+    expect(textValues).toContain("8400");
+    expect(textValues).toContain("8400/12000");
     const circleStrokes = root
       .findAllByType("Circle")
       .map((node: ReactTestInstance) => String(node.props.stroke));
@@ -294,7 +294,7 @@ describe("ProgressOverviewCard", () => {
     });
     const textValues = getTextValues(root);
 
-    expect(textValues).toContain("8.4k");
+    expect(textValues).toContain("8400");
     expect(textValues).toContain("Avg/day");
   });
 

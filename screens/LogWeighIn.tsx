@@ -1,15 +1,16 @@
 import {
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { formatShortDate } from "../lib/utils/metrics";
-import { sanitizeWeightInput, formatWeight } from "../lib/utils/weight";
+import { sanitizeWeightInput } from "../lib/utils/weight";
 import AuthHeader from "../components/auth/AuthHeader";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
@@ -30,6 +31,7 @@ import type {
 
 const IS_IOS = Platform.OS === "ios";
 const IS_ANDROID = Platform.OS === "android";
+const APPLE_HEALTH_HEART = "#ff304f";
 
 function LoadErrorCard({ loadError }: LoadErrorCardProps) {
   if (!loadError) return null;
@@ -66,46 +68,79 @@ function WeightCard({
   weight,
   setWeight,
   unit,
-  latestWeighIn,
-  onUseLastWeight,
+  canImportAppleHealth,
+  appleHealthImporting,
+  appleHealthImportError,
+  appleHealthImportedSampleLabel,
+  onImportAppleHealth,
 }: WeightCardProps) {
   return (
     <Card className="mb-6 p-5">
       <SectionTitle>Weight</SectionTitle>
-      <View className="mt-4 flex-row items-center">
-        <View className="flex-1">
+      <View className="mt-4">
+        <View className="relative">
           <Input
             value={weight}
             onChangeText={(value) => setWeight(sanitizeWeightInput(value))}
             placeholder="180.4"
             keyboardType="decimal-pad"
+            className="pr-16"
           />
-        </View>
-        <View className="ml-3 items-center rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-4">
-          <Text className="text-sm font-semibold text-neutral-200">{unit}</Text>
+          <View className="pointer-events-none absolute inset-y-0 right-5 items-center justify-center">
+            <Text className="text-sm font-medium uppercase tracking-[1.2px] text-neutral-500">
+              {unit}
+            </Text>
+          </View>
         </View>
       </View>
 
-      {latestWeighIn ? (
-        <View className="mt-3 flex-row items-center justify-between gap-2">
-          <HelperText className="flex-1">
-            Last: {formatShortDate(latestWeighIn.localDate)} -{" "}
-            {formatWeight(latestWeighIn.weight, latestWeighIn.unit)}
-          </HelperText>
-          {!weight.trim() ? (
+      {canImportAppleHealth ? (
+        <View
+          className="mt-3 rounded-2xl border border-neutral-800 bg-neutral-950/60 px-4 py-3.5"
+        >
+          <View className="flex-row items-center justify-between gap-3">
+            <View className="flex-1 flex-row items-center gap-3">
+              <View className="h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-white">
+                <View className="absolute right-[4px] top-[4px]">
+                  <Ionicons name="heart" size={20} color={APPLE_HEALTH_HEART} />
+                </View>
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-semibold text-white">Apple Health</Text>
+                <Text className="mt-1 text-sm text-neutral-400">
+                  Use your latest weight from Apple Health.
+                </Text>
+              </View>
+            </View>
             <TouchableOpacity
-              onPress={onUseLastWeight}
-              className="rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1"
+              onPress={onImportAppleHealth}
+              disabled={appleHealthImporting}
+              className={`rounded-full border px-3 py-1.5 ${
+                appleHealthImporting
+                  ? "border-neutral-700 bg-neutral-800"
+                  : "border-neutral-700 bg-neutral-900"
+              }`}
             >
-              <Text className="text-xs font-semibold text-violet-300">Use last</Text>
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: appleHealthImporting ? "#9ca3af" : "#f5f5f5" }}
+              >
+                {appleHealthImporting ? "Loading..." : "Use latest"}
+              </Text>
             </TouchableOpacity>
+          </View>
+          {appleHealthImportedSampleLabel ? (
+            <HelperText className="mt-2 text-neutral-400">
+              Imported sample: {appleHealthImportedSampleLabel}
+            </HelperText>
+          ) : null}
+          {appleHealthImportError ? (
+            <HelperText className="mt-2 text-rose-300">
+              {appleHealthImportError}
+            </HelperText>
           ) : null}
         </View>
-      ) : (
-        <HelperText className="mt-3">Your first weigh-in starts the streak.</HelperText>
-      )}
-
-      <HelperText className="mt-2">Units follow your profile preference.</HelperText>
+      ) : null}
     </Card>
   );
 }
@@ -113,7 +148,6 @@ function WeightCard({
 function WhenCard({
   dateLabel,
   timeLabel,
-  timezone,
   onPressDate,
   onPressTime,
 }: WhenCardProps) {
@@ -134,9 +168,8 @@ function WhenCard({
         containerClassName="mt-3"
       />
 
-      <HelperText className="mt-2">Local time zone: {timezone}.</HelperText>
       <HelperText className="mt-1">
-        Logging again for the same day replaces the previous entry.
+        Saving again updates that day&apos;s entry.
       </HelperText>
     </Card>
   );
@@ -173,7 +206,10 @@ export default function LogWeighIn({ navigation }: LogWeighInScreenProps) {
     weight,
     setWeight,
     recordedAt,
-    latestWeighIn,
+    appleHealthImporting,
+    appleHealthImportError,
+    appleHealthImportedSampleLabel,
+    canImportAppleHealth,
     showDatePicker,
     setShowDatePicker,
     showTimePicker,
@@ -187,7 +223,7 @@ export default function LogWeighIn({ navigation }: LogWeighInScreenProps) {
     closeDatePicker,
     closeTimePicker,
     saveCurrentWeighIn,
-    useLastWeight,
+    importAppleHealthWeight,
     handleDateChange,
     handleTimeChange,
   } = useLogWeighIn();
@@ -206,6 +242,30 @@ export default function LogWeighIn({ navigation }: LogWeighInScreenProps) {
     ]);
   };
 
+  const onImportAppleHealth = async () => {
+    const result = await importAppleHealthWeight();
+    if (result.error) {
+      Alert.alert(
+        "Apple Health import failed",
+        result.error,
+        [
+          { text: "OK", style: "cancel" },
+          {
+            text: "Open Settings",
+            onPress: () => {
+              void Linking.openSettings();
+            },
+          },
+        ],
+      );
+      return;
+    }
+
+    if (result.message) {
+      Alert.alert("Apple Health weight imported", result.message);
+    }
+  };
+
   return (
     <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={720}>
       <KeyboardAvoidingView
@@ -222,14 +282,16 @@ export default function LogWeighIn({ navigation }: LogWeighInScreenProps) {
               weight={weight}
               setWeight={setWeight}
               unit={unit}
-              latestWeighIn={latestWeighIn}
-              onUseLastWeight={useLastWeight}
+              canImportAppleHealth={canImportAppleHealth}
+              appleHealthImporting={appleHealthImporting}
+              appleHealthImportError={appleHealthImportError}
+              appleHealthImportedSampleLabel={appleHealthImportedSampleLabel}
+              onImportAppleHealth={onImportAppleHealth}
             />
 
             <WhenCard
               dateLabel={dateLabel}
               timeLabel={timeLabel}
-              timezone={timezone}
               onPressDate={() => setShowDatePicker(true)}
               onPressTime={() => setShowTimePicker(true)}
             />
@@ -292,7 +354,9 @@ export default function LogWeighIn({ navigation }: LogWeighInScreenProps) {
             ) : null}
 
             {validationMessage ? (
-              <HelperText className="mb-3 font-medium">{validationMessage}</HelperText>
+              <HelperText className="mb-3 font-medium text-rose-300">
+                {validationMessage}
+              </HelperText>
             ) : null}
 
             <Button

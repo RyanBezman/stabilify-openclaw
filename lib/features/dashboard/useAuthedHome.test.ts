@@ -536,8 +536,33 @@ describe("useAuthedHome support nudge hardening", () => {
     const hook = renderUseAuthedHome();
     await flushAsyncWork();
 
-    expect(hook.current.profileSummary.startWeightValue).toBe("200 lb");
+    expect(hook.current.profileSummary.startWeightLabel).toBe("Latest weigh-in");
+    expect(hook.current.profileSummary.startWeightValue).toBe("188 lb");
     expect(hook.current.profileSummary.targetValue).toBe("8 lb");
+
+    hook.unmount();
+  });
+
+  it("falls back to starting weight when no weigh-ins are logged", async () => {
+    mocks.fetchDashboardData.mockResolvedValueOnce({
+      data: buildDashboardData({
+        goal: {
+          goalType: "lose",
+          startWeight: 200,
+          targetMin: null,
+          targetMax: null,
+          targetWeight: 180,
+        },
+        weighIns: [],
+      }),
+    });
+    mocks.fetchCurrentWeekSupportRequest.mockResolvedValueOnce({ data: null });
+
+    const hook = renderUseAuthedHome();
+    await flushAsyncWork();
+
+    expect(hook.current.profileSummary.startWeightLabel).toBe("Starting weight");
+    expect(hook.current.profileSummary.startWeightValue).toBe("200 lb");
 
     hook.unmount();
   });

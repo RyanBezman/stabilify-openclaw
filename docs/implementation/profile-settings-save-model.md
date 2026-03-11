@@ -45,7 +45,8 @@ Define how Profile Settings saves user changes without a global save button.
   - focuses a single text input for the selected field,
   - saves from the dedicated screen and returns to the main settings screen on success,
   - prompts before discarding unsaved changes when the user backs out,
-  - keeps the iPhone step-goal keyboard dismissal accessory for numeric entry.
+  - keeps the iPhone step-goal keyboard dismissal accessory for numeric entry,
+  - limits step-goal typing to 5 digits (`99999` max typed input).
 
 ## Analytics
 

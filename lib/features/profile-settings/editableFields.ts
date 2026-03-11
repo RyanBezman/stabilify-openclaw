@@ -48,7 +48,7 @@ function buildPreview(value: string, placeholder: string): EditableProfileSettin
 }
 
 function normalizeDailyStepGoalDraft(value: string) {
-  return value.replace(/[^0-9]/g, "");
+  return value.replace(/[^0-9]/g, "").slice(0, 5);
 }
 
 function parseDailyStepGoalDraft(value: string) {
@@ -124,6 +124,7 @@ export const profileSettingsEditableFields: Record<
     placeholder: "10000",
     autoCapitalize: "none",
     autoCorrect: false,
+    maxLength: 5,
     inputMode: "numeric",
     keyboardType: "number-pad",
     description: "Used for your progress card and Apple Health step sync.",

@@ -146,6 +146,7 @@ Status mapping:
 
 - Keep support payload minimal and non-sensitive by default.
 - Default support message avoids exact weight/location/photo exposure.
+- iPhone `Log weigh-in` may import the latest Apple Health weight into the draft, but the user must explicitly save before it affects accountability data.
 - If explicit consent is missing, show consent prompt and suppress automated posting.
 - Home nudge card states:
   - consent prompt (`suppressed_prompt`) with title `Allow private auto-support?` and CTA `Allow auto-support` + `Not now`,

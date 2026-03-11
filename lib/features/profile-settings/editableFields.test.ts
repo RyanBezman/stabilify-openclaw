@@ -45,6 +45,12 @@ describe("profile settings editable field metadata", () => {
     expect(nextValues.dailyStepGoal).toBe(10000);
   });
 
+  it("caps daily step goal drafts at five digits", () => {
+    expect(profileSettingsEditableFields.dailyStepGoal.normalizeDraft?.("1234567")).toBe(
+      "12345",
+    );
+  });
+
   it("reports bio length through helper text", () => {
     expect(profileSettingsEditableFields.bio.helperText?.("abc")).toBe("3/160 characters");
   });
