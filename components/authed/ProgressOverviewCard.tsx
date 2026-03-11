@@ -25,7 +25,6 @@ export type ProgressOverviewCardProps = {
   onPressWeighIn: () => void;
   gymCompleted: number;
   gymTarget: number;
-  gymWeekLabel: string;
   onLogSession?: () => void;
   onSetupGym?: () => void;
   logSessionEnabled?: boolean;
@@ -82,7 +81,6 @@ export default function ProgressOverviewCard({
   consistencyPercent,
   gymCompleted,
   gymTarget,
-  gymWeekLabel,
   gymLastStatus,
   stepSummary,
   onPressSteps,
@@ -118,7 +116,7 @@ export default function ProgressOverviewCard({
 
   return (
     <Card className="mb-6 p-5">
-      <View className="mb-3 flex-row items-center justify-between">
+      <View className="mb-4 flex-row items-center justify-between">
         <SectionTitle>Progress</SectionTitle>
         <TouchableOpacity
           testID="progress-overview-consistency-selector"
@@ -174,8 +172,6 @@ export default function ProgressOverviewCard({
           />
         </View>
       </View>
-
-      <Text className="mt-3 text-center text-xs text-neutral-500">{gymWeekLabel}</Text>
 
       {showConsistencyMenu ? (
         <View className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950/90 p-2">

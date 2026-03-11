@@ -153,7 +153,6 @@ function renderCard(overrides?: Partial<ProgressOverviewCardProps>) {
     onPressWeighIn,
     gymCompleted: 2,
     gymTarget: 4,
-    gymWeekLabel: "Week of Mar 2",
     onLogSession,
     onSetupGym,
     logSessionEnabled: true,
@@ -210,7 +209,7 @@ describe("ProgressOverviewCard", () => {
     expect(textValues).toContain("Weigh-ins");
     expect(textValues).toContain("Gym sessions");
     expect(textValues).toContain("2/7");
-    expect(textValues).toContain("Week of Mar 2");
+    expect(textValues).not.toContain("Mar 2");
   });
 
   it("supports consistency selector toggle and option selection", () => {

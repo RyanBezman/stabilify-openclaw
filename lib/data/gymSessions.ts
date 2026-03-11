@@ -1,9 +1,12 @@
+import type { StorageError } from "@supabase/storage-js";
 import { supabase } from "../supabase";
 import type { GymSessionStatus, GymSessionStatusReason } from "./types";
 import { formatLocalDate } from "../utils/metrics";
 import { getLocalTimeZone } from "../utils/time";
 import { recordActivityEvent } from "./activityEvents";
 import { fail, ok, type Result } from "../features/shared";
+
+const GYM_PROOFS_BUCKET = "gym-proofs";
 
 export type GymSessionDefaults = {
   timezone: string;
@@ -58,6 +61,13 @@ function base64ToBytes(base64: string): Uint8Array | null {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+function isMissingStorageBucket(error: StorageError): boolean {
+  const message = error.message.toLowerCase();
+  const statusCode = error.statusCode?.toLowerCase() ?? "";
+
+  return message.includes("bucket not found") || statusCode === "404";
 }
 
 export async function fetchGymSessionDefaults(
@@ -188,12 +198,15 @@ export async function saveGymSession(
     const fileName = `gym-${sessionDate}-${input.recordedAt.getTime()}.${extension}`;
     proofPath = `${userId}/${fileName}`;
     const { error: uploadError } = await supabase.storage
-      .from("gym-proofs")
+      .from(GYM_PROOFS_BUCKET)
       .upload(proofPath, uploadBody, {
         contentType,
         upsert: true,
       });
     if (uploadError) {
+      if (isMissingStorageBucket(uploadError)) {
+        return fail("Couldn't upload your gym proof photo right now. Please try again.");
+      }
       return fail(uploadError);
     }
   }
@@ -258,7 +271,7 @@ export async function saveGymSession(
   if (saveError) {
     if (proofPath) {
       const { error: cleanupError } = await supabase.storage
-        .from("gym-proofs")
+        .from(GYM_PROOFS_BUCKET)
         .remove([proofPath]);
       if (cleanupError) {
         // eslint-disable-next-line no-console

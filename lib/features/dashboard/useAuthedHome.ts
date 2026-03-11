@@ -12,7 +12,6 @@ import { getLocalTimeZone } from "../../utils/time";
 import { signOutCurrentUser } from "../auth";
 import {
   formatLocalDate,
-  formatShortDate,
   getConsistencyWindow,
   getCurrentStreak,
 } from "../../utils/metrics";
@@ -485,9 +484,6 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     todayGymSession && todayGymValidationRequest?.sessionId === todayGymSession.id
       ? todayGymValidationRequest.status
       : null;
-  const gymWeekLabel = dashboard?.gymWeekStart
-    ? `Week of ${formatShortDate(dashboard.gymWeekStart)}`
-    : "This week";
 
   const requestGymValidationForToday =
     useCallback(async (message?: string | null): Promise<{ success: boolean; error?: string }> => {
@@ -579,7 +575,6 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     enablingPhoneNudges,
     verifiedGymSessions,
     weeklyGymTarget,
-    gymWeekLabel,
     hasGymLocation,
     todayGymSession,
     todayGymValidationStatus,

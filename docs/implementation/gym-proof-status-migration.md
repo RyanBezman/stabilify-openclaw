@@ -1,6 +1,6 @@
 # Gym Proof Status Migration
 
-Last updated: 2026-03-10
+Last updated: 2026-03-11
 
 ## Goal
 
@@ -35,6 +35,9 @@ Align gym proof state contracts across database, runtime types, and UI with poli
   - location mismatch with proof captured => `provisional`,
   - `provisional` always writes `status_reason = outside_radius`,
   - `partial` always writes a missing-signal reason.
+- Storage contract:
+  - private storage bucket `gym-proofs` must exist before proof uploads run,
+  - session save rollback may delete an uploaded proof object when the DB write fails.
 - Database migration:
   - rename enum labels on `public.gym_session_status`:
     - `pending` to `partial`,
@@ -85,3 +88,4 @@ Align gym proof state contracts across database, runtime types, and UI with poli
    - address suggestions appear after debounced typing,
    - selecting a suggestion sets location coordinates,
    - editing the address text after selection clears the selected geocode until a new suggestion is chosen.
+8. On a fresh database, log a session with a photo and confirm the upload succeeds because the private `gym-proofs` bucket exists.

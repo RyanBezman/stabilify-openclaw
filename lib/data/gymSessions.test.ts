@@ -132,4 +132,27 @@ describe("saveGymSession", () => {
     ]);
     expect(result.error).toBe("db write failed");
   });
+
+  it("maps missing gym proof bucket errors to a stable user-facing message", async () => {
+    mocks.upload.mockResolvedValue({
+      error: {
+        message: "Bucket not found",
+        details: "bucket not found",
+      },
+    });
+
+    const result = await saveGymSession({
+      recordedAt: new Date("2026-03-10T15:30:00.000Z"),
+      timezone: "America/New_York",
+      status: "partial",
+      photoUri: "file:///proof.jpg",
+      location: {
+        latitude: 40.7128,
+        longitude: -74.006,
+      },
+    });
+
+    expect(mocks.saveSingle).not.toHaveBeenCalled();
+    expect(result.error).toBe("Couldn't upload your gym proof photo right now. Please try again.");
+  });
 });

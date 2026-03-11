@@ -76,7 +76,6 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
     enablingPhoneNudges,
     verifiedGymSessions,
     weeklyGymTarget,
-    gymWeekLabel,
     hasGymLocation,
     todayGymSession,
     todayGymValidationStatus,
@@ -308,7 +307,6 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
               onPressWeighIn={() => navigation.navigate("LogWeighIn")}
               gymCompleted={verifiedGymSessions}
               gymTarget={weeklyGymTarget}
-              gymWeekLabel={gymWeekLabel}
               onLogSession={() => {
                 if (!gymFlow.canStartGymSessionCapture) {
                   return;

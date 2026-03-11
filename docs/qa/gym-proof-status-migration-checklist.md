@@ -36,6 +36,7 @@ Validate that gym proof status + `status_reason` migration is correct across sch
 - `public.gym_sessions.status_reason` is non-null for `partial`/`provisional`.
 - App `GymSessionStatus` type matches enum labels exactly.
 - App `GymSessionStatusReason` type matches enum labels exactly.
+- Private storage bucket `gym-proofs` exists for gym proof uploads.
 
 ## UX States
 
@@ -83,3 +84,5 @@ Validate that gym proof status + `status_reason` migration is correct across sch
 14. Continue without location, save, and confirm the session is stored as `partial` with a non-null `status_reason`.
 15. Confirm the inline gym flow shows 4 steps (take photo, verify location, confirm/save, analyzing) and card height stays constant across all states.
 16. While inline gym flow/analyzing card is visible, confirm lower `Add gym session` row is hidden and `Log weight` row remains visible.
+17. On a fresh database, log a session with a proof photo and confirm save does not fail with a storage bucket error.
+18. Confirm the Home Progress card footer does not render a gym week label.
