@@ -16,6 +16,16 @@ Define Pro-tier coaching boundaries, quality defaults, and safety behavior.
 - Keep specialist workout/nutrition logic behind that single voice.
 - Persona launch scope keeps all six personas.
 - Pro coach onboarding is required before first workspace run; onboarding captures goal, schedule, constraints, body profile (including sex: `male | female | other`), and one unified persona for both workout and nutrition tracks.
+- Coach personality selection must stay aligned across onboarding and picker surfaces; all six personas remain selectable in both places.
+- Unified coach switching policy:
+  - when a saved coaching setup already exists, selecting a different coach must offer:
+    1. `Keep current setup`,
+    2. `Rebuild from current setup`,
+    3. `Edit setup first`,
+  - `Keep current setup` changes persona/voice while keeping accepted plans and saved coaching profile,
+  - `Rebuild from current setup` reuses the saved coaching profile and regenerates drafts for review,
+  - `Edit setup first` reopens onboarding prefilled from the saved coaching profile before regeneration.
+- Removing a coach means leaving the active coach selection, not erasing the saved coaching setup; after removal the user returns to coach selection and can later reattach a coach to the same saved setup.
 - After onboarding plan generation, show a dual-track results review surface (Training + Nutrition) before routing users onward.
 - Coach cadence:
   - weekly check-ins are required,
@@ -61,3 +71,5 @@ If `safety_blocked = true`, no plan-adjustment payload is applied.
 - Weekly check-in should present one guided step at a time and end with a review step before submit.
 - Weekly check-in should keep focused multiline responses visible above the keyboard and bottom CTA.
 - Onboarding results review must show both tracks and clearly indicate generated vs not-generated states when user chose a single-track start.
+- Switching coaches with saved setup must always present the chooser flow instead of silently replacing plans.
+- Removing a coach must return to coach selection while keeping saved setup available for a later re-selection flow.

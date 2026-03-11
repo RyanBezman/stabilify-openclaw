@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { ActiveCoach, CoachSpecialization } from "../types";
 import { loadCoachState, saveCoachState } from "../services/storage";
@@ -7,12 +7,14 @@ import type { CoachIntake, CoachPlan } from "../types/workspaceTypes";
 import type { CoachWorkspaceState } from "../models/workspaceState";
 import { invokeCoachChat, mapCoachMessages } from "../services/chatClient";
 import { isSameCoach } from "../models/identity";
-import { fetchCurrentUserId, subscribeToAuthStateChanges } from "../../auth";
 
 type SpecializationMap<T> = Record<CoachSpecialization, T>;
 type CoachWorkspaceStatePatch = Partial<
   Pick<CoachWorkspaceState, "activeCoach" | "activePlan" | "draftPlan" | "messages" | "intake">
 >;
+type SetActiveCoachOptions = {
+  preserveWorkspace?: "reset" | "keep_active_plan";
+};
 
 const specializations: CoachSpecialization[] = ["workout", "nutrition"];
 const SERVER_UPDATE_BADGE_MS = 1200;
@@ -23,9 +25,14 @@ const defaultBySpecialization = <T,>(factory: (specialization: CoachSpecializati
 });
 
 type CoachContextValue = {
+  authUserId: string | null;
   activeCoaches: SpecializationMap<ActiveCoach | null>;
   getActiveCoach: (specialization: CoachSpecialization) => ActiveCoach | null;
-  setActiveCoach: (specialization: CoachSpecialization, coach: ActiveCoach | null) => void;
+  setActiveCoach: (
+    specialization: CoachSpecialization,
+    coach: ActiveCoach | null,
+    options?: SetActiveCoachOptions
+  ) => void;
   hydrated: boolean;
   refreshFromServer: (specialization?: CoachSpecialization) => Promise<void>;
   serverCheckedBySpecialization: SpecializationMap<boolean>;
@@ -36,7 +43,13 @@ type CoachContextValue = {
 
 const CoachContext = createContext<CoachContextValue | null>(null);
 
-export function CoachProvider({ children }: { children: ReactNode }) {
+export function CoachProvider({
+  children,
+  authUserId,
+}: {
+  children: ReactNode;
+  authUserId: string | null;
+}) {
   const [activeCoaches, setActiveCoaches] = useState<SpecializationMap<ActiveCoach | null>>(
     defaultBySpecialization(() => null)
   );
@@ -52,13 +65,22 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     useState<SpecializationMap<boolean>>(defaultBySpecialization(() => false));
   const [serverErrorBySpecialization, setServerErrorBySpecialization] =
     useState<SpecializationMap<string | null>>(defaultBySpecialization(() => null));
-  const [authUserId, setAuthUserId] = useState<string | null>(null);
+  const authUserIdRef = useRef(authUserId);
   const clearMeaningfulSyncTimeoutRef = useRef<
     SpecializationMap<ReturnType<typeof setTimeout> | null>
   >(defaultBySpecialization(() => null));
 
   const prefetchChatHistory = useCallback(
-    async (specialization: CoachSpecialization, coach?: ActiveCoach | null) => {
+    async (
+      specialization: CoachSpecialization,
+      coach: ActiveCoach | null,
+      requestUserId: string,
+      isCurrent: () => boolean
+    ) => {
+      if (!requestUserId) {
+        return;
+      }
+
       try {
         const data = await invokeCoachChat({
           action: "workspace",
@@ -71,6 +93,15 @@ export function CoachProvider({ children }: { children: ReactNode }) {
               }
             : {}),
         });
+        if (!isCurrent()) {
+          return;
+        }
+        if (authUserIdRef.current !== requestUserId) {
+          return;
+        }
+        if (!isSameCoach(activeCoachesRef.current[specialization], coach)) {
+          return;
+        }
 
         const mapped = mapCoachMessages(data.messages);
         const activePlan = (data.active_plan ?? null) as CoachPlan | null;
@@ -87,7 +118,8 @@ export function CoachProvider({ children }: { children: ReactNode }) {
             draftPlan,
             intake,
           },
-          specialization
+          specialization,
+          requestUserId
         );
       } catch {
         // Best-effort prefetch; ignore.
@@ -98,10 +130,31 @@ export function CoachProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let alive = true;
+    setHydrated(false);
+    setActiveCoaches(defaultBySpecialization(() => null));
+    setServerCheckedBySpecialization(defaultBySpecialization(() => false));
+    setServerSyncingBySpecialization(defaultBySpecialization(() => false));
+    setServerMeaningfulSyncBySpecialization(defaultBySpecialization(() => false));
+    setServerErrorBySpecialization(defaultBySpecialization(() => null));
+
+    specializations.forEach((specialization) => {
+      const timeout = clearMeaningfulSyncTimeoutRef.current[specialization];
+      if (timeout) {
+        clearTimeout(timeout);
+        clearMeaningfulSyncTimeoutRef.current[specialization] = null;
+      }
+    });
+
     (async () => {
+      if (!authUserId) {
+        if (!alive) return;
+        setHydrated(true);
+        return;
+      }
+
       const [workoutState, nutritionState] = await Promise.all([
-        loadCoachState("workout"),
-        loadCoachState("nutrition"),
+        loadCoachState("workout", authUserId),
+        loadCoachState("nutrition", authUserId),
       ]);
       if (!alive) return;
       setActiveCoaches({
@@ -113,11 +166,15 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [authUserId]);
 
   useEffect(() => {
     activeCoachesRef.current = activeCoaches;
   }, [activeCoaches]);
+
+  useEffect(() => {
+    authUserIdRef.current = authUserId;
+  }, [authUserId]);
 
   useEffect(() => {
     return () => {
@@ -129,9 +186,13 @@ export function CoachProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshFromServer = useCallback(async (specialization?: CoachSpecialization) => {
+    if (!authUserId) {
+      return;
+    }
+
+    const refreshUserId = authUserId;
     const targets = specialization ? [specialization] : specializations;
     const changedBySpecialization = defaultBySpecialization(() => false);
-    let hasResolvedUser = false;
 
     targets.forEach((s) => {
       const pendingTimeout = clearMeaningfulSyncTimeoutRef.current[s];
@@ -145,14 +206,11 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     });
 
     try {
-      const authResult = await fetchCurrentUserId();
-      const userId = authResult.data?.userId;
-      if (!userId) return;
-      hasResolvedUser = true;
-      setAuthUserId(userId);
-
       for (const s of targets) {
-        const result = await fetchActiveCoachFromServer(userId, s);
+        const result = await fetchActiveCoachFromServer(refreshUserId, s);
+        if (authUserIdRef.current !== refreshUserId) {
+          return;
+        }
         if (result.error) {
           setServerErrorBySpecialization((prev) => ({
             ...prev,
@@ -181,14 +239,17 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         };
         await saveCoachState(
           resetWorkspacePatch,
-          s
+          s,
+          refreshUserId
         );
       }
     } finally {
+      if (authUserIdRef.current !== refreshUserId) {
+        return;
+      }
+
       targets.forEach((s) => {
-        if (hasResolvedUser) {
-          setServerCheckedBySpecialization((prev) => ({ ...prev, [s]: true }));
-        }
+        setServerCheckedBySpecialization((prev) => ({ ...prev, [s]: true }));
         setServerSyncingBySpecialization((prev) => ({ ...prev, [s]: false }));
 
         if (!changedBySpecialization[s]) {
@@ -202,7 +263,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         }, SERVER_UPDATE_BADGE_MS);
       });
     }
-  }, []);
+  }, [authUserId]);
 
   // Prefetch chat history after sign-in/coach selection so Messages opens with the old thread ready.
   useEffect(() => {
@@ -211,12 +272,22 @@ export function CoachProvider({ children }: { children: ReactNode }) {
 
     let alive = true;
     (async () => {
+      const prefetchUserId = authUserId;
       for (const specialization of specializations) {
-        if (!activeCoaches[specialization]) continue;
-        const state = await loadCoachState(specialization);
+        const coach = activeCoaches[specialization];
+        if (!coach) continue;
+        const state = await loadCoachState(specialization, authUserId);
         if (!alive) return;
         if (state.messages.length) continue;
-        await prefetchChatHistory(specialization, activeCoaches[specialization]);
+        await prefetchChatHistory(
+          specialization,
+          coach,
+          prefetchUserId,
+          () =>
+            alive
+            && authUserIdRef.current === prefetchUserId
+            && isSameCoach(activeCoachesRef.current[specialization], coach)
+        );
       }
     })();
 
@@ -225,89 +296,57 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     };
   }, [activeCoaches, authUserId, hydrated, prefetchChatHistory]);
 
-  // Clear local coach cache on auth changes so accounts don't leak coach selection into each other.
   useEffect(() => {
-    const unsubscribe = subscribeToAuthStateChanges(async (session) => {
-      const nextUserId = session?.user?.id ?? null;
-      if (nextUserId === authUserId) return;
-
-      // Initial auth bootstrap (null -> signed-in user) should keep local coach cache
-      // and let server sync reconcile, instead of clearing and causing transient UI flashes.
-      if (authUserId === null && nextUserId !== null) {
-        setAuthUserId(nextUserId);
-        void refreshFromServer();
-        return;
-      }
-
-      specializations.forEach((specialization) => {
-        const timeout = clearMeaningfulSyncTimeoutRef.current[specialization];
-        if (timeout) {
-          clearTimeout(timeout);
-          clearMeaningfulSyncTimeoutRef.current[specialization] = null;
-        }
-      });
-
-      setAuthUserId(nextUserId);
-      setServerCheckedBySpecialization(defaultBySpecialization(() => false));
-      setServerMeaningfulSyncBySpecialization(defaultBySpecialization(() => false));
-      setServerErrorBySpecialization(defaultBySpecialization(() => null));
-      setActiveCoaches(defaultBySpecialization(() => null));
-
-      await Promise.all(
-        specializations.map((specialization) =>
-          saveCoachState(
-            {
-              activeCoach: null,
-              activePlan: null,
-              draftPlan: null,
-              messages: [],
-              intake: null,
-            } satisfies CoachWorkspaceStatePatch,
-            specialization
-          )
-        )
-      );
-
-      // If signed in, sync the server coach for the new user.
-      if (nextUserId) {
-        void refreshFromServer();
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [authUserId, refreshFromServer]);
-
-  useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !authUserId) return;
     void refreshFromServer();
-  }, [hydrated, refreshFromServer]);
+  }, [authUserId, hydrated, refreshFromServer]);
 
   const setActiveCoachPersisted = useCallback(
-    (specialization: CoachSpecialization, coach: ActiveCoach | null) => {
+    (
+      specialization: CoachSpecialization,
+      coach: ActiveCoach | null,
+      options?: SetActiveCoachOptions
+    ) => {
       const current = activeCoaches[specialization];
       const same = isSameCoach(coach, current);
+      const preserveWorkspace =
+        !same && options?.preserveWorkspace === "keep_active_plan";
+      const targetUserId = authUserId;
 
       setActiveCoaches((prev) => ({ ...prev, [specialization]: coach }));
-      void saveCoachState(
-        same
-          ? ({ activeCoach: coach } satisfies CoachWorkspaceStatePatch)
-          : ({
-              activeCoach: coach,
-              activePlan: null,
-              draftPlan: null,
-              messages: [],
-              intake: null,
-            } satisfies CoachWorkspaceStatePatch),
-        specialization
-      );
+
+      void (async () => {
+        let nextPatch: CoachWorkspaceStatePatch;
+        if (same) {
+          nextPatch = { activeCoach: coach } satisfies CoachWorkspaceStatePatch;
+        } else if (preserveWorkspace) {
+          const currentState = await loadCoachState(specialization, targetUserId);
+          nextPatch = {
+            activeCoach: coach,
+            activePlan: currentState.activePlan,
+            draftPlan: null,
+            messages: [],
+            intake: currentState.intake,
+          } satisfies CoachWorkspaceStatePatch;
+        } else {
+          nextPatch = {
+            activeCoach: coach,
+            activePlan: null,
+            draftPlan: null,
+            messages: [],
+            intake: null,
+          } satisfies CoachWorkspaceStatePatch;
+        }
+
+        await saveCoachState(nextPatch, specialization, targetUserId);
+      })();
     },
-    [activeCoaches]
+    [activeCoaches, authUserId]
   );
 
   const value = useMemo<CoachContextValue>(() => {
     return {
+      authUserId,
       activeCoaches,
       getActiveCoach: (specialization) => activeCoaches[specialization],
       setActiveCoach: setActiveCoachPersisted,
@@ -320,6 +359,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     };
   }, [
     activeCoaches,
+    authUserId,
     hydrated,
     refreshFromServer,
     serverCheckedBySpecialization,

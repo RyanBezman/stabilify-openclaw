@@ -40,6 +40,7 @@ This registry is the source of truth for analytics events tracked from the mobil
   - `screen`: source screen name
 - Notes:
   - Weekly idempotency key prevents duplicate opens for same coach + week.
+  - Client tracking performs a duplicate lookup by `user_id + idempotency_key` before insert so repeated screen opens do not emit HTTP `409` errors in client sessions.
 
 ### `checkin_submitted`
 - Status: `active`
@@ -76,6 +77,7 @@ This registry is the source of truth for analytics events tracked from the mobil
   - `source`: navigation source for review action
 - Notes:
   - Fired before navigating to `CoachWorkspace` plan review flow.
+  - Client tracking performs a duplicate lookup by `user_id + idempotency_key` before insert so repeat opens for the same coach + week are silently ignored.
 
 ### `plan_decision_made`
 - Status: `active`
@@ -115,6 +117,7 @@ This registry is the source of truth for analytics events tracked from the mobil
 - Notes:
   - Emitted when a check-in is submitted and an accepted nutrition plan feedback row exists.
   - Idempotent per accepted feedback id (`next_checkin_submitted:<feedback_id>`).
+  - Client tracking performs a duplicate lookup by `user_id + idempotency_key` before insert so duplicate submissions do not surface transport errors to the client.
 
 ### `gym_session_validation_requested`
 - Status: `active`

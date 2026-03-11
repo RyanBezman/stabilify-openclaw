@@ -65,6 +65,7 @@ type HydratedCoachWorkspacePayload = {
 };
 
 type HydrateCoachWorkspaceWorkflowOptions = {
+  authUserId: string | null;
   coach: ActiveCoach | null;
   specialization: CoachSpecialization;
   hydrated: boolean;
@@ -197,6 +198,7 @@ async function runPlanMutationWorkflow(
 }
 
 export async function hydrateCoachWorkspaceWorkflow({
+  authUserId,
   coach,
   specialization,
   hydrated,
@@ -212,7 +214,7 @@ export async function hydrateCoachWorkspaceWorkflow({
 
   let cachedState: HydratedCoachWorkspaceCache | null = null;
   if (!skipCachedState) {
-    const state = await loadCoachState(specialization);
+    const state = await loadCoachState(specialization, authUserId);
     if (
       state.activeCoach &&
       state.activeCoach.gender === coach.gender &&

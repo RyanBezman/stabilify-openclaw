@@ -54,6 +54,15 @@ export default function CoachWorkspaceSkeleton({
 
   return (
     <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={960}>
+      <View className="border-b border-neutral-900 bg-neutral-950 px-5 pb-4 pt-4">
+        <View className="flex-row items-center">
+          <SkeletonBlock className="h-10 w-10 rounded-xl" />
+          <View className="mx-3 flex-1 items-center">
+            <SkeletonBlock className="h-6 w-36 rounded-full" />
+          </View>
+          <SkeletonBlock className="h-10 w-10 rounded-xl" />
+        </View>
+      </View>
       <SkeletonContent />
     </AppScreen>
   );

@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   publishCoachSyncEvent: vi.fn(),
   subscribeCoachSyncEvents: vi.fn(),
   syncListeners: new Set<(event: unknown) => void>(),
+  useCoach: vi.fn(),
 }));
 
 vi.mock("../workflows", () => ({
@@ -20,8 +21,14 @@ vi.mock("../workflows", () => ({
 }));
 
 vi.mock("../services/syncEvents", () => ({
+  coachSyncIdentityKey: (coach: ActiveCoach | null | undefined) =>
+    coach ? `${coach.specialization}:${coach.gender}:${coach.personality}` : null,
   publishCoachSyncEvent: mocks.publishCoachSyncEvent,
   subscribeCoachSyncEvents: mocks.subscribeCoachSyncEvents,
+}));
+
+vi.mock("./CoachContext", () => ({
+  useCoach: mocks.useCoach,
 }));
 
 import {
@@ -30,6 +37,11 @@ import {
 } from "./useCoachCheckins";
 
 type HookValue = ReturnType<typeof useCoachCheckins>;
+type RenderOptions = {
+  coach?: ActiveCoach | null;
+  hydrated?: boolean;
+  onTierRequired?: () => void;
+};
 
 const coach: ActiveCoach = {
   specialization: "nutrition",
@@ -38,6 +50,8 @@ const coach: ActiveCoach = {
   displayName: "Ruth",
   tagline: "Direct and clear",
 };
+
+let currentAuthUserId = "user-1";
 
 function buildNoDataPayload(overrides?: Partial<{
   threadId: string;
@@ -110,25 +124,26 @@ function buildNoDataPayload(overrides?: Partial<{
   };
 }
 
-function renderUseCoachCheckins(options?: {
-  coach?: ActiveCoach | null;
-  hydrated?: boolean;
-  onTierRequired?: () => void;
-}) {
+function renderUseCoachCheckins(options?: RenderOptions) {
   let current: HookValue | null = null;
+  let currentOptions: RenderOptions = {
+    coach: options?.coach ?? coach,
+    hydrated: options?.hydrated ?? true,
+    onTierRequired: options?.onTierRequired,
+  };
 
-  function HookHarness() {
+  function HookHarness(props: RenderOptions) {
     current = useCoachCheckins({
-      coach: options?.coach ?? coach,
-      hydrated: options?.hydrated ?? true,
-      onTierRequired: options?.onTierRequired,
+      coach: props.coach ?? coach,
+      hydrated: props.hydrated ?? true,
+      onTierRequired: props.onTierRequired,
     });
     return null;
   }
 
   let renderer: TestRenderer.ReactTestRenderer;
   act(() => {
-    renderer = TestRenderer.create(React.createElement(HookHarness));
+    renderer = TestRenderer.create(React.createElement(HookHarness, currentOptions));
   });
 
   return {
@@ -137,6 +152,15 @@ function renderUseCoachCheckins(options?: {
         throw new Error("Hook state not available yet");
       }
       return current;
+    },
+    rerender: (nextOptions?: RenderOptions) => {
+      currentOptions = {
+        ...currentOptions,
+        ...nextOptions,
+      };
+      act(() => {
+        renderer.update(React.createElement(HookHarness, currentOptions));
+      });
     },
     unmount: () => act(() => renderer.unmount()),
   };
@@ -159,6 +183,9 @@ describe("useCoachCheckins", () => {
     mocks.hydrateCoachCheckinsWorkflow.mockReset();
     mocks.submitCoachCheckinWorkflow.mockReset();
     mocks.publishCoachSyncEvent.mockReset();
+    mocks.useCoach.mockReset();
+    currentAuthUserId = "user-1";
+    mocks.useCoach.mockImplementation(() => ({ authUserId: currentAuthUserId }));
     mocks.syncListeners.clear();
     mocks.subscribeCoachSyncEvents.mockImplementation((listener: (event: unknown) => void) => {
       mocks.syncListeners.add(listener);
@@ -277,6 +304,7 @@ describe("useCoachCheckins", () => {
     });
 
     expect(mocks.submitCoachCheckinWorkflow).toHaveBeenCalledWith({
+      authUserId: "user-1",
       coach,
       limit: 26,
       input: expect.objectContaining({
@@ -418,6 +446,7 @@ describe("useCoachCheckins", () => {
     expect(hook.current.history[0]?.blockers).toBe("Work travel");
     expect(hook.current.history[0]?.coachSummary).toContain("Energy improved");
     expect(mocks.submitCoachCheckinWorkflow).toHaveBeenNthCalledWith(1, {
+      authUserId: "user-1",
       coach,
       limit: 26,
       input: expect.objectContaining({
@@ -427,6 +456,7 @@ describe("useCoachCheckins", () => {
       }),
     });
     expect(mocks.submitCoachCheckinWorkflow).toHaveBeenNthCalledWith(2, {
+      authUserId: "user-1",
       coach,
       limit: 26,
       input: expect.objectContaining({
@@ -694,6 +724,117 @@ describe("useCoachCheckins", () => {
     hook.unmount();
   });
 
+  it("does not reuse cached weekly check-ins across accounts with the same coach persona", async () => {
+    currentAuthUserId = "user-1";
+    mocks.hydrateCoachCheckinsWorkflow.mockResolvedValueOnce({
+      status: "success",
+      payload: buildNoDataPayload({
+        threadId: "thread-user-1",
+        energy: 5,
+        blockers: "User 1 cached payload",
+      }),
+    });
+
+    const firstHook = renderUseCoachCheckins();
+
+    await act(async () => {
+      await firstHook.current.hydrateCheckins();
+    });
+
+    expect(firstHook.current.threadId).toBe("thread-user-1");
+    expect(firstHook.current.currentCheckin?.blockers).toBe("User 1 cached payload");
+
+    firstHook.unmount();
+
+    currentAuthUserId = "user-2";
+
+    const secondHook = renderUseCoachCheckins();
+
+    expect(secondHook.current.threadId).toBeNull();
+    expect(secondHook.current.currentCheckin).toBeNull();
+    expect(secondHook.current.history).toEqual([]);
+    expect(secondHook.current.historyLoading).toBe(true);
+    expect(secondHook.current.blockers).toBe("");
+    expect(secondHook.current.v2Form.consistencyNotes).toBe("");
+
+    secondHook.unmount();
+  });
+
+  it("ignores stale submit results after the authenticated user changes", async () => {
+    let resolveFirstSubmit:
+      | ((value: Awaited<ReturnType<typeof mocks.submitCoachCheckinWorkflow>>) => void)
+      | null = null;
+
+    mocks.submitCoachCheckinWorkflow
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirstSubmit = resolve;
+          })
+      )
+      .mockResolvedValueOnce({
+        status: "success",
+        payload: buildNoDataPayload({
+          threadId: "thread-user-2",
+          blockers: "Fresh account payload",
+          energy: 5,
+        }),
+      });
+
+    const hook = renderUseCoachCheckins();
+
+    act(() => {
+      setRequiredTypedInputs(hook.current);
+      hook.current.setEnergy(4);
+      hook.current.setAdherencePercent("80");
+      hook.current.setBlockers("Old account payload");
+    });
+
+    await act(async () => {
+      void hook.current.submitCheckin();
+      await Promise.resolve();
+    });
+
+    expect(hook.current.saving).toBe(true);
+
+    currentAuthUserId = "user-2";
+    hook.rerender();
+
+    expect(hook.current.saving).toBe(false);
+    expect(hook.current.currentCheckin).toBeNull();
+
+    act(() => {
+      setRequiredTypedInputs(hook.current);
+      hook.current.setEnergy(5);
+      hook.current.setAdherencePercent("90");
+      hook.current.setBlockers("Fresh account payload");
+    });
+
+    await act(async () => {
+      await hook.current.submitCheckin();
+    });
+
+    expect(hook.current.currentCheckin?.blockers).toBe("Fresh account payload");
+    expect(hook.current.currentCheckin?.energy).toBe(5);
+
+    await act(async () => {
+      resolveFirstSubmit?.({
+        status: "success",
+        payload: buildNoDataPayload({
+          threadId: "thread-user-1",
+          blockers: "Old account payload",
+          energy: 2,
+        }),
+      });
+      await Promise.resolve();
+    });
+
+    expect(hook.current.currentCheckin?.blockers).toBe("Fresh account payload");
+    expect(hook.current.currentCheckin?.energy).toBe(5);
+
+    hook.unmount();
+  });
+
   it("shows and auto-dismisses save success feedback", async () => {
     vi.useFakeTimers();
     try {
@@ -749,6 +890,9 @@ describe("useCoachCheckins", () => {
       for (const listener of mocks.syncListeners) {
         listener({
           type: "nutrition_draft_resolved",
+          authUserId: "user-1",
+          specialization: "nutrition",
+          coachIdentityKey: "nutrition:woman:strict",
           resolution: "promoted",
           resolvedAt: Date.now(),
         });
@@ -756,6 +900,46 @@ describe("useCoachCheckins", () => {
     });
 
     expect(hook.current.planUpdatedForReview).toBe(false);
+    expect(hook.current.planUpdateError).toBeNull();
+
+    hook.unmount();
+
+    const remountedHook = renderUseCoachCheckins();
+    expect(remountedHook.current.planUpdatedForReview).toBe(false);
+    expect(remountedHook.current.planUpdateError).toBeNull();
+
+    remountedHook.unmount();
+  });
+
+  it("ignores nutrition draft resolution events from a different auth user", async () => {
+    mocks.hydrateCoachCheckinsWorkflow.mockResolvedValueOnce({
+      status: "success",
+      payload: {
+        ...buildNoDataPayload(),
+        planUpdatedForReview: true,
+      },
+    });
+
+    const hook = renderUseCoachCheckins();
+
+    await act(async () => {
+      await hook.current.hydrateCheckins();
+    });
+
+    act(() => {
+      for (const listener of mocks.syncListeners) {
+        listener({
+          type: "nutrition_draft_resolved",
+          authUserId: "user-2",
+          specialization: "nutrition",
+          coachIdentityKey: "nutrition:woman:strict",
+          resolution: "promoted",
+          resolvedAt: Date.now(),
+        });
+      }
+    });
+
+    expect(hook.current.planUpdatedForReview).toBe(true);
     expect(hook.current.planUpdateError).toBeNull();
 
     hook.unmount();

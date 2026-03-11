@@ -9,7 +9,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LogBox } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import * as Notifications from "expo-notifications";
 import AuthedTabs from "./screens/AuthedTabs";
 import GuestHome from "./screens/GuestHome";
 import SignIn from "./screens/SignIn";
@@ -33,10 +32,14 @@ import GymValidationRequestDetail from "./screens/GymValidationRequestDetail";
 import { supabase } from "./lib/supabase";
 import type { RootStackParamList } from "./lib/navigation/types";
 import { CoachProvider } from "./lib/features/coaches";
+import { syncCoachAccessGateAuthUser } from "./lib/features/coaches/hooks/useCoachAccessGate";
+import { registerForegroundNotificationHandler } from "./lib/features/shared/foregroundNotifications";
 import { appNavigationTheme, appSceneStyle, appSurfaceStyle } from "./lib/navigation/theme";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+registerForegroundNotificationHandler();
 
 if (__DEV__) {
   // Keep Metro focused on actionable app issues; these warnings come from known dependency/tooling behavior.
@@ -46,15 +49,6 @@ if (__DEV__) {
     "`expo-notifications` functionality is not fully supported in Expo Go",
     "[expo-av]: Expo AV has been deprecated and will be removed in SDK 54.",
   ]);
-
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
 }
 
 export default function App() {
@@ -74,6 +68,7 @@ export default function App() {
             await supabase.auth.signOut({ scope: "local" });
           }
           if (active) {
+            syncCoachAccessGateAuthUser(null);
             setUser(null);
             setSessionChecked(true);
           }
@@ -81,10 +76,12 @@ export default function App() {
         }
 
         if (!active) return;
+        syncCoachAccessGateAuthUser(data.session?.user?.id ?? null);
         setUser(data.session?.user ?? null);
         setSessionChecked(true);
       } catch {
         if (active) {
+          syncCoachAccessGateAuthUser(null);
           setUser(null);
           setSessionChecked(true);
         }
@@ -95,6 +92,7 @@ export default function App() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        syncCoachAccessGateAuthUser(session?.user?.id ?? null);
         setUser(session?.user ?? null);
         if (navigationRef.isReady()) {
           navigationRef.reset({
@@ -118,7 +116,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={appSurfaceStyle}>
       <SafeAreaProvider style={appSurfaceStyle}>
-        <CoachProvider>
+        <CoachProvider key={user?.id ?? "guest"} authUserId={user?.id ?? null}>
           <NavigationContainer ref={navigationRef} theme={appNavigationTheme}>
             <Stack.Navigator
               screenOptions={{

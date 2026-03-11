@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Easing,
   ScrollView,
@@ -16,10 +17,18 @@ import CoachFlowProgressOverlay from "../components/coaches/flow/CoachFlowProgre
 import type { RootStackParamList } from "../lib/navigation/types";
 import AppScreen from "../components/ui/AppScreen";
 import {
+  buildGeneratedTracksFromPlanStart,
+  createInitialCoachOnboardingDraft,
+  coachFromSelection,
+  fetchCoachUserProfileJson,
+  mapCoachUserProfileJsonToDraft,
   submitCoachOnboardingWorkflow,
+  useCoach,
   useCoachOnboarding,
+  COACH_ONBOARDING_STEPS,
   type CoachOnboardingStepId,
 } from "../lib/features/coaches";
+import { fetchCurrentAuthUser } from "../lib/features/auth";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CoachOnboardingFlow">;
 
@@ -49,7 +58,8 @@ const LOADING_TIPS = [
   "Final quality checks before opening your workspace.",
 ] as const;
 
-export default function CoachOnboardingFlow({ navigation }: Props) {
+export default function CoachOnboardingFlow({ navigation, route }: Props) {
+  const { setActiveCoach } = useCoach();
   const {
     currentStep,
     draft,
@@ -68,7 +78,19 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
     setSubmitStart,
     setSubmitDone,
     setSubmitError,
+    setDraft,
   } = useCoachOnboarding();
+  const prefillAppliedRef = useRef(false);
+  const [prefillLoading, setPrefillLoading] = useState(
+    Boolean(
+      route.params?.prefillFromCurrentProfile ||
+        route.params?.prefillCoachGender ||
+        route.params?.prefillCoachPersonality ||
+        route.params?.prefillPlanStart ||
+        route.params?.startAtStep,
+    ),
+  );
+  const [prefillError, setPrefillError] = useState<string | null>(null);
 
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(18)).current;
@@ -78,6 +100,101 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
   const [generatingIndex, setGeneratingIndex] = useState(0);
   const [tipIndex, setTipIndex] = useState(0);
   const [submitSeconds, setSubmitSeconds] = useState(0);
+
+  useEffect(() => {
+    if (prefillAppliedRef.current) {
+      return;
+    }
+
+    const hasPrefillRequest = Boolean(
+      route.params?.prefillFromCurrentProfile ||
+        route.params?.prefillCoachGender ||
+        route.params?.prefillCoachPersonality ||
+        route.params?.prefillPlanStart ||
+        route.params?.startAtStep,
+    );
+
+    if (!hasPrefillRequest) {
+      setPrefillLoading(false);
+      return;
+    }
+
+    prefillAppliedRef.current = true;
+    let mounted = true;
+
+    const applyPrefill = async () => {
+      setPrefillLoading(true);
+      setPrefillError(null);
+
+      let profile: Record<string, unknown> | null = null;
+      if (route.params?.prefillFromCurrentProfile) {
+        const authResult = await fetchCurrentAuthUser();
+        const userId = authResult.data?.user?.id ?? null;
+          if (authResult.error || !userId) {
+            if (mounted) {
+              setPrefillError(
+                authResult.error ?? "Couldn't load your current coaching setup.",
+              );
+            }
+          } else {
+            const profileResult = await fetchCoachUserProfileJson(userId);
+            if (profileResult.error) {
+              if (mounted) {
+                setPrefillError(
+                  profileResult.error ?? "Couldn't load your current coaching setup.",
+                );
+              }
+            } else {
+              profile = profileResult.data?.profile ?? null;
+          }
+        }
+      }
+
+      const nextDraft = mapCoachUserProfileJsonToDraft(profile, {
+        gender: route.params?.prefillCoachGender,
+        personality: route.params?.prefillCoachPersonality,
+        planStart: route.params?.prefillPlanStart,
+      });
+
+      if (!mounted) {
+        return;
+      }
+
+      if (!profile && !route.params?.prefillFromCurrentProfile) {
+        const fallbackDraft = createInitialCoachOnboardingDraft();
+        fallbackDraft.persona = nextDraft.persona;
+        fallbackDraft.planStart = nextDraft.planStart;
+        setDraft(fallbackDraft);
+      } else {
+        setDraft(nextDraft);
+      }
+
+      if (route.params?.startAtStep) {
+        const stepIndex = COACH_ONBOARDING_STEPS.indexOf(
+          route.params.startAtStep,
+        );
+        if (stepIndex >= 0) {
+          goToStep(stepIndex);
+        }
+      }
+
+      setPrefillLoading(false);
+    };
+
+    void applyPrefill();
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    goToStep,
+    route.params?.prefillCoachGender,
+    route.params?.prefillCoachPersonality,
+    route.params?.prefillFromCurrentProfile,
+    route.params?.prefillPlanStart,
+    route.params?.startAtStep,
+    setDraft,
+  ]);
 
   useEffect(() => {
     fade.setValue(0);
@@ -198,17 +315,31 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
       setSubmitError(res.error);
       return;
     }
+    setActiveCoach(
+      "workout",
+      coachFromSelection("workout", draft.persona.gender, draft.persona.personality)
+    );
+    setActiveCoach(
+      "nutrition",
+      res.data?.nutritionLinked === false
+        ? null
+        : coachFromSelection("nutrition", draft.persona.gender, draft.persona.personality)
+    );
     setSubmitDone();
     navigation.replace("CoachOnboardingResults", {
       planStart: draft.planStart,
       coachGender: draft.persona.gender,
       coachPersonality: draft.persona.personality,
+      generatedTracks:
+        res.data?.generatedTracks
+        ?? buildGeneratedTracksFromPlanStart(draft.planStart),
+      warning: res.data?.warning,
     });
   };
 
   const exitOnboarding = () => {
     navigation.navigate("Authed", {
-      screen: "Today",
+      screen: route.params?.returnTo === "coaches" ? "Coaches" : "Today",
     });
   };
 
@@ -224,6 +355,22 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
 
   const generatingPhases = GENERATING_PHASES_BY_START[draft.planStart];
   const loadingProgressPct = Math.round(((generatingIndex + 1) / generatingPhases.length) * 100);
+  if (prefillLoading) {
+    return (
+      <AppScreen className="flex-1 bg-neutral-950 px-6" maxContentWidth={720}>
+        <View className="flex-1 items-center justify-center rounded-3xl border border-neutral-800 bg-neutral-900 px-6">
+          <ActivityIndicator color="#a78bfa" />
+          <Text className="mt-4 text-lg font-semibold text-white">
+            Loading your current coaching setup
+          </Text>
+          <Text className="mt-2 text-center text-sm leading-relaxed text-neutral-400">
+            We’re pulling your saved goals, schedule, and preferences so you can switch coaches without starting from scratch.
+          </Text>
+        </View>
+      </AppScreen>
+    );
+  }
+
   if (submitting) {
     return (
       <AppScreen className="flex-1 bg-neutral-950 px-6" maxContentWidth={720}>
@@ -255,6 +402,12 @@ export default function CoachOnboardingFlow({ navigation }: Props) {
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-40 pt-6" keyboardShouldPersistTaps="handled">
         <Animated.View style={{ opacity: fade, transform: [{ translateX: slide }, { scale }] }}>
           <OnboardingHero title={title} subtitle={subtitle} showReadyBadge={currentStep === "review"} />
+
+          {prefillError ? (
+            <Card className="mt-4 border border-amber-500/30 bg-amber-500/10 p-4">
+              <Text className="text-sm font-semibold text-amber-200">{prefillError}</Text>
+            </Card>
+          ) : null}
 
           {stepIndex > 1 && currentStep !== "review" ? (
             <View className="mt-4 flex-row flex-wrap gap-2">

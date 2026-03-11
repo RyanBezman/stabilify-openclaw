@@ -29,6 +29,8 @@ type CoachUserProfileRow = {
   profile_json: Record<string, unknown> | null;
 };
 
+type UnifiedCoachSelection = Record<CoachSpecialization, ActiveCoach | null>;
+
 async function fetchCoachProfileById(
   id: string,
 ): Promise<Result<{ row: CoachProfileIdentityRow | null }>> {
@@ -203,6 +205,13 @@ export async function setUnifiedCoachOnServer(
 
   const nutritionRes = await setActiveCoachOnServer(userId, "nutrition", nutritionCoach);
   if (nutritionRes.error) {
+    const clearNutritionRes = await clearActiveCoachOnServer(userId, "nutrition");
+    if (clearNutritionRes.error) {
+      return fail(
+        `Workout coach saved, but nutrition coach could not be linked or cleared (${clearNutritionRes.error}).`,
+      );
+    }
+
     return ok({
       ok: true,
       nutritionLinked: false,
@@ -214,25 +223,118 @@ export async function setUnifiedCoachOnServer(
   return ok({ ok: true, nutritionLinked: true });
 }
 
-export async function clearUnifiedCoachOnServer(
+async function fetchUnifiedCoachSelectionFromServer(
   userId: string,
-): Promise<Result<{ ok: true }>> {
-  const workoutRes = await clearActiveCoachOnServer(userId, "workout");
-  const nutritionRes = await clearActiveCoachOnServer(userId, "nutrition");
+): Promise<Result<UnifiedCoachSelection>> {
+  const [workoutRes, nutritionRes] = await Promise.all([
+    fetchActiveCoachFromServer(userId, "workout"),
+    fetchActiveCoachFromServer(userId, "nutrition"),
+  ]);
 
   if (workoutRes.error && nutritionRes.error) {
     return fail(
-      `Couldn't clear workout coach (${workoutRes.error}) and nutrition coach (${nutritionRes.error}).`,
+      `Couldn't load workout coach (${workoutRes.error}) and nutrition coach (${nutritionRes.error}).`,
     );
   }
   if (workoutRes.error) {
-    return fail(workoutRes.error ?? "Couldn't clear workout coach.");
+    return fail(workoutRes.error ?? "Couldn't load workout coach.");
   }
   if (nutritionRes.error) {
-    return fail(nutritionRes.error ?? "Couldn't clear nutrition coach.");
+    return fail(nutritionRes.error ?? "Couldn't load nutrition coach.");
+  }
+
+  return ok({
+    workout: workoutRes.data?.coach ?? null,
+    nutrition: nutritionRes.data?.coach ?? null,
+  });
+}
+
+async function restoreCoachSelectionsOnServer(
+  userId: string,
+  selections: Array<{ specialization: CoachSpecialization; coach: ActiveCoach }>,
+): Promise<Result<{ ok: true }>> {
+  const errors: string[] = [];
+
+  for (const selection of selections) {
+    const restoreRes = await setActiveCoachOnServer(
+      userId,
+      selection.specialization,
+      selection.coach,
+    );
+    if (restoreRes.error) {
+      errors.push(`${selection.specialization}: ${restoreRes.error}`);
+    }
+  }
+
+  if (errors.length > 0) {
+    return fail(
+      `Couldn't restore previous coach selection (${errors.join("; ")}).`,
+    );
   }
 
   return ok({ ok: true });
+}
+
+function buildUnifiedCoachClearError(args: {
+  workoutError?: string;
+  nutritionError?: string;
+}) {
+  if (args.workoutError && args.nutritionError) {
+    return `Couldn't clear workout coach (${args.workoutError}) and nutrition coach (${args.nutritionError}).`;
+  }
+  if (args.workoutError) {
+    return args.workoutError;
+  }
+  return args.nutritionError ?? "Couldn't clear unified coach selection.";
+}
+
+export async function clearUnifiedCoachOnServer(
+  userId: string,
+): Promise<Result<{ ok: true }>> {
+  const previousSelectionRes = await fetchUnifiedCoachSelectionFromServer(userId);
+  if (previousSelectionRes.error || !previousSelectionRes.data) {
+    return fail(previousSelectionRes.error ?? "Couldn't load existing coach selection.");
+  }
+
+  const workoutRes = await clearActiveCoachOnServer(userId, "workout");
+  const nutritionRes = await clearActiveCoachOnServer(userId, "nutrition");
+
+  if (!workoutRes.error && !nutritionRes.error) {
+    return ok({ ok: true });
+  }
+
+  const rollbackTargets: Array<{
+    specialization: CoachSpecialization;
+    coach: ActiveCoach;
+  }> = [];
+  if (previousSelectionRes.data.workout) {
+    rollbackTargets.push({
+      specialization: "workout",
+      coach: previousSelectionRes.data.workout,
+    });
+  }
+  if (workoutRes.error && !nutritionRes.error && previousSelectionRes.data.nutrition) {
+    rollbackTargets.push({
+      specialization: "nutrition",
+      coach: previousSelectionRes.data.nutrition,
+    });
+  }
+
+  const clearError = buildUnifiedCoachClearError({
+    workoutError: workoutRes.error,
+    nutritionError: nutritionRes.error,
+  });
+
+  if (rollbackTargets.length === 0) {
+    return fail(clearError);
+  }
+
+  const rollbackRes = await restoreCoachSelectionsOnServer(userId, rollbackTargets);
+  if (rollbackRes.error) {
+    return fail(`${clearError} ${rollbackRes.error}`);
+  }
+
+  return fail(`${clearError} Restored previous coach selection.`);
 }
 
 export async function fetchCoachUserProfileJson(

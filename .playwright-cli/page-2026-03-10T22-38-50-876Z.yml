@@ -1,0 +1,14 @@
+- generic [ref=e329]:
+  - generic [ref=e331]:
+    - generic [ref=e333] [cursor=pointer]: Back
+    - generic [ref=e334]:
+      - generic [ref=e335]: Step 1 of 12
+      - generic [ref=e336]: What is your goal?
+  - generic [ref=e340]:
+    - generic [ref=e341]: What is your goal?
+    - generic [ref=e342]: Choose the primary outcome you care about most right now.
+    - generic [ref=e344]:
+      - generic [ref=e346] [cursor=pointer]: Lose fat
+      - generic [ref=e348] [cursor=pointer]: Maintain
+      - generic [ref=e350] [cursor=pointer]: Gain muscle
+  - generic [ref=e354] [cursor=pointer]: Continue

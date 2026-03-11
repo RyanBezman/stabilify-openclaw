@@ -3,16 +3,11 @@ import type { ActiveCoach } from "../types";
 
 const mocks = vi.hoisted(() => ({
   invokeCoachChat: vi.fn(),
-  fetchCurrentUserId: vi.fn(),
   setActiveCoachOnServer: vi.fn(),
 }));
 
 vi.mock("./chatClient", () => ({
   invokeCoachChat: mocks.invokeCoachChat,
-}));
-
-vi.mock("../../auth", () => ({
-  fetchCurrentUserId: mocks.fetchCurrentUserId,
 }));
 
 vi.mock("./api", () => ({
@@ -37,9 +32,7 @@ const coach: ActiveCoach = {
 describe("checkins service", () => {
   beforeEach(() => {
     mocks.invokeCoachChat.mockReset();
-    mocks.fetchCurrentUserId.mockReset();
     mocks.setActiveCoachOnServer.mockReset();
-    mocks.fetchCurrentUserId.mockResolvedValue({ data: { userId: "user-1" } });
     mocks.setActiveCoachOnServer.mockResolvedValue({ data: { ok: true } });
   });
 
@@ -452,12 +445,61 @@ describe("checkins service", () => {
         checkin_history: [],
       });
 
-    const payload = await fetchNutritionCheckins({ coach, limit: 26 });
+    const payload = await fetchNutritionCheckins({
+      authUserId: "user-1",
+      coach,
+      limit: 26,
+    });
 
     expect(payload.threadId).toBe("thread-retry");
     expect(mocks.invokeCoachChat).toHaveBeenCalledTimes(2);
-    expect(mocks.fetchCurrentUserId).toHaveBeenCalledTimes(1);
     expect(mocks.setActiveCoachOnServer).toHaveBeenCalledWith("user-1", "nutrition", coach);
+  });
+
+  it("repairs stale coach selection during submit using the request auth user id", async () => {
+    mocks.invokeCoachChat
+      .mockRejectedValueOnce(new Error("No active coach selected."))
+      .mockResolvedValueOnce({
+        thread_id: "thread-submit-retry",
+        checkin_week_start: "2026-02-23",
+        checkin_week_end: "2026-03-01",
+        checkin_weight_snapshot: {
+          unit: "lb",
+          entries: 0,
+          startWeight: null,
+          endWeight: null,
+          delta: null,
+          trend: "no_data",
+        },
+        checkin_current: null,
+        checkin_history: [],
+      });
+
+    const payload = await submitNutritionCheckin(
+      {
+        energy: 4,
+        adherencePercent: 85,
+        blockers: "Travel week",
+      },
+      {
+        authUserId: "user-1",
+        coach,
+        limit: 26,
+      }
+    );
+
+    expect(payload.threadId).toBe("thread-submit-retry");
+    expect(mocks.invokeCoachChat).toHaveBeenCalledTimes(2);
+    expect(mocks.setActiveCoachOnServer).toHaveBeenCalledWith("user-1", "nutrition", coach);
+    expect(mocks.invokeCoachChat).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        action: "checkin_submit",
+        specialization: "nutrition",
+        coach_gender: "woman",
+        coach_personality: "strict",
+      })
+    );
   });
 
   it("computes deterministic adherence scores bounded to 0-100", () => {

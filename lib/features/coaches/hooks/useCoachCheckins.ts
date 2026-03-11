@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MembershipTier } from "../../../data/types";
 import type { ActiveCoach } from "../types";
+import { useCoach } from "./CoachContext";
 import type {
   CoachCheckinsPayload,
   WeeklyCheckin,
@@ -11,6 +12,7 @@ import {
   submitCoachCheckinWorkflow,
 } from "../workflows";
 import {
+  coachSyncIdentityKey,
   publishCoachSyncEvent,
   subscribeCoachSyncEvents,
 } from "../services/syncEvents";
@@ -42,9 +44,12 @@ const DEFAULT_WEIGHT_SNAPSHOT: WeeklyWeightSnapshot = {
 
 const checkinsPayloadCache = new Map<string, CoachCheckinsPayload>();
 
-function coachCheckinsCacheKey(coach: ActiveCoach | null | undefined): string | null {
-  if (!coach) return null;
-  return `${coach.specialization}:${coach.gender}:${coach.personality}`;
+function coachCheckinsCacheKey(
+  authUserId: string | null | undefined,
+  coach: ActiveCoach | null | undefined
+): string | null {
+  if (!authUserId || !coach) return null;
+  return `${authUserId}:${coach.specialization}:${coach.gender}:${coach.personality}`;
 }
 
 function hasCheckinsSnapshot(payload: CoachCheckinsPayload | null | undefined) {
@@ -77,10 +82,16 @@ export function useCoachCheckins({
   userTier,
   onTierRequired,
 }: UseCoachCheckinsOptions) {
-  const cacheKey = useMemo(
-    () => coachCheckinsCacheKey(coach),
+  const { authUserId } = useCoach();
+  const syncEventCoachKey = useMemo(
+    () => coachSyncIdentityKey(coach),
     [coach?.gender, coach?.personality, coach?.specialization]
   );
+  const cacheKey = useMemo(
+    () => coachCheckinsCacheKey(authUserId, coach),
+    [authUserId, coach?.gender, coach?.personality, coach?.specialization]
+  );
+  const requestIdentityKey = cacheKey ?? `${authUserId ?? "guest"}:no-coach`;
   const cachedPayload = cacheKey ? (checkinsPayloadCache.get(cacheKey) ?? null) : null;
   const hasCachedSnapshot = hasCheckinsSnapshot(cachedPayload);
   const initialLegacyForm = deriveLegacyCheckinFormValues(
@@ -137,6 +148,7 @@ export function useCoachCheckins({
   const submitRequestIdRef = useRef(0);
   const submitInFlightRef = useRef(false);
   const mutationTokenRef = useRef(0);
+  const requestIdentityRef = useRef(requestIdentityKey);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearSaveSuccessMessage = useCallback(() => {
@@ -191,6 +203,26 @@ export function useCoachCheckins({
     hasSeedDataRef.current = false;
   }, []);
 
+  const clearResolvedPlanReviewState = useCallback(() => {
+    setPlanUpdatedForReview(false);
+    setPlanUpdateError(null);
+    if (!cacheKey) {
+      return;
+    }
+
+    const cached = checkinsPayloadCache.get(cacheKey);
+    if (!cached) {
+      return;
+    }
+
+    const {
+      planUpdatedForReview: _planUpdatedForReview,
+      planUpdateError: _planUpdateError,
+      ...rest
+    } = cached;
+    checkinsPayloadCache.set(cacheKey, rest);
+  }, [cacheKey]);
+
   const applyPayload = useCallback((payload: CoachCheckinsPayload, syncForm: boolean) => {
     setThreadId(payload.threadId);
     setWeekStart(payload.weekStart);
@@ -229,9 +261,10 @@ export function useCoachCheckins({
     setValidationMessage(null);
     clearSaveSuccessMessage();
     submitInFlightRef.current = false;
-    mutationTokenRef.current = 0;
-    hydrateRequestIdRef.current = 0;
-    submitRequestIdRef.current = 0;
+    mutationTokenRef.current += 1;
+    hydrateRequestIdRef.current += 1;
+    submitRequestIdRef.current += 1;
+    requestIdentityRef.current = requestIdentityKey;
 
     if (!cacheKey) {
       setHistoryLoading(false);
@@ -248,7 +281,7 @@ export function useCoachCheckins({
 
     setHistoryLoading(hydrated);
     resetToDefaults();
-  }, [applyPayload, cacheKey, clearSaveSuccessMessage, hydrated, resetToDefaults]);
+  }, [applyPayload, cacheKey, clearSaveSuccessMessage, hydrated, requestIdentityKey, resetToDefaults]);
 
   useEffect(() => {
     return () => {
@@ -264,15 +297,21 @@ export function useCoachCheckins({
       if (event.type !== "nutrition_draft_resolved") {
         return;
       }
-      setPlanUpdatedForReview(false);
-      setPlanUpdateError(null);
+      if (event.authUserId !== authUserId) {
+        return;
+      }
+      if (!syncEventCoachKey || event.coachIdentityKey !== syncEventCoachKey) {
+        return;
+      }
+      clearResolvedPlanReviewState();
     });
     return unsubscribe;
-  }, []);
+  }, [authUserId, clearResolvedPlanReviewState, syncEventCoachKey]);
 
   const hydrateCheckins = useCallback(async () => {
     if (!hydrated || !coach) return;
 
+    const requestIdentity = requestIdentityKey;
     const requestId = hydrateRequestIdRef.current + 1;
     hydrateRequestIdRef.current = requestId;
     const mutationTokenAtStart = mutationTokenRef.current;
@@ -289,12 +328,16 @@ export function useCoachCheckins({
 
     try {
       const result = await hydrateCoachCheckinsWorkflow({
+        authUserId,
         coach,
         limit: 26,
       });
 
-      if (requestId !== hydrateRequestIdRef.current) return;
-      if (mutationTokenAtStart !== mutationTokenRef.current) return;
+      if (
+        requestId !== hydrateRequestIdRef.current
+        || mutationTokenAtStart !== mutationTokenRef.current
+        || requestIdentityRef.current !== requestIdentity
+      ) return;
 
       if (result.status === "tier_required") {
         onTierRequired?.();
@@ -308,12 +351,15 @@ export function useCoachCheckins({
 
       applyPayload(result.payload, true);
     } finally {
-      if (requestId === hydrateRequestIdRef.current) {
+      if (
+        requestId === hydrateRequestIdRef.current
+        && requestIdentityRef.current === requestIdentity
+      ) {
         setHistoryLoading(false);
         setRefreshing(false);
       }
     }
-  }, [applyPayload, coach, hydrated, onTierRequired]);
+  }, [applyPayload, authUserId, coach, hydrated, onTierRequired, requestIdentityKey]);
 
   const submitCheckin = useCallback(async () => {
     if (!hydrated || !coach) return { saved: false } as const;
@@ -337,6 +383,7 @@ export function useCoachCheckins({
     }
 
     const wasEditingCurrentWeek = Boolean(currentCheckin && currentCheckin.weekStart === weekStart);
+    const requestIdentity = requestIdentityKey;
     const requestId = submitRequestIdRef.current + 1;
     submitRequestIdRef.current = requestId;
     submitInFlightRef.current = true;
@@ -344,12 +391,16 @@ export function useCoachCheckins({
 
     try {
       const result = await submitCoachCheckinWorkflow({
+        authUserId,
         coach,
         limit: 26,
         input: normalized.input,
       });
 
-      if (requestId !== submitRequestIdRef.current) {
+      if (
+        requestId !== submitRequestIdRef.current
+        || requestIdentityRef.current !== requestIdentity
+      ) {
         return { saved: false } as const;
       }
 
@@ -365,12 +416,16 @@ export function useCoachCheckins({
 
       mutationTokenRef.current += 1;
       applyPayload(result.payload, true);
-      publishCoachSyncEvent({
-        type: "checkin_submitted",
-        specialization: "nutrition",
-        planUpdatedForReview: Boolean(result.payload.planUpdatedForReview),
-        submittedAt: Date.now(),
-      });
+      if (authUserId && syncEventCoachKey) {
+        publishCoachSyncEvent({
+          type: "checkin_submitted",
+          authUserId,
+          specialization: "nutrition",
+          coachIdentityKey: syncEventCoachKey,
+          planUpdatedForReview: Boolean(result.payload.planUpdatedForReview),
+          submittedAt: Date.now(),
+        });
+      }
       void trackCheckinSubmissionEvents({
         coach,
         userTier,
@@ -384,14 +439,18 @@ export function useCoachCheckins({
       );
       return { saved: true } as const;
     } finally {
-      if (requestId === submitRequestIdRef.current) {
+      if (
+        requestId === submitRequestIdRef.current
+        && requestIdentityRef.current === requestIdentity
+      ) {
         setSaving(false);
+        submitInFlightRef.current = false;
       }
-      submitInFlightRef.current = false;
     }
   }, [
     adherencePercent,
     applyPayload,
+    authUserId,
     blockers,
     clearSaveSuccessMessage,
     coach,
@@ -400,6 +459,8 @@ export function useCoachCheckins({
     hydrated,
     onTierRequired,
     showSaveSuccessMessage,
+    syncEventCoachKey,
+    requestIdentityKey,
     userTier,
     v2Form,
     weekStart,

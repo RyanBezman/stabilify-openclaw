@@ -34,6 +34,7 @@ import {
   useCoachRenderDiagnostics,
 } from "../lib/features/coaches";
 import { useCoachCheckinFlow } from "../lib/features/coaches/hooks/useCoachCheckinFlow";
+import { shouldShowCoachCheckinsLoadingState } from "../lib/features/coaches/hooks/coachSurfaceLoading";
 import type { WeightUnit } from "../lib/data/types";
 import type { CoachSpecialization, WeeklyCheckinTrend } from "../lib/features/coaches";
 import { formatShortDate } from "../lib/utils/metrics";
@@ -555,7 +556,13 @@ export default function CoachCheckins({ navigation, route }: ScreenProps) {
     step: flow.currentStep,
   });
 
-  if (viewState === "gating") {
+  if (
+    shouldShowCoachCheckinsLoadingState({
+      viewState,
+      isPro,
+      hydrated,
+    })
+  ) {
     return (
       <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={840}>
         <CheckinHeader

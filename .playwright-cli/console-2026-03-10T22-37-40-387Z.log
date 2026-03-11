@@ -1,0 +1,8 @@
+Total messages: 14 (Errors: 1, Warnings: 9)
+Returning 1 messages for level "error"
+
+[ERROR] Received `%s` for a non-boolean attribute `%s`.
+
+If you want to write it to the DOM, pass a string instead: %s="%s" or %s={value.toString()}.
+
+If you used to conditionally omit it with %s={condition && value}, pass %s={condition ? value : undefined} instead. false collapsable collapsable false collapsable collapsable collapsable @ http://localhost:19006/index.ts.bundle?platform=web&dev=true&hot=false&lazy=true&transform.engine=hermes&transform.routerRoot=app&unstable_transformProfile=hermes-stable:34947

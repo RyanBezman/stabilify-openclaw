@@ -34,7 +34,7 @@ export type CoachOnboardingDraft = {
   };
   persona: {
     gender: CoachGender;
-    personality: Extract<CoachPersonality, "strict" | "hype" | "sweet">;
+    personality: CoachPersonality;
   };
   planStart: "workout" | "nutrition" | "both";
 };

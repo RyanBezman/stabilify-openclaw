@@ -1,6 +1,6 @@
 # Gym Proof Status Migration QA
 
-Last updated: 2026-03-04
+Last updated: 2026-03-10
 
 ## Goal
 
@@ -79,5 +79,7 @@ Validate that gym proof status + `status_reason` migration is correct across sch
 10. On Home, tap `Add gym session` and confirm step 1 appears without auto-opening camera.
 11. Confirm camera permission is only requested after tapping `Open camera`.
 12. Confirm location permission is only requested after tapping `Tap to capture location`.
-13. Confirm the inline gym flow shows 4 steps (take photo, verify location, confirm/save, analyzing) and card height stays constant across all states.
-14. While inline gym flow/analyzing card is visible, confirm lower `Add gym session` row is hidden and `Log weight` row remains visible.
+13. Deny or fail location capture and confirm the flow offers `Continue without location`.
+14. Continue without location, save, and confirm the session is stored as `partial` with a non-null `status_reason`.
+15. Confirm the inline gym flow shows 4 steps (take photo, verify location, confirm/save, analyzing) and card height stays constant across all states.
+16. While inline gym flow/analyzing card is visible, confirm lower `Add gym session` row is hidden and `Log weight` row remains visible.

@@ -1,20 +1,36 @@
-import type { CoachSpecialization } from "../types";
+import type { ActiveCoach, CoachSpecialization } from "../types";
+
+export function coachSyncIdentityKey(
+  coach: Pick<ActiveCoach, "specialization" | "gender" | "personality"> | null | undefined
+) {
+  if (!coach) {
+    return null;
+  }
+  return `${coach.specialization}:${coach.gender}:${coach.personality}`;
+}
 
 export type CoachSyncEvent =
   | {
       type: "checkin_submitted";
+      authUserId: string;
       specialization: CoachSpecialization;
+      coachIdentityKey: string;
       planUpdatedForReview: boolean;
       submittedAt: number;
     }
   | {
       type: "nutrition_draft_resolved";
+      authUserId: string;
+      specialization: "nutrition";
+      coachIdentityKey: string;
       resolution: "promoted" | "discarded";
       resolvedAt: number;
     }
   | {
       type: "workspace_plan_changed";
+      authUserId: string;
       specialization: CoachSpecialization;
+      coachIdentityKey: string;
       changedAt: number;
     };
 

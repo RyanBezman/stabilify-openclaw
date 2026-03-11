@@ -17,7 +17,9 @@ describe("syncEvents", () => {
 
     publishCoachSyncEvent({
       type: "checkin_submitted",
+      authUserId: "user-1",
       specialization: "nutrition",
+      coachIdentityKey: "nutrition:woman:strict",
       planUpdatedForReview: true,
       submittedAt: Date.now(),
     });
@@ -28,6 +30,9 @@ describe("syncEvents", () => {
 
     publishCoachSyncEvent({
       type: "nutrition_draft_resolved",
+      authUserId: "user-1",
+      specialization: "nutrition",
+      coachIdentityKey: "nutrition:woman:strict",
       resolution: "promoted",
       resolvedAt: Date.now(),
     });

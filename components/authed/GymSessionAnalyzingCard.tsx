@@ -23,8 +23,6 @@ type GymSessionAnalyzingCardProps = {
 const PHOTO_SIZE = 144;
 const RING_SIZE = 88;
 const RING_STROKE = 6;
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
 function clampProgress(value: number) {
   if (!Number.isFinite(value) || value <= 0) {
     return 0;
@@ -65,10 +63,7 @@ function ProgressBadge({ progress }: { progress: number }) {
     };
   }, [progressAnimation]);
 
-  const strokeDashoffset = progressAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [circumference, 0],
-  });
+  const strokeDashoffset = circumference * (1 - animatedProgress);
   const percent = Math.round(animatedProgress * 100);
 
   return (
@@ -82,7 +77,7 @@ function ProgressBadge({ progress }: { progress: number }) {
           strokeWidth={RING_STROKE}
           fill="none"
         />
-        <AnimatedCircle
+        <Circle
           cx={center}
           cy={center}
           r={radius}

@@ -1,6 +1,6 @@
 # Gym Proof Status Migration
 
-Last updated: 2026-03-02
+Last updated: 2026-03-10
 
 ## Goal
 
@@ -76,7 +76,7 @@ Align gym proof state contracts across database, runtime types, and UI with poli
    - status `provisional`,
    - `status_reason = outside_radius`,
    - reason + next-action guidance rendered on Home.
-4. Log a session without proof signals via direct data call and confirm:
+4. Log a session with a proof photo, deny or fail location capture in the inline flow, continue without location, and confirm:
    - fallback status `partial`,
    - non-null `status_reason` with best-known missing-signal mapping.
 5. Confirm log flow success messaging shows reason + guidance when status is non-verified.

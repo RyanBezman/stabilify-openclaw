@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { Platform } from "react-native";
-import {
-  fetchAppleHealthDailyStepAverage,
-  fetchAppleHealthTodayStepCount,
-} from "../../data/appleHealth";
 import { fetchDashboardData } from "../../data/dashboard";
 import { fetchActionableNotificationCount } from "../../data/notifications";
 import {
@@ -21,25 +16,23 @@ import {
   getConsistencyWindow,
   getCurrentStreak,
 } from "../../utils/metrics";
+import { kgToLb, lbToKg } from "../../utils/bodyMetrics";
 import type { ProfileSummary } from "../profile";
 import {
-  allowAutoSupportWithConsent,
-  deferSupportNudge,
   fetchCurrentWeekSupportRequest,
   fetchHasActivePushNotificationDevice,
   markSupportNudgeOpened,
-  setAutoSupportEnabled,
   type CurrentWeekSupportRequest,
 } from "../../data/supportAutomation";
+import { deriveSurfaceLoadState } from "../shared";
 import {
-  deriveSurfaceLoadState,
-  registerCurrentPushDevice,
-} from "../shared";
-import {
-  createStepSummary,
   resolveStepSummaryMode,
-  type StepSummary,
 } from "./models/stepSummary";
+import {
+  useAuthedHomeSupportAutomation,
+  type SupportNudgeDisplayVariant,
+} from "./useAuthedHomeSupportAutomation";
+import { useAuthedHomeStepSummary } from "./useAuthedHomeStepSummary";
 
 export type HomeConsistencyOption = {
   id: string;
@@ -54,7 +47,17 @@ const CONSISTENCY_OPTIONS: HomeConsistencyOption[] = [
   { id: "6m", label: "Last 6 months", days: 180 },
   { id: "1y", label: "Last year", days: 365 },
 ];
-const DEFAULT_DAILY_STEP_TARGET = 10000;
+function convertWeightToPreferredUnit(
+  value: number,
+  sourceUnit: "lb" | "kg",
+  targetUnit: "lb" | "kg",
+) {
+  if (sourceUnit === targetUnit) {
+    return value;
+  }
+
+  return sourceUnit === "kg" ? kgToLb(value) : lbToKg(value);
+}
 
 type DashboardState = Awaited<ReturnType<typeof fetchDashboardData>>["data"] | null;
 
@@ -64,16 +67,7 @@ export type AuthedHomeUser = {
   user_metadata?: { full_name?: string | null } | null;
 };
 
-type SupportActionResult = {
-  success: boolean;
-  error?: string;
-};
-
-export type SupportNudgeDisplayVariant =
-  | "suppressed_prompt"
-  | "suppressed_acknowledged"
-  | "disabled"
-  | "published";
+export type { SupportNudgeDisplayVariant } from "./useAuthedHomeSupportAutomation";
 
 export function useAuthedHome(user?: AuthedHomeUser | null) {
   const [blockingLoad, setBlockingLoad] = useState(true);
@@ -89,20 +83,14 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
   const [requestingGymValidation, setRequestingGymValidation] = useState(false);
   const [supportRequest, setSupportRequest] = useState<CurrentWeekSupportRequest | null>(null);
   const [phoneNudgesEnabled, setPhoneNudgesEnabled] = useState(false);
-  const [supportActionBusy, setSupportActionBusy] = useState(false);
-  const [enablingPhoneNudges, setEnablingPhoneNudges] = useState(false);
-  const supportActionBusyRef = useRef(false);
   const [consistencyOption, setConsistencyOption] = useState(
     CONSISTENCY_OPTIONS[0],
   );
   const [showConsistencyMenu, setShowConsistencyMenu] = useState(false);
-  const [stepValue, setStepValue] = useState<number | null>(null);
-  const [loadingStepSummary, setLoadingStepSummary] = useState(false);
   const hasUsableSnapshot = dashboard !== null;
   const loadRequestIdRef = useRef(0);
   const loadInFlightRef = useRef(false);
   const focusRefreshRef = useRef<() => Promise<void>>(async () => {});
-  const stepRequestIdRef = useRef(0);
 
   const loadDashboardSurface = useCallback(
     async (options?: {
@@ -275,10 +263,18 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
   const goalLabel =
     goalType === "maintain" ? "Maintain" : goalType === "lose" ? "Lose" : "Gain";
 
-  const currentWeight = goal?.startWeight ?? null;
+  const startWeight = goal?.startWeight ?? null;
   const targetMin = goal?.targetMin ?? null;
   const targetMax = goal?.targetMax ?? null;
   const targetWeight = goal?.targetWeight ?? null;
+  const currentWeight = useMemo(() => {
+    const latestWeighIn = weighIns[0];
+    if (!latestWeighIn) {
+      return startWeight;
+    }
+
+    return convertWeightToPreferredUnit(latestWeighIn.weight, latestWeighIn.unit, unit);
+  }, [startWeight, unit, weighIns]);
 
   const formatWeight = useCallback(
     (value: number | null | undefined) => {
@@ -314,44 +310,63 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     : "No reminder";
   const appleHealthStepsEnabled = dashboard?.profile?.appleHealthStepsEnabled ?? false;
   const stepSummaryMode = resolveStepSummaryMode(consistencyOption.id);
+  const stepSummary = useAuthedHomeStepSummary({
+    appleHealthStepsEnabled,
+    consistencyDays: consistencyOption.days,
+    dailyStepGoal: dashboard?.profile?.dailyStepGoal,
+    stepSummaryMode,
+  });
 
-  useEffect(() => {
-    if (!appleHealthStepsEnabled || Platform.OS !== "ios") {
-      stepRequestIdRef.current += 1;
-      setStepValue(null);
-      setLoadingStepSummary(false);
-      return;
+  const signOut = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
+    if (signingOut) return { success: false };
+
+    setSigningOut(true);
+    const result = await signOutCurrentUser();
+
+    if (result.error) {
+      setSigningOut(false);
+      return { success: false, error: result.error };
     }
 
-    const requestId = stepRequestIdRef.current + 1;
-    stepRequestIdRef.current = requestId;
-    setLoadingStepSummary(true);
+    return { success: true };
+  }, [signingOut]);
 
-    const loadStepSummary = async () => {
-      if (stepSummaryMode === "today") {
-        const stepResult = await fetchAppleHealthTodayStepCount();
-        if (requestId !== stepRequestIdRef.current) {
-          return;
+  const updateDashboardAutoSupportState = useCallback(
+    (next: { autoSupportConsentedAt: string | null; autoSupportEnabled: boolean }) => {
+      setDashboard((previous) => {
+        if (!previous?.profile) {
+          return previous;
         }
 
-        setStepValue(stepResult.error || !stepResult.data ? null : stepResult.data.steps);
-        setLoadingStepSummary(false);
-        return;
-      }
-
-      const stepResult = await fetchAppleHealthDailyStepAverage(consistencyOption.days);
-      if (requestId !== stepRequestIdRef.current) {
-        return;
-      }
-
-      setStepValue(
-        stepResult.error || !stepResult.data ? null : stepResult.data.averageDailySteps,
-      );
-      setLoadingStepSummary(false);
-    };
-
-    void loadStepSummary();
-  }, [appleHealthStepsEnabled, consistencyOption.days, stepSummaryMode]);
+        return {
+          ...previous,
+          profile: {
+            ...previous.profile,
+            autoSupportEnabled: next.autoSupportEnabled,
+            autoSupportConsentAt: next.autoSupportConsentedAt,
+          },
+        };
+      });
+    },
+    [],
+  );
+  const {
+    allowAutoSupportFromNudge,
+    deferAutoSupportFromNudge,
+    enablePhoneNudges,
+    enablingPhoneNudges,
+    reEnableAutoSupportFromNudge,
+    supportActionBusy,
+    supportNudgeVariant,
+  } = useAuthedHomeSupportAutomation({
+    profileAutoSupportConsentAt: dashboard?.profile?.autoSupportConsentAt,
+    profileAutoSupportEnabled: dashboard?.profile?.autoSupportEnabled,
+    setPhoneNudgesEnabled,
+    setSupportRequest,
+    supportRequest,
+    updateDashboardAutoSupportState,
+    userId: user?.id,
+  });
 
   const loadingState = deriveSurfaceLoadState({
     blockingLoad,
@@ -402,7 +417,7 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     return "text-neutral-400";
   }, [maintainStatus]);
 
-  const profileStartWeightValue = formatWeight(currentWeight);
+  const profileStartWeightValue = formatWeight(startWeight);
   const profileTargetLabel = goalType === "maintain" ? "Status" : "To target";
   const profileTargetValue =
     goalType === "maintain"
@@ -470,47 +485,6 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     ? `Week of ${formatShortDate(dashboard.gymWeekStart)}`
     : "This week";
 
-  const trendPoints = useMemo(() => {
-    if (!weighIns.length) return [];
-    const sorted = [...weighIns].sort((a, b) => a.localDate.localeCompare(b.localDate));
-    return sorted.slice(-14).map((entry) => ({
-      weight: entry.weight,
-      localDate: entry.localDate,
-    }));
-  }, [weighIns]);
-
-  const recentWeighIns = useMemo(
-    () =>
-      weighIns.slice(0, 5).map((entry) => ({
-        weight: entry.weight,
-        localDate: entry.localDate,
-      })),
-    [weighIns],
-  );
-
-  const selectConsistencyOption = useCallback((option: HomeConsistencyOption) => {
-    setConsistencyOption(option);
-    setShowConsistencyMenu(false);
-  }, []);
-
-  const toggleConsistencyMenu = useCallback(() => {
-    setShowConsistencyMenu((prev) => !prev);
-  }, []);
-
-  const signOut = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
-    if (signingOut) return { success: false };
-
-    setSigningOut(true);
-    const result = await signOutCurrentUser();
-
-    if (result.error) {
-      setSigningOut(false);
-      return { success: false, error: result.error };
-    }
-
-    return { success: true };
-  }, [signingOut]);
-
   const requestGymValidationForToday =
     useCallback(async (message?: string | null): Promise<{ success: boolean; error?: string }> => {
       if (requestingGymValidation) {
@@ -542,163 +516,32 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
       return { success: true };
     }, [requestingGymValidation, todayGymSession, user?.id]);
 
-  const refreshSupportAutomation = useCallback(async () => {
-    const [supportResult, pushDeviceResult] = await Promise.all([
-      fetchCurrentWeekSupportRequest(),
-      fetchHasActivePushNotificationDevice(user?.id),
-    ]);
+  const trendPoints = useMemo(() => {
+    if (!weighIns.length) return [];
+    const sorted = [...weighIns].sort((a, b) => a.localDate.localeCompare(b.localDate));
+    return sorted.slice(-14).map((entry) => ({
+      weight: entry.weight,
+      localDate: entry.localDate,
+    }));
+  }, [weighIns]);
 
-    if (!supportResult.error) {
-      setSupportRequest(supportResult.data ?? null);
-    }
+  const recentWeighIns = useMemo(
+    () =>
+      weighIns.slice(0, 5).map((entry) => ({
+        weight: entry.weight,
+        localDate: entry.localDate,
+      })),
+    [weighIns],
+  );
 
-    if (!pushDeviceResult.error) {
-      setPhoneNudgesEnabled(pushDeviceResult.data?.hasActiveDevice ?? false);
-    }
-  }, [user?.id]);
-
-  const startSupportAction = useCallback(() => {
-    if (supportActionBusyRef.current) {
-      return false;
-    }
-
-    supportActionBusyRef.current = true;
-    setSupportActionBusy(true);
-    return true;
+  const selectConsistencyOption = useCallback((option: HomeConsistencyOption) => {
+    setConsistencyOption(option);
+    setShowConsistencyMenu(false);
   }, []);
 
-  const finishSupportAction = useCallback(() => {
-    supportActionBusyRef.current = false;
-    setSupportActionBusy(false);
+  const toggleConsistencyMenu = useCallback(() => {
+    setShowConsistencyMenu((prev) => !prev);
   }, []);
-
-  const allowAutoSupportFromNudge = useCallback(async (): Promise<SupportActionResult> => {
-    if (!startSupportAction()) {
-      return { success: false };
-    }
-
-    try {
-      const result = await allowAutoSupportWithConsent();
-      if (result.error || !result.data) {
-        return {
-          success: false,
-          error: result.error ?? "Couldn't update support consent.",
-        };
-      }
-
-      setDashboard((previous) => {
-        if (!previous?.profile) {
-          return previous;
-        }
-        return {
-          ...previous,
-          profile: {
-            ...previous.profile,
-            autoSupportEnabled: result.data.autoSupportEnabled,
-            autoSupportConsentAt: result.data.autoSupportConsentedAt,
-          },
-        };
-      });
-
-      await refreshSupportAutomation();
-      return { success: true };
-    } finally {
-      finishSupportAction();
-    }
-  }, [finishSupportAction, refreshSupportAutomation, startSupportAction]);
-
-  const reEnableAutoSupportFromNudge = useCallback(async (): Promise<SupportActionResult> => {
-    if (!startSupportAction()) {
-      return { success: false };
-    }
-
-    try {
-      const result = await setAutoSupportEnabled(true);
-      if (result.error) {
-        return { success: false, error: result.error };
-      }
-
-      await refreshSupportAutomation();
-      return { success: true };
-    } finally {
-      finishSupportAction();
-    }
-  }, [finishSupportAction, refreshSupportAutomation, startSupportAction]);
-
-  const deferAutoSupportFromNudge = useCallback(async (): Promise<SupportActionResult> => {
-    if (!startSupportAction()) {
-      return { success: false };
-    }
-
-    try {
-      const requestId = supportRequest?.id?.trim() ?? "";
-      if (!requestId) {
-        return { success: false, error: "No support nudge is available to defer." };
-      }
-
-      const result = await deferSupportNudge({
-        requestId,
-        surface: "home",
-      });
-
-      if (result.error) {
-        return { success: false, error: result.error };
-      }
-
-      await refreshSupportAutomation();
-      return { success: true };
-    } finally {
-      finishSupportAction();
-    }
-  }, [finishSupportAction, refreshSupportAutomation, startSupportAction, supportRequest?.id]);
-
-  const supportNudgeVariant = useMemo<SupportNudgeDisplayVariant | null>(() => {
-    if (!supportRequest) {
-      return null;
-    }
-
-    if (supportRequest.status === "suppressed_no_consent") {
-      const consentedAtRaw = dashboard?.profile?.autoSupportConsentAt;
-      const consentedAtMs = consentedAtRaw ? Date.parse(consentedAtRaw) : Number.NaN;
-      const requestCreatedAtMs = Date.parse(supportRequest.createdAt);
-      const hasPersistedAcknowledgedConsent =
-        dashboard?.profile?.autoSupportEnabled === true &&
-        !Number.isNaN(consentedAtMs) &&
-        !Number.isNaN(requestCreatedAtMs) &&
-        consentedAtMs >= requestCreatedAtMs;
-
-      if (hasPersistedAcknowledgedConsent) {
-        return "suppressed_acknowledged";
-      }
-      return "suppressed_prompt";
-    }
-
-    if (supportRequest.status === "disabled") {
-      return "disabled";
-    }
-
-    return "published";
-  }, [dashboard?.profile?.autoSupportConsentAt, dashboard?.profile?.autoSupportEnabled, supportRequest]);
-
-  const enablePhoneNudges = useCallback(async (): Promise<SupportActionResult> => {
-    if (enablingPhoneNudges) {
-      return { success: false };
-    }
-
-    setEnablingPhoneNudges(true);
-    const registrationResult = await registerCurrentPushDevice(user?.id);
-    if (registrationResult.error) {
-      setEnablingPhoneNudges(false);
-      return {
-        success: false,
-        error: registrationResult.error,
-      };
-    }
-    setEnablingPhoneNudges(false);
-
-    await refreshSupportAutomation();
-    return { success: true };
-  }, [enablingPhoneNudges, refreshSupportAutomation]);
 
   const refreshDashboard = useCallback(
     async (options?: {
@@ -711,24 +554,6 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
       });
     },
     [hasUsableSnapshot, loadDashboardSurface],
-  );
-
-  const stepSummary = useMemo<StepSummary>(
-    () =>
-      createStepSummary({
-        enabled: appleHealthStepsEnabled,
-        loading: loadingStepSummary,
-        mode: stepSummaryMode,
-        steps: stepValue,
-        target: dashboard?.profile?.dailyStepGoal ?? DEFAULT_DAILY_STEP_TARGET,
-      }),
-    [
-      appleHealthStepsEnabled,
-      dashboard?.profile?.dailyStepGoal,
-      loadingStepSummary,
-      stepSummaryMode,
-      stepValue,
-    ],
   );
 
   return {

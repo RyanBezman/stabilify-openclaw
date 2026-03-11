@@ -14,6 +14,7 @@ import CoachTodayCard from "../components/coaches/dashboard/CoachTodayCard";
 import TrackCard from "../components/coaches/dashboard/TrackCard";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import ModalSheet from "../components/ui/ModalSheet";
 import { useCoach } from "../lib/features/coaches";
 import { useCoachAccessGate } from "../lib/features/coaches";
 import type {
@@ -27,7 +28,7 @@ import {
   clearUnifiedCoachOnServer,
   ensureCoachSelectionProfile,
   fetchCoachOnboardingStatus,
-  setUnifiedCoachOnServer,
+  persistUnifiedCoachSelectionOnServer,
 } from "../lib/features/coaches";
 import { preloadCoachAvatars } from "../lib/features/coaches";
 import { useCoachDashboard } from "../lib/features/coaches";
@@ -57,7 +58,7 @@ const personalities: CoachPersonality[] = [
   "analyst",
 ];
 
-export default function Coaches({ navigation }: CoachesScreenProps) {
+export default function Coaches({ navigation, route }: CoachesScreenProps) {
   const { contentBottomPadding, overlayHeight } = useFloatingTabBarLayout();
   const {
     setActiveCoach,
@@ -77,6 +78,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   const workoutCoach = getActiveCoach("workout");
   const nutritionCoach = getActiveCoach("nutrition");
   const canonicalCoach = workoutCoach ?? nutritionCoach;
+  const dashboardCoach = nutritionCoach ?? canonicalCoach;
   const coachIdentityKey = canonicalCoach
     ? `${canonicalCoach.gender}:${canonicalCoach.personality}`
     : null;
@@ -88,6 +90,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   const [onboardingGate, setOnboardingGate] = useState<"checking" | "needs_onboarding" | "ready">("checking");
   const [forcePicker, setForcePicker] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [pendingSwitchCoach, setPendingSwitchCoach] = useState<ActiveCoach | null>(null);
   const [loadedAvatars, setLoadedAvatars] = useState<Record<string, boolean>>(
     {},
   );
@@ -101,9 +104,10 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   const serverError =
     serverErrorBySpecialization.workout ??
     serverErrorBySpecialization.nutrition;
+  const hasSavedSetup = onboardingGate === "ready";
 
   const dashboard = useCoachDashboard({
-    coach: canonicalCoach,
+    coach: dashboardCoach,
     hydrated: hydrated && serverChecked,
     specialization: "nutrition",
   });
@@ -130,6 +134,17 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
     setPersonality(canonicalCoach.personality);
   }, [canonicalCoach, forcePicker]);
 
+  useEffect(() => {
+    if (!route.params?.forcePicker) {
+      return;
+    }
+
+    setForcePicker(true);
+    setPendingSwitchCoach(null);
+    setSaveError(null);
+    navigation.setParams({ forcePicker: undefined });
+  }, [navigation, route.params?.forcePicker]);
+
   useCoachDashboardFocusRefresh({
     coachIdentityKey,
     forcePicker,
@@ -139,7 +154,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
-      setOnboardingGate("checking");
+      setOnboardingGate((previous) => (previous === "ready" ? previous : "checking"));
 
       const run = async () => {
         if (viewState !== "ready") {
@@ -172,7 +187,6 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
 
       return () => {
         mounted = false;
-        setOnboardingGate("checking");
       };
     }, [viewState]),
   );
@@ -185,6 +199,9 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
 
   const persistCoachSelection = async (
     coach: ActiveCoach,
+    options?: {
+      preservePrograms?: boolean;
+    },
   ): Promise<boolean> => {
     setSaveError(null);
     setSaving(true);
@@ -222,29 +239,37 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
         return false;
       }
 
-      const res = await setUnifiedCoachOnServer(
+      const preservePrograms = options?.preservePrograms ?? false;
+      const res = await persistUnifiedCoachSelectionOnServer({
         userId,
-        coach.gender,
-        coach.personality,
-      );
+        targetCoach: coach,
+        currentSelection: {
+          workout: workoutCoach,
+          nutrition: nutritionCoach,
+        },
+        preservePrograms,
+      });
       if (res.error) {
         setSaveError(res.error ?? "Couldn't save coach.");
         return false;
       }
 
-      const nextWorkoutCoach = coachFromSelection(
+      setActiveCoach(
         "workout",
-        coach.gender,
-        coach.personality,
+        res.data?.workoutCoach ?? coachFromSelection(
+          "workout",
+          coach.gender,
+          coach.personality,
+        ),
+        preservePrograms ? { preserveWorkspace: "keep_active_plan" } : undefined,
       );
-      const nextNutritionCoach =
-        res.data?.nutritionLinked === false
-          ? null
-          : coachFromSelection("nutrition", coach.gender, coach.personality);
-
-      setActiveCoach("workout", nextWorkoutCoach);
-      setActiveCoach("nutrition", nextNutritionCoach);
+      setActiveCoach(
+        "nutrition",
+        res.data?.nutritionCoach ?? null,
+        preservePrograms ? { preserveWorkspace: "keep_active_plan" } : undefined,
+      );
       setForcePicker(false);
+      setPendingSwitchCoach(null);
       if (res.data?.warning) {
         setSaveError(res.data.warning);
       }
@@ -262,33 +287,47 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   };
 
   const confirmAndPersist = (coach: ActiveCoach) => {
-    const switching = canonicalCoach
-      ? canonicalCoach.gender !== coach.gender ||
-        canonicalCoach.personality !== coach.personality
-      : false;
+    const switching =
+      canonicalCoach !== null
+        ? canonicalCoach.gender !== coach.gender ||
+          canonicalCoach.personality !== coach.personality
+        : hasSavedSetup;
 
     if (!switching) {
+      if (forcePicker) {
+        setForcePicker(false);
+        setSaveError(null);
+        return;
+      }
       void persistCoachSelection(coach);
       return;
     }
 
-    Alert.alert(
-      `Set ${coach.displayName} as your coach?`,
-      "Switching coaches will reset both workout and nutrition plans + chat history.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Set coach",
-          style: "default",
-          onPress: () => void persistCoachSelection(coach),
-        },
-      ],
-    );
+    setPendingSwitchCoach(coach);
+  };
+
+  const openCoachRebuildFlow = (
+    coach: ActiveCoach,
+    startAtStep: "goal" | "review",
+  ) => {
+    setPendingSwitchCoach(null);
+    setForcePicker(false);
+    setSaveError(null);
+    navigation.navigate("CoachOnboardingFlow", {
+      specialization: "workout",
+      prefillFromCurrentProfile: true,
+      prefillCoachGender: coach.gender,
+      prefillCoachPersonality: coach.personality,
+      prefillPlanStart: "both",
+      startAtStep,
+      returnTo: "coaches",
+    });
   };
 
   const removeCoach = async () => {
     setSaveError(null);
     setRemoving(true);
+    setPendingSwitchCoach(null);
     try {
       const authResult = await fetchCurrentAuthUser();
       if (authResult.error) {
@@ -307,20 +346,19 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
         return;
       }
 
-      setActiveCoach("workout", null);
-      setActiveCoach("nutrition", null);
+      setActiveCoach("workout", null, {
+        preserveWorkspace: "keep_active_plan",
+      });
+      setActiveCoach("nutrition", null, {
+        preserveWorkspace: "keep_active_plan",
+      });
       setForcePicker(false);
-      await refreshFromServer();
     } finally {
       setRemoving(false);
     }
   };
 
   const ready = hydrated && serverChecked;
-
-  if (viewState === "ready" && onboardingGate !== "ready") {
-    return <CoachesLoadingSkeleton />;
-  }
 
   if (viewState === "locked") {
     return (
@@ -334,7 +372,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
   }
 
   if (canonicalCoach && !forcePicker) {
-    const dashboardReady = viewState === "ready" && ready;
+    const dashboardReady = viewState === "ready" && ready && onboardingGate === "ready";
     const nutritionPendingApproval = dashboard.effectiveNutritionPendingReview;
     const chatFabBottom = overlayHeight + 8;
     const chatFabHeight = 48;
@@ -464,7 +502,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
               onPress={() => {
                 Alert.alert(
                   "Remove coach?",
-                  "This will clear your workout and nutrition coach data.",
+                  "You’ll return to coach selection. Your saved setup stays available if you want to come back later.",
                   [
                     { text: "Cancel", style: "cancel" },
                     {
@@ -508,7 +546,7 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
     );
   }
 
-  if (viewState === "gating" || !ready) {
+  if (viewState === "gating" || !ready || onboardingGate !== "ready") {
     return <CoachesLoadingSkeleton />;
   }
 
@@ -587,6 +625,59 @@ export default function Coaches({ navigation }: CoachesScreenProps) {
           })}
         </View>
       </ScrollView>
+      <ModalSheet
+        visible={Boolean(pendingSwitchCoach)}
+        onRequestClose={() => {
+          if (saving) return;
+          setPendingSwitchCoach(null);
+        }}
+      >
+        <Text className="text-lg font-bold text-white">
+          {canonicalCoach
+            ? `Switch to ${pendingSwitchCoach?.displayName ?? "this coach"}?`
+            : `Start with ${pendingSwitchCoach?.displayName ?? "this coach"}?`}
+        </Text>
+        <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
+          {canonicalCoach
+            ? "You can keep your current plans and just change the coach voice, rebuild plans from your saved setup, or reopen onboarding to edit your setup first."
+            : "You already have a saved coaching setup. Keep it, rebuild plans from it, or reopen onboarding to edit it first."}
+        </Text>
+
+        <View className="mt-5 gap-3">
+          <Button
+            title="Keep Current Setup"
+            loading={saving}
+            onPress={() => {
+              if (!pendingSwitchCoach) return;
+              void persistCoachSelection(pendingSwitchCoach, { preservePrograms: true });
+            }}
+          />
+          <Button
+            title="Rebuild From Current Setup"
+            variant="secondary"
+            disabled={saving}
+            onPress={() => {
+              if (!pendingSwitchCoach) return;
+              openCoachRebuildFlow(pendingSwitchCoach, "review");
+            }}
+          />
+          <Button
+            title="Edit Setup First"
+            variant="outline"
+            disabled={saving}
+            onPress={() => {
+              if (!pendingSwitchCoach) return;
+              openCoachRebuildFlow(pendingSwitchCoach, "goal");
+            }}
+          />
+          <Button
+            title="Cancel"
+            variant="ghost"
+            disabled={saving}
+            onPress={() => setPendingSwitchCoach(null)}
+          />
+        </View>
+      </ModalSheet>
     </AppScreen>
   );
 }

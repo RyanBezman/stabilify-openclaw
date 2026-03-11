@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { coachPersonalityCopy } from "../models/personalityCopy";
 import { createInitialCoachOnboardingDraft } from "./models";
 import { validateCoachOnboardingStep } from "./validation";
 
@@ -21,5 +22,18 @@ describe("validateCoachOnboardingStep", () => {
 
     draft.body.sex = "other";
     expect(validateCoachOnboardingStep("sex", draft)).toBeNull();
+  });
+
+  it("accepts every shipped coach personality", () => {
+    const personalities = Object.keys(
+      coachPersonalityCopy,
+    ) as Array<keyof typeof coachPersonalityCopy>;
+
+    for (const personality of personalities) {
+      const draft = createInitialCoachOnboardingDraft();
+      draft.persona.personality = personality;
+
+      expect(validateCoachOnboardingStep("persona", draft)).toBeNull();
+    }
   });
 });

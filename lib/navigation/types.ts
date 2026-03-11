@@ -3,6 +3,8 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type {
   ActiveCoach,
   CoachGender,
+  CoachOnboardingGeneratedTracks,
+  CoachOnboardingStepId,
   CoachPersonality,
   CoachSpecialization,
 } from "../features/coaches";
@@ -20,7 +22,12 @@ export type AuthedTabParamList = {
     | undefined;
   Feed: { createdPost?: PostRow } | undefined;
   Search: undefined;
-  Coaches: { specialization?: CoachSpecialization } | undefined;
+  Coaches:
+    | {
+        specialization?: CoachSpecialization;
+        forcePicker?: boolean;
+      }
+    | undefined;
   Profile: undefined;
 };
 
@@ -55,12 +62,20 @@ export type RootStackParamList = {
   CoachOnboardingFlow:
     | {
         specialization?: CoachSpecialization;
+        prefillFromCurrentProfile?: boolean;
+        prefillCoachGender?: CoachGender;
+        prefillCoachPersonality?: CoachPersonality;
+        prefillPlanStart?: "workout" | "nutrition" | "both";
+        startAtStep?: CoachOnboardingStepId;
+        returnTo?: "today" | "coaches";
       }
     | undefined;
   CoachOnboardingResults: {
     planStart: "workout" | "nutrition" | "both";
     coachGender: CoachGender;
     coachPersonality: CoachPersonality;
+    generatedTracks: CoachOnboardingGeneratedTracks;
+    warning?: string;
   };
   CoachChat:
     | {

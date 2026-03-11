@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCoach } from "./CoachContext";
 import type { ActiveCoach } from "../types";
 import { hydrateCoachDashboard } from "../services/dashboard";
 import { fetchNutritionCheckins } from "../services/checkins";
-import { subscribeCoachSyncEvents } from "../services/syncEvents";
+import {
+  coachSyncIdentityKey,
+  subscribeCoachSyncEvents,
+} from "../services/syncEvents";
 import {
   computeAdherenceTrend,
   computeAdherenceTrendSummary,
@@ -38,17 +42,45 @@ export function useCoachDashboard(options: {
   hydrated: boolean;
   specialization?: "workout" | "nutrition";
 }) {
+  const { authUserId } = useCoach();
+  const surfaceSpecialization = options.specialization ?? options.coach?.specialization ?? "nutrition";
+  const surfaceCoachKey = useMemo(() => {
+    if (!options.coach) {
+      return `${surfaceSpecialization}:none`;
+    }
+    return `${surfaceSpecialization}:${options.coach.gender}:${options.coach.personality}`;
+  }, [
+    options.coach?.gender,
+    options.coach?.personality,
+    options.coach,
+    surfaceSpecialization,
+  ]);
+  const surfaceIdentityKey = `${authUserId ?? "guest"}:${surfaceCoachKey}`;
+  const syncEventCoachKey = useMemo(
+    () =>
+      options.coach
+        ? coachSyncIdentityKey({
+            specialization: surfaceSpecialization,
+            gender: options.coach.gender,
+            personality: options.coach.personality,
+          })
+        : null,
+    [options.coach, options.coach?.gender, options.coach?.personality, surfaceSpecialization]
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState<Awaited<ReturnType<typeof hydrateCoachDashboard>> | null>(null);
+  const [snapshotOwnerKey, setSnapshotOwnerKey] = useState<string | null>(null);
   const [optimisticNutritionPendingReview, setOptimisticNutritionPendingReview] = useState<boolean | null>(null);
   const [nutritionSyncing, setNutritionSyncing] = useState(false);
   const [analyticsSource, setAnalyticsSource] = useState<DashboardAnalyticsSource>(
     EMPTY_ANALYTICS_SOURCE
   );
+  const [analyticsOwnerKey, setAnalyticsOwnerKey] = useState<string | null>(null);
   const refreshRequestIdRef = useRef(0);
   const requestInFlightRef = useRef(false);
+  const surfaceIdentityRef = useRef(surfaceIdentityKey);
   const snapshotSignatureRef = useRef<string | null>(null);
   const analyticsSignatureRef = useRef(EMPTY_ANALYTICS_SIGNATURE);
 
@@ -56,6 +88,7 @@ export function useCoachDashboard(options: {
     if (requestInFlightRef.current && mode === "refresh") {
       return;
     }
+    const requestIdentity = surfaceIdentityKey;
     const requestId = refreshRequestIdRef.current + 1;
     refreshRequestIdRef.current = requestId;
     requestInFlightRef.current = true;
@@ -73,11 +106,13 @@ export function useCoachDashboard(options: {
     if (!options.hydrated || !options.coach) {
       snapshotSignatureRef.current = null;
       setSnapshot(null);
+      setSnapshotOwnerKey(null);
       setError(null);
       setOptimisticNutritionPendingReview(null);
       setNutritionSyncing(false);
       analyticsSignatureRef.current = EMPTY_ANALYTICS_SIGNATURE;
       setAnalyticsSource(EMPTY_ANALYTICS_SOURCE);
+      setAnalyticsOwnerKey(null);
       setLoading(false);
       setRefreshing(false);
       requestInFlightRef.current = false;
@@ -100,15 +135,19 @@ export function useCoachDashboard(options: {
       const [nextSnapshot, checkinsResult] = await Promise.all([
         hydrateCoachDashboard({
           coach: options.coach,
-          specialization: options.specialization ?? "nutrition",
+          specialization: surfaceSpecialization,
         }),
         fetchNutritionCheckins({
+          authUserId,
           coach: options.coach,
           limit: 8,
         }).catch(() => null),
       ]);
 
-      if (requestId !== refreshRequestIdRef.current) {
+      if (
+        requestId !== refreshRequestIdRef.current
+        || surfaceIdentityRef.current !== requestIdentity
+      ) {
         logCoachRequestDiagnostics({
           scope: "useCoachDashboard",
           requestId,
@@ -121,22 +160,26 @@ export function useCoachDashboard(options: {
       if (nextSnapshotSignature !== snapshotSignatureRef.current) {
         snapshotSignatureRef.current = nextSnapshotSignature;
         setSnapshot(nextSnapshot);
+        setSnapshotOwnerKey(surfaceIdentityKey);
       }
       setOptimisticNutritionPendingReview(null);
       setNutritionSyncing(false);
 
-      const nextAnalyticsSource = checkinsResult?.history.length
-        ? {
-            weekStarts: checkinsResult.history.map((entry) => entry.weekStart),
-            adherenceScores: checkinsResult.history.map(
-              (entry) => entry.adherenceScore ?? entry.adherencePercent
-            ),
-          }
-        : EMPTY_ANALYTICS_SOURCE;
-      const nextAnalyticsSignature = getSignature(nextAnalyticsSource);
-      if (nextAnalyticsSignature !== analyticsSignatureRef.current) {
-        analyticsSignatureRef.current = nextAnalyticsSignature;
-        setAnalyticsSource(nextAnalyticsSource);
+      if (checkinsResult) {
+        const nextAnalyticsSource = checkinsResult.history.length
+          ? {
+              weekStarts: checkinsResult.history.map((entry) => entry.weekStart),
+              adherenceScores: checkinsResult.history.map(
+                (entry) => entry.adherenceScore ?? entry.adherencePercent
+              ),
+            }
+          : EMPTY_ANALYTICS_SOURCE;
+        const nextAnalyticsSignature = getSignature(nextAnalyticsSource);
+        if (nextAnalyticsSignature !== analyticsSignatureRef.current) {
+          analyticsSignatureRef.current = nextAnalyticsSignature;
+          setAnalyticsSource(nextAnalyticsSource);
+          setAnalyticsOwnerKey(surfaceIdentityKey);
+        }
       }
 
       logCoachRequestDiagnostics({
@@ -145,7 +188,10 @@ export function useCoachDashboard(options: {
         phase: "success",
       });
     } catch (err) {
-      if (requestId !== refreshRequestIdRef.current) {
+      if (
+        requestId !== refreshRequestIdRef.current
+        || surfaceIdentityRef.current !== requestIdentity
+      ) {
         logCoachRequestDiagnostics({
           scope: "useCoachDashboard",
           requestId,
@@ -164,13 +210,31 @@ export function useCoachDashboard(options: {
         },
       });
     } finally {
-      if (requestId === refreshRequestIdRef.current) {
+      if (
+        requestId === refreshRequestIdRef.current
+        && surfaceIdentityRef.current === requestIdentity
+      ) {
         setLoading(false);
         setRefreshing(false);
         requestInFlightRef.current = false;
       }
     }
-  }, [options.coach, options.hydrated, options.specialization]);
+  }, [authUserId, options.coach, options.hydrated, surfaceIdentityKey, surfaceSpecialization]);
+
+  useEffect(() => {
+    surfaceIdentityRef.current = surfaceIdentityKey;
+    refreshRequestIdRef.current += 1;
+    requestInFlightRef.current = false;
+    snapshotSignatureRef.current = null;
+    analyticsSignatureRef.current = EMPTY_ANALYTICS_SIGNATURE;
+    setSnapshot(null);
+    setSnapshotOwnerKey(null);
+    setError(null);
+    setOptimisticNutritionPendingReview(null);
+    setNutritionSyncing(false);
+    setAnalyticsSource(EMPTY_ANALYTICS_SOURCE);
+    setAnalyticsOwnerKey(null);
+  }, [surfaceIdentityKey]);
 
   useEffect(() => {
     void refresh("load");
@@ -179,6 +243,12 @@ export function useCoachDashboard(options: {
   useEffect(() => {
     const unsubscribe = subscribeCoachSyncEvents((event) => {
       if (!options.hydrated || !options.coach) {
+        return;
+      }
+      if (event.authUserId !== authUserId) {
+        return;
+      }
+      if (!syncEventCoachKey || event.coachIdentityKey !== syncEventCoachKey) {
         return;
       }
 
@@ -197,59 +267,64 @@ export function useCoachDashboard(options: {
     });
 
     return unsubscribe;
-  }, [options.coach, options.hydrated, refresh]);
+  }, [authUserId, options.coach, options.hydrated, refresh, syncEventCoachKey]);
+
+  const currentSnapshot = snapshotOwnerKey === surfaceIdentityKey ? snapshot : null;
+  const currentAnalyticsSource = analyticsOwnerKey === surfaceIdentityKey
+    ? analyticsSource
+    : EMPTY_ANALYTICS_SOURCE;
 
   const effectiveNutritionPendingReview = useMemo(() => {
     if (optimisticNutritionPendingReview !== null) {
       return optimisticNutritionPendingReview;
     }
-    return Boolean(snapshot?.nutrition.planUpdatedForReview);
-  }, [optimisticNutritionPendingReview, snapshot?.nutrition.planUpdatedForReview]);
+    return Boolean(currentSnapshot?.nutrition.planUpdatedForReview);
+  }, [currentSnapshot?.nutrition.planUpdatedForReview, optimisticNutritionPendingReview]);
 
   const analytics = useMemo(() => {
     const nowLocal = formatLocalDate(new Date(), getLocalTimeZone());
     const { weekStart } = getWeekRange(nowLocal);
 
     const streakFromHistory = computeWeeklyCheckinStreak(
-      analyticsSource.weekStarts,
+      currentAnalyticsSource.weekStarts,
       weekStart
     );
     const completion = computeCompletionRate(
-      analyticsSource.weekStarts,
+      currentAnalyticsSource.weekStarts,
       weekStart,
       8
     );
     const adherenceTrend = computeAdherenceTrend(
-      analyticsSource.adherenceScores,
+      currentAnalyticsSource.adherenceScores,
       8
     );
 
     return {
-      streak: snapshot?.weeklyCheckin.streak ?? streakFromHistory,
+      streak: currentSnapshot?.weeklyCheckin.streak ?? streakFromHistory,
       completionRate: completion.percent,
       adherenceTrend,
-      nextWeekAdherenceDelta: snapshot?.weeklyCheckin.nextWeekAdherenceDelta ?? null,
+      nextWeekAdherenceDelta: currentSnapshot?.weeklyCheckin.nextWeekAdherenceDelta ?? null,
     };
-  }, [analyticsSource.adherenceScores, analyticsSource.weekStarts, snapshot]);
+  }, [currentAnalyticsSource.adherenceScores, currentAnalyticsSource.weekStarts, currentSnapshot]);
 
   const weeklyRecap = useMemo(() => {
-    const trendSummary = computeAdherenceTrendSummary(analyticsSource.adherenceScores);
+    const trendSummary = computeAdherenceTrendSummary(currentAnalyticsSource.adherenceScores);
 
     return {
-      checkinCompleted: snapshot ? !snapshot.weeklyCheckin.isDue : false,
-      planAcceptedThisWeek: snapshot?.weeklyCheckin.planAcceptedThisWeek ?? null,
+      checkinCompleted: currentSnapshot ? !currentSnapshot.weeklyCheckin.isDue : false,
+      planAcceptedThisWeek: currentSnapshot?.weeklyCheckin.planAcceptedThisWeek ?? null,
       adherenceTrendDirection: trendSummary.direction,
       adherenceTrendDelta: trendSummary.delta,
-      cta: snapshot?.weeklyCheckin.cta ?? "Do weekly check-in",
-      nextDueLabel: snapshot?.weeklyCheckin.nextDueLabel ?? "Sunday",
+      cta: currentSnapshot?.weeklyCheckin.cta ?? "Do weekly check-in",
+      nextDueLabel: currentSnapshot?.weeklyCheckin.nextDueLabel ?? "Sunday",
     };
-  }, [analyticsSource.adherenceScores, snapshot]);
+  }, [currentAnalyticsSource.adherenceScores, currentSnapshot]);
 
   const loadingState = deriveSurfaceLoadState({
-    blockingLoad: loading && !snapshot,
+    blockingLoad: loading && !currentSnapshot,
     hydrated: options.hydrated,
-    refreshing: refreshing && Boolean(snapshot),
-    hasUsableSnapshot: Boolean(snapshot),
+    refreshing: refreshing && Boolean(currentSnapshot),
+    hasUsableSnapshot: Boolean(currentSnapshot),
     mutating: false,
   });
 
@@ -261,7 +336,7 @@ export function useCoachDashboard(options: {
     hasUsableSnapshot: loadingState.hasUsableSnapshot,
     mutating: loadingState.mutating,
     error,
-    snapshot,
+    snapshot: currentSnapshot,
     analytics,
     weeklyRecap,
     refresh,

@@ -2,6 +2,36 @@
 
 Record every analytics add/change/remove here. Do not delete prior entries.
 
+## 2026-03-10 - Coach funnel idempotent analytics writes avoid duplicate 409s
+
+### Added
+- Regression coverage for coach funnel analytics persistence:
+  - idempotent events perform a duplicate lookup before insert
+  - non-idempotent events still use plain `insert(...)`
+
+### Changed
+- Updated coach funnel analytics writes to check for an existing `user_id + idempotency_key` row before insert whenever an `idempotency_key` is present.
+- This prevents repeated `checkin_opened`, `plan_review_opened`, and `next_checkin_submitted` writes from surfacing HTTP `409` conflicts in browser console logs during normal revisits.
+
+### Removed
+- None.
+
+### Affected Files
+- `lib/features/coaches/services/funnelTracking.ts`
+- `lib/features/coaches/services/funnelTracking.test.ts`
+- `docs/analytics/event-registry.md`
+- `docs/analytics/tracking-changelog.md`
+
+### SQL / DB Objects
+- `public.analytics_events`
+- unique index: `analytics_events_user_idempotency_key_uniq`
+
+### Validation
+- [x] Event registry updated.
+- [x] Event names in docs match instrumentation code.
+- [x] Required dimensions documented as mandatory.
+- [x] Idempotent write behavior documented.
+
 ## 2026-03-04 - Gym validation stale-expiry instrumentation hardening
 
 ### Added

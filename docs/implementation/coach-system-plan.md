@@ -83,10 +83,24 @@ Last updated: 2026-03-10
 - `CoachOnboardingFlow` is the required pre-workspace intake surface for Pro users missing `coach_user_profiles.profile_json` required fields.
 - Coach onboarding body profile includes explicit `sex` selection (`male | female | other`) plus defaulted height/weight values (`5'5"`, `170 lb`) that are valid without manual picker movement.
 - Onboarding submission writes `coach_user_profiles`, sets unified persona selection, and triggers initial workout + nutrition plan generation via `coach-chat` (`plan_generate`).
+- Onboarding must persist `coach_user_profiles.profile_json` before saving the unified coach selection. A profile-write failure cannot leave the server pointing at a newly selected coach while the client still treats onboarding as failed.
+- Onboarding generation is commit-first for the saved coach/profile state: if one or both requested tracks fail to generate, onboarding still completes, returns explicit per-track generated state, and routes into `CoachOnboardingResults` with a warning instead of leaving client state behind server state.
 - `CoachOnboardingResults` is the post-submit review surface that shows both Training + Nutrition outcomes and routes into per-track plan views/intake.
+- `CoachOnboardingResults` reads explicit per-track generated booleans from the onboarding workflow result instead of assuming the requested `planStart` fully succeeded.
+- `CoachOnboardingResults` snapshot hydration must prefer generated nutrition results when available, but fall back to workout snapshot loading when nutrition is unavailable so a partial success never renders as a full-screen error.
 - `CoachWorkspace` is now the canonical plan + chat surface.
+- `CoachWorkspace` and `CoachProfile` resolve the selected coach from live `CoachContext` state once hydration settles. `CoachWorkspace` may temporarily use an explicit route coach during initial entry or explicit intake/draft launch so the shell can load immediately, but stale route params must never override the hydrated active selection.
 - `CoachCheckins` now runs as an overview + wizard split: overview holds history/current-week preview; wizard handles the active weekly check-in steps and review.
 - `CoachChat` is a compatibility shim that redirects to `CoachWorkspace` with `tab: "chat"` and carries `prefill`.
+- Coach switching is a three-path flow whenever a saved coaching profile already exists:
+  - `Keep current setup`: update unified coach identity, preserve accepted plan state and intake, clear chat thread and draft state.
+  - `Rebuild from current setup`: open `CoachOnboardingFlow` prefilled from `coach_user_profiles.profile_json`, jump to review, and regenerate drafts.
+  - `Edit setup first`: open `CoachOnboardingFlow` prefilled from `coach_user_profiles.profile_json` at the first editable step.
+- Coach removal clears the active unified coach selection but intentionally preserves saved plan/intake state locally so a later `Keep current setup` selection can reattach without forcing onboarding.
+- Coach removal must clear workout + nutrition selection as one logical unit. If one server-side clear fails after the other succeeds, the previous unified selection must be restored before the error is surfaced so the server never remains half-cleared.
+- `Keep current setup` must preserve server-side thread state too: copy the accepted active plan and thread intake onto the newly selected coach thread, clear draft plans on both source/target threads, and clear target-thread chat history so the next workspace hydrate and future chat revisions stay aligned.
+- `Keep current setup` must only run destructive server-side preserve mutations after the unified coach selection has been saved successfully. If preserve fails after the switch, the client attempts to restore the previous active-coach selection before surfacing the error.
+- Unified coach linking must clear any stale nutrition selection if the workout half saves but the nutrition half fails. A warning state cannot leave an old nutrition coach attached on the server.
 - Voice recording/transcription/synthesis orchestration is consolidated in `lib/features/coaches/hooks/useCoachVoiceComposer.ts` and consumed by workspace chat pane.
 - Coach UI decomposition is anchored under:
   - `components/coaches/workspace/*`
@@ -122,6 +136,7 @@ export type UserProfile = {
     sessionMinutes: 30 | 45 | 60 | 75 | 90;
     notes?: string;
   };
+  trainingNotes?: string;
   updatedAt: string;
 };
 
@@ -257,6 +272,15 @@ export type CoachMessage = {
 
 ### State classification
 - Durable DB state: active coach identity, coach user profile artifact, plan versions, weekly check-ins, adjustment recommendations, coach messages.
+- Durable local cache: SQLite coach workspace cache is keyed by authenticated user id and must never hydrate coach identity, plans, intake, or messages across accounts on the same device. Legacy unscoped cache must be discarded during migration instead of being reassigned to the current user.
+- Detaching an active coach must preserve accepted plan/intake cache when explicitly requested by the remove/switch flow, while still clearing active coach identity, chat messages, and draft state so stale chat does not appear under a new persona.
+- Ephemeral in-memory cache: weekly check-in hook payload caches must also be keyed by authenticated user id in addition to coach persona so same-coach accounts on one device never inherit another account's history, current check-in, or derived form state.
+- Background coach workspace prefetches must only seed local cache if the same auth user and same active coach are still current when the async fetch resolves; stale prefetch results from a previous coach selection must be dropped.
+- Mounted coach workspace state must be invalidated on coach identity changes before the next hydrate runs; prior coach thread ids, plans, messages, and draft state cannot stay mounted while a new same-specialization coach loads.
+- Mounted workspace mutations must also be session-scoped. If a coach switch happens while chat, plan generation, draft promotion, or draft discard requests are in flight, late results from the previous coach must be ignored instead of rehydrating stale plan/chat state into the new coach session.
+- Coach sync events must be scoped by authenticated user id and coach identity. Weekly check-in listeners must also rewrite their in-memory cache when a nutrition draft is resolved so pending-review state cannot reappear after remount.
+- Coach dashboard listeners must key sync events to the rendered surface specialization, not the raw specialization on an arbitrary passed coach object. The shared Coaches dashboard is nutrition-driven, so it must subscribe to the nutrition coach identity even when the UI also has a workout coach selected.
+- Coach chat/check-in retry repairs must stay pinned to the auth user that started the request; they must never re-resolve the current session mid-retry and mutate a different account's coach selection.
 - Versioned state: workout plan versions, nutrition target versions, optional meal plan versions, linked version refs on each check-in.
 - Transient state: chat draft text, in-flight coordinator reasoning, short prompt context window, UI-only form partials.
 

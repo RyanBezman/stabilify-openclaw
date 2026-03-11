@@ -1,5 +1,27 @@
 # Product Policy Change Log
 
+## 2026-03-10 - Coach switching keeps saved setup
+
+### Added
+
+- Coach switching chooser policy:
+  - when a saved coaching setup exists, switching to another coach offers `Keep current setup`, `Rebuild from current setup`, and `Edit setup first`.
+- Coach removal preservation policy:
+  - removing a coach returns the user to coach selection without erasing the saved coaching setup.
+
+### Changed
+
+- Coach persona selection policy:
+  - all six personas must remain selectable in both onboarding and the coach picker.
+
+### Removed
+
+- Implicit destructive coach switching that silently replaced plans/chat without an explicit choice.
+
+### Notes
+
+- `Keep current setup` is intended as a voice/persona swap while preserving accepted plans and the saved coaching profile.
+
 ## 2026-03-10 - Weekly check-in wizard polish
 
 ### Added

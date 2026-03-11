@@ -2,11 +2,15 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import type { ScrollView, TextInput } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import useAssistantReveal from "../../../../components/chat/useAssistantReveal";
-import { setActiveCoachOnServer } from "../services/api";
+import { useCoach } from "./CoachContext";
 import { invokeCoachChat } from "../services/chatClient";
+import { invokeCoachChatWithActiveCoachRecovery } from "../services/activeCoachRecovery";
 import { trackPlanDecisionMadeEvent } from "../services/funnelTracking";
 import { saveCoachState } from "../services/storage";
-import { publishCoachSyncEvent } from "../services/syncEvents";
+import {
+  coachSyncIdentityKey,
+  publishCoachSyncEvent,
+} from "../services/syncEvents";
 import type { CoachWorkspaceState } from "../models/workspaceState";
 import {
   discardDraftWorkflow,
@@ -17,7 +21,6 @@ import {
   sendCoachMessageWorkflow,
   type CoachWorkspaceMutationPayload,
 } from "../workflows";
-import { fetchCurrentUserId } from "../../auth";
 import {
   deriveSurfaceLoadState,
   isAsyncWorkflowBusy,
@@ -31,23 +34,23 @@ import {
   defaultIntake,
   defaultNutritionIntake,
   isNutritionIntake,
-  isNutritionPlan,
   isWorkoutIntake,
   isWorkoutPlan,
   normalizeNutritionIntake,
   sleep,
 } from "../models/workspaceHelpers";
 import { logCoachRequestDiagnostics } from "../models/devDiagnostics";
+import { deriveWorkspacePlanView } from "../models/workspacePlanView";
 import type {
   ChatMessage,
   CoachIntake,
   CoachPlan,
   NutritionGoal,
   NutritionIntake,
-  PlanStatus,
   WorkspaceTab,
   WorkoutIntake,
 } from "../types/workspaceTypes";
+import { useCoachWorkspacePlanState } from "./useCoachWorkspacePlanState";
 
 export function useCoachWorkspace({
   coach,
@@ -62,6 +65,11 @@ export function useCoachWorkspace({
   userTier,
   onTierRequired,
 }: UseCoachWorkspaceOptions) {
+  const { authUserId } = useCoach();
+  const coachIdentityKey = coach
+    ? `${specialization}:${coach.gender}:${coach.personality}`
+    : `${specialization}:none`;
+  const syncEventCoachKey = coachSyncIdentityKey(coach);
   const clampDays = useCallback(
     (value: number) => Math.max(1, Math.min(7, Math.round(value))),
     []
@@ -90,13 +98,7 @@ export function useCoachWorkspace({
   const [historyChecked, setHistoryChecked] = useState(false);
   const [workspaceSeeded, setWorkspaceSeeded] = useState(false);
   const [planApiUnavailable, setPlanApiUnavailable] = useState(false);
-  const [planStage, setPlanStage] = useState<"idle" | "sending" | "modeling" | "persisting" | "done">("idle");
-  const [planLoadingAction, setPlanLoadingAction] = useState<
-    "generate" | "revise_days" | "promote" | "discard" | null
-  >(null);
-  const [planSuccessChip, setPlanSuccessChip] = useState<string | null>(null);
   const [defaultNutritionGoal, setDefaultNutritionGoal] = useState<NutritionGoal>("maintain");
-  const chipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openIntakeHandledRef = useRef(false);
   const openDraftHandledRef = useRef(false);
   const prefillHandledRef = useRef(false);
@@ -104,7 +106,8 @@ export function useCoachWorkspace({
   const hydrateRequestIdRef = useRef(0);
   const hydrateWorkspaceRef = useRef<() => Promise<void>>(async () => {});
   const hasHandledInitialFocusRef = useRef(false);
-  const workspaceRequestInFlightRef = useRef(false);
+  const workspaceRequestInFlightRef = useRef<number | null>(null);
+  const workspaceSessionTokenRef = useRef(0);
 
   const [composerHeight, setComposerHeight] = useState(0);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -128,44 +131,56 @@ export function useCoachWorkspace({
     [coach?.gender, coach?.personality]
   );
 
-  const hasAnyPlan = Boolean(activePlan || draftPlan);
-  const displayedPlan = useMemo(() => {
-    if (showDraftInPlan && draftPlan) return draftPlan;
-    if (!activePlan && draftPlan) return draftPlan;
-    return activePlan;
-  }, [activePlan, draftPlan, showDraftInPlan]);
-
-  const displayedPlanKind: "current" | "new" | "none" = useMemo(() => {
-    if (!displayedPlan) return "none";
-    if (activePlan && displayedPlan === activePlan) return "current";
-    return "new";
-  }, [activePlan, displayedPlan]);
-
-  const planBadge = useMemo<PlanStatus>(() => {
-    if (activePlan) return "active";
-    if (draftPlan) return "draft";
-    return "none";
-  }, [activePlan, draftPlan]);
-
-  const hasToggle = Boolean(activePlan && draftPlan);
-  const displayedWorkoutPlan = isWorkoutPlan(displayedPlan) ? displayedPlan : null;
-  const displayedNutritionPlan = isNutritionPlan(displayedPlan) ? displayedPlan : null;
-  const workoutActivePlan = isWorkoutPlan(activePlan) ? activePlan : null;
-  const workoutDraftPlan = isWorkoutPlan(draftPlan) ? draftPlan : null;
-  const nutritionActivePlan = isNutritionPlan(activePlan) ? activePlan : null;
-  const nutritionDraftPlan = isNutritionPlan(draftPlan) ? draftPlan : null;
-  const workoutIntake = isWorkoutIntake(intake) ? intake : defaultIntake;
-  const nutritionIntake = useMemo(() => {
-    const base = isNutritionIntake(intake) ? intake : defaultNutritionIntake;
-    return {
-      ...base,
-      goal: base.goal ?? defaultNutritionGoal,
-    };
-  }, [defaultNutritionGoal, intake]);
+  const {
+    displayedPlanKind,
+    displayedNutritionPlan,
+    displayedWorkoutPlan,
+    hasAnyPlan,
+    hasToggle,
+    nutritionActivePlan,
+    nutritionDraftPlan,
+    nutritionIntake,
+    planBadge,
+    workoutActivePlan,
+    workoutDraftPlan,
+    workoutIntake,
+  } = useMemo(
+    () =>
+      deriveWorkspacePlanView({
+        activePlan,
+        defaultNutritionGoal,
+        draftPlan,
+        intake,
+        showDraftInPlan,
+      }),
+    [activePlan, defaultNutritionGoal, draftPlan, intake, showDraftInPlan],
+  );
 
   const scrollToBottom = useCallback((animated = true) => {
     chatScrollRef.current?.scrollToEnd({ animated });
   }, []);
+  const {
+    beginPlanLoading,
+    closePlanLoadingForSession,
+    inlinePlanLoadingAction,
+    planBusy,
+    planLoadingAction,
+    planLoadingVisible,
+    planStage,
+    planSuccessChip,
+    resetPlanState,
+    setPlanStage,
+    showInlinePlanLoading,
+    showPlanSuccess,
+  } = useCoachWorkspacePlanState({
+    onPlanStart: () => {
+      dispatchAsync({ type: "plan/start" });
+    },
+    onPlanSuccess: () => {
+      dispatchAsync({ type: "plan/succeed" });
+    },
+    workspaceSessionTokenRef,
+  });
 
   const workspaceBusy =
     (Boolean(coach) && (!hydrated || !historyChecked)) || isAsyncWorkflowBusy(asyncState.workspace);
@@ -179,7 +194,6 @@ export function useCoachWorkspace({
   const workspaceLoading = loadingState.blockingLoad || loadingState.refreshing;
   const workspaceSkeletonVisible = loadingState.blockingLoad;
   const sending = isAsyncWorkflowBusy(asyncState.send);
-  const planLoadingVisible = planStage !== "idle";
   const syncError = asyncState.workspace.error;
   const sendError = asyncState.send.error;
   const planError = asyncState.plan.error;
@@ -200,57 +214,21 @@ export function useCoachWorkspace({
       baseCps: 45,
     });
   const assistantBusy = sending || Boolean(revealingMessageId);
-  const planBusy = planLoadingVisible;
-  const inlinePlanLoadingAction =
-    planLoadingVisible && (planLoadingAction === "generate" || planLoadingAction === "revise_days")
-      ? planLoadingAction
-      : null;
-  const showInlinePlanLoading = Boolean(inlinePlanLoadingAction);
   const invokeCoachChatWithRecovery = useCallback(
     async (body: Record<string, unknown>) => {
-      try {
-        return await invokeCoachChat(body);
-      } catch (error) {
-        if (!coach) throw error;
-        const raw = String((error as Error)?.message ?? error);
-        if (!raw.includes("No active coach selected")) throw error;
-
-        const authResult = await fetchCurrentUserId();
-        const userId = authResult.data?.userId;
-        if (authResult.error || !userId) throw error;
-
-        const repair = await setActiveCoachOnServer(userId, specialization, coach);
-        if (repair.error) throw new Error(repair.error ?? "Couldn't repair active coach.");
-        try {
-          return await invokeCoachChat(body);
-        } catch (retryError) {
-          const retryRaw = String((retryError as Error)?.message ?? retryError);
-          if (!retryRaw.includes("No active coach selected")) throw retryError;
-          throw new Error(
-            "No active coach could be resolved after re-saving your selection. This usually means Supabase migrations or the coach-chat function are out of date. Run DB migration + deploy coach-chat, then retry."
-          );
-        }
-      }
+      return invokeCoachChatWithActiveCoachRecovery({
+        authUserId,
+        body,
+        coach,
+        invokeCoachChat,
+        repairFailureMessage: "Couldn't repair active coach.",
+        specialization,
+        unresolvedCoachMessage:
+          "No active coach could be resolved after re-saving your selection. This usually means Supabase migrations or the coach-chat function are out of date. Run DB migration + deploy coach-chat, then retry.",
+      });
     },
-    [coach, specialization]
+    [authUserId, coach, specialization]
   );
-
-  useEffect(() => {
-    return () => {
-      if (chipTimerRef.current) {
-        clearTimeout(chipTimerRef.current);
-      }
-    };
-  }, []);
-
-  const showPlanSuccess = useCallback((message: string) => {
-    if (chipTimerRef.current) clearTimeout(chipTimerRef.current);
-    setPlanSuccessChip(message);
-    chipTimerRef.current = setTimeout(() => {
-      setPlanSuccessChip(null);
-      chipTimerRef.current = null;
-    }, 2000);
-  }, []);
 
   const updateWorkoutIntake = useCallback((partial: Partial<WorkoutIntake>) => {
     setIntake((prev) => ({
@@ -275,24 +253,10 @@ export function useCoachWorkspace({
     setShowIntake(true);
   }, [isWorkout]);
 
-  const beginPlanLoading = useCallback(
-    (action: "generate" | "revise_days" | "promote" | "discard" | null) => {
-      dispatchAsync({ type: "plan/start" });
-      setPlanLoadingAction(action);
-      setPlanStage("sending");
-    },
+  const isCurrentWorkspaceSession = useCallback(
+    (sessionToken: number) => sessionToken === workspaceSessionTokenRef.current,
     []
   );
-
-  const closePlanLoading = useCallback(async (success: boolean, doneDelayMs = 200) => {
-    if (success) {
-      dispatchAsync({ type: "plan/succeed" });
-      setPlanStage("done");
-      await sleep(doneDelayMs);
-    }
-    setPlanStage("idle");
-    setPlanLoadingAction(null);
-  }, []);
 
   useEffect(() => {
     setTab(initialTab);
@@ -307,7 +271,10 @@ export function useCoachWorkspace({
   }, [openIntakeOnMount, openPlanIntake, tab]);
 
   useEffect(() => {
+    workspaceSessionTokenRef.current += 1;
     hydrateRequestIdRef.current += 1;
+    workspaceRequestInFlightRef.current = null;
+    setThreadId(null);
     setShowIntake(false);
     setRequiresPlanFeedbackChoice(
       specialization === "nutrition" && requirePlanFeedbackChoice
@@ -318,10 +285,15 @@ export function useCoachWorkspace({
     setActivePlan(null);
     setDraftPlan(null);
     setMessages([]);
+    setShowScrollToBottom(false);
     setHistoryChecked(false);
     setWorkspaceSeeded(false);
+    setPlanApiUnavailable(false);
+    setIntakeStep(1);
     setIntake(specialization === "nutrition" ? defaultNutritionIntake : defaultIntake);
     setDefaultNutritionGoal("maintain");
+    setDraft("");
+    lastSendRef.current = null;
     openIntakeHandledRef.current = false;
     openDraftHandledRef.current = false;
     skipCachedSeedForDraftOpenRef.current = Boolean(openDraftOnMount);
@@ -329,9 +301,15 @@ export function useCoachWorkspace({
     dispatchAsync({ type: "workspace/reset" });
     dispatchAsync({ type: "send/reset" });
     dispatchAsync({ type: "plan/reset" });
-    setPlanStage("idle");
-    setPlanLoadingAction(null);
-  }, [openDraftOnMount, requirePlanFeedbackChoice, specialization]);
+    resetPlanState();
+  }, [
+    authUserId,
+    coachIdentityKey,
+    openDraftOnMount,
+    requirePlanFeedbackChoice,
+    resetPlanState,
+    specialization,
+  ]);
 
   useEffect(() => {
     if (!openDraftOnMount) return;
@@ -365,10 +343,11 @@ export function useCoachWorkspace({
           intake: next.intake,
           messages: next.messages,
         },
-        specialization
+        specialization,
+        authUserId
       );
     },
-    [coach, specialization]
+    [authUserId, coach, specialization]
   );
 
   const applyWorkspaceMutation = useCallback(
@@ -425,10 +404,10 @@ export function useCoachWorkspace({
 
   const hydrateWorkspace = useCallback(async () => {
     if (!coach || !hydrated) return;
-    if (workspaceRequestInFlightRef.current) return;
+    if (workspaceRequestInFlightRef.current !== null) return;
     const requestId = hydrateRequestIdRef.current + 1;
     hydrateRequestIdRef.current = requestId;
-    workspaceRequestInFlightRef.current = true;
+    workspaceRequestInFlightRef.current = requestId;
     logCoachRequestDiagnostics({
       scope: "useCoachWorkspace/hydrate",
       requestId,
@@ -445,6 +424,7 @@ export function useCoachWorkspace({
     let didSucceed = false;
     try {
       const workflowResult = await hydrateCoachWorkspaceWorkflow({
+        authUserId,
         coach,
         specialization,
         hydrated,
@@ -547,7 +527,7 @@ export function useCoachWorkspace({
         setShowDraftInPlan(true);
       }
     } finally {
-      if (requestId === hydrateRequestIdRef.current) {
+      if (workspaceRequestInFlightRef.current === requestId) {
         if (didSucceed) {
           setHistoryChecked(true);
           setWorkspaceSeeded(true);
@@ -557,11 +537,12 @@ export function useCoachWorkspace({
             phase: "success",
           });
         }
-        workspaceRequestInFlightRef.current = false;
+        workspaceRequestInFlightRef.current = null;
       }
     }
   }, [
     applyWorkspaceMutation,
+    authUserId,
     clampDays,
     coach,
     coachIdentityPayload,
@@ -579,12 +560,12 @@ export function useCoachWorkspace({
 
   useEffect(() => {
     hasHandledInitialFocusRef.current = false;
-  }, [coach?.gender, coach?.personality, hydrated, specialization]);
+  }, [coachIdentityKey, hydrated]);
 
   useEffect(() => {
     if (!coach || !hydrated) return;
     void hydrateWorkspace();
-  }, [coach?.gender, coach?.personality, hydrated, specialization]);
+  }, [coachIdentityKey, hydrated, hydrateWorkspace]);
 
   useFocusEffect(
     useCallback(() => {
@@ -594,7 +575,7 @@ export function useCoachWorkspace({
         return;
       }
       void hydrateWorkspaceRef.current();
-    }, [coach?.gender, coach?.personality, hydrated, specialization])
+    }, [coachIdentityKey, coach, hydrated])
   );
 
   useEffect(() => {
@@ -625,6 +606,7 @@ export function useCoachWorkspace({
 
   const generatePlan = useCallback(async () => {
     if (!coach) return;
+    const sessionToken = workspaceSessionTokenRef.current;
     const nutritionPayload = isWorkout
       ? null
       : isNutritionIntake(intake)
@@ -650,6 +632,7 @@ export function useCoachWorkspace({
       : nutritionPayload!;
 
     await sleep(180);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     setPlanStage("modeling");
     const modelingStartedAt = Date.now();
     const workflowResult = await generatePlanWorkflow({
@@ -664,11 +647,12 @@ export function useCoachWorkspace({
       currentThreadId: threadId,
       defaultIntake,
     });
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
 
     if (workflowResult.status === "tier_required") {
       onTierRequired?.();
       dispatchAsync({ type: "plan/reset" });
-      await closePlanLoading(false);
+      await closePlanLoadingForSession(sessionToken, false);
       return;
     }
 
@@ -680,21 +664,25 @@ export function useCoachWorkspace({
       ) {
         setPlanApiUnavailable(true);
       }
-      await closePlanLoading(false);
+      await closePlanLoadingForSession(sessionToken, false);
       return;
     }
 
     const modelingElapsed = Date.now() - modelingStartedAt;
     if (modelingElapsed < 1000) {
       await sleep(1000 - modelingElapsed);
+      if (!isCurrentWorkspaceSession(sessionToken)) return;
     }
     setPlanStage("persisting");
     await sleep(700);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     setPlanApiUnavailable(false);
     await applyWorkspaceMutation(workflowResult.payload);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     showPlanSuccess(`Draft generated by ${coach.displayName}`);
     setTab("plan");
-    await closePlanLoading(true, 700);
+    await closePlanLoadingForSession(sessionToken, true, 700);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     setShowIntake(false);
     if (isWorkout) setShowDaysRevision(false);
     setShowDraftInPlan(true);
@@ -702,13 +690,14 @@ export function useCoachWorkspace({
     activePlan,
     applyWorkspaceMutation,
     beginPlanLoading,
-    closePlanLoading,
+    closePlanLoadingForSession,
     coach,
     coachIdentityPayload,
     defaultNutritionGoal,
     draftPlan,
     intake,
     invokeCoachChatWithRecovery,
+    isCurrentWorkspaceSession,
     isWorkout,
     onTierRequired,
     planType,
@@ -719,8 +708,10 @@ export function useCoachWorkspace({
 
   const revisePlanDays = useCallback(async () => {
     if (!coach || !hasAnyPlan || !isWorkout) return;
+    const sessionToken = workspaceSessionTokenRef.current;
     beginPlanLoading("revise_days");
     await sleep(180);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     setPlanStage("modeling");
     const modelingStartedAt = Date.now();
     const workflowResult = await revisePlanWorkflow({
@@ -735,11 +726,12 @@ export function useCoachWorkspace({
       currentThreadId: threadId,
       defaultIntake,
     });
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
 
     if (workflowResult.status === "tier_required") {
       onTierRequired?.();
       dispatchAsync({ type: "plan/reset" });
-      await closePlanLoading(false);
+      await closePlanLoadingForSession(sessionToken, false);
       return;
     }
 
@@ -751,21 +743,25 @@ export function useCoachWorkspace({
       ) {
         setPlanApiUnavailable(true);
       }
-      await closePlanLoading(false);
+      await closePlanLoadingForSession(sessionToken, false);
       return;
     }
 
     const modelingElapsed = Date.now() - modelingStartedAt;
     if (modelingElapsed < 1000) {
       await sleep(1000 - modelingElapsed);
+      if (!isCurrentWorkspaceSession(sessionToken)) return;
     }
     setPlanStage("persisting");
     await sleep(700);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     setPlanApiUnavailable(false);
     await applyWorkspaceMutation(workflowResult.payload);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     showPlanSuccess(`Draft generated by ${coach.displayName}`);
     setTab("plan");
-    await closePlanLoading(true, 700);
+    await closePlanLoadingForSession(sessionToken, true, 700);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     setShowDaysRevision(false);
     setShowDraftInPlan(true);
   }, [
@@ -773,13 +769,14 @@ export function useCoachWorkspace({
     applyWorkspaceMutation,
     beginPlanLoading,
     clampDays,
-    closePlanLoading,
+    closePlanLoadingForSession,
     coach,
     coachIdentityPayload,
     draftPlan,
     hasAnyPlan,
     intake,
     invokeCoachChatWithRecovery,
+    isCurrentWorkspaceSession,
     isWorkout,
     onTierRequired,
     pendingDaysPerWeek,
@@ -791,8 +788,10 @@ export function useCoachWorkspace({
 
   const promoteDraftPlan = useCallback(async () => {
     if (!draftPlan) return;
+    const sessionToken = workspaceSessionTokenRef.current;
     beginPlanLoading("promote");
     await sleep(60);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     setPlanStage("persisting");
     const workflowResult = await promoteDraftWorkflow({
       invokeCoachChat: invokeCoachChatWithRecovery,
@@ -805,54 +804,68 @@ export function useCoachWorkspace({
       currentThreadId: threadId,
       defaultIntake: specialization === "nutrition" ? defaultNutritionIntake : defaultIntake,
     });
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
 
     if (workflowResult.status === "tier_required") {
       onTierRequired?.();
       dispatchAsync({ type: "plan/reset" });
-      await closePlanLoading(false);
+      await closePlanLoadingForSession(sessionToken, false);
       return;
     }
 
     if (workflowResult.status === "error") {
       dispatchAsync({ type: "plan/fail", error: workflowResult.error.message });
-      await closePlanLoading(false);
+      await closePlanLoadingForSession(sessionToken, false);
       return;
     }
 
     await applyWorkspaceMutation(workflowResult.payload);
-    if (specialization === "nutrition") {
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
+    if (specialization === "nutrition" && authUserId && syncEventCoachKey) {
       publishCoachSyncEvent({
         type: "nutrition_draft_resolved",
+        authUserId,
+        specialization: "nutrition",
+        coachIdentityKey: syncEventCoachKey,
         resolution: "promoted",
         resolvedAt: Date.now(),
       });
     }
-    publishCoachSyncEvent({
-      type: "workspace_plan_changed",
-      specialization,
-      changedAt: Date.now(),
-    });
+    if (authUserId && syncEventCoachKey) {
+      publishCoachSyncEvent({
+        type: "workspace_plan_changed",
+        authUserId,
+        specialization,
+        coachIdentityKey: syncEventCoachKey,
+        changedAt: Date.now(),
+      });
+    }
     setShowDraftInPlan(false);
-    await closePlanLoading(true);
+    await closePlanLoadingForSession(sessionToken, true);
   }, [
     activePlan,
     applyWorkspaceMutation,
     beginPlanLoading,
-    closePlanLoading,
+    closePlanLoadingForSession,
     coachIdentityPayload,
     draftPlan,
     intake,
     invokeCoachChatWithRecovery,
+    authUserId,
+    isCurrentWorkspaceSession,
     onTierRequired,
     planType,
     specialization,
+    syncEventCoachKey,
     threadId,
   ]);
 
   const discardDraftPlan = useCallback(async () => {
     if (!draftPlan) return;
+    const sessionToken = workspaceSessionTokenRef.current;
     beginPlanLoading("discard");
     await sleep(90);
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
     setPlanStage("modeling");
     const workflowResult = await discardDraftWorkflow({
       invokeCoachChat: invokeCoachChatWithRecovery,
@@ -865,48 +878,60 @@ export function useCoachWorkspace({
       currentThreadId: threadId,
       defaultIntake: specialization === "nutrition" ? defaultNutritionIntake : defaultIntake,
     });
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
 
     if (workflowResult.status === "tier_required") {
       onTierRequired?.();
       dispatchAsync({ type: "plan/reset" });
-      await closePlanLoading(false);
+      await closePlanLoadingForSession(sessionToken, false);
       return;
     }
 
     if (workflowResult.status === "error") {
       dispatchAsync({ type: "plan/fail", error: workflowResult.error.message });
-      await closePlanLoading(false);
+      await closePlanLoadingForSession(sessionToken, false);
       return;
     }
 
     setPlanStage("persisting");
     await applyWorkspaceMutation(workflowResult.payload);
-    if (specialization === "nutrition") {
+    if (!isCurrentWorkspaceSession(sessionToken)) return;
+    if (specialization === "nutrition" && authUserId && syncEventCoachKey) {
       publishCoachSyncEvent({
         type: "nutrition_draft_resolved",
+        authUserId,
+        specialization: "nutrition",
+        coachIdentityKey: syncEventCoachKey,
         resolution: "discarded",
         resolvedAt: Date.now(),
       });
     }
-    publishCoachSyncEvent({
-      type: "workspace_plan_changed",
-      specialization,
-      changedAt: Date.now(),
-    });
+    if (authUserId && syncEventCoachKey) {
+      publishCoachSyncEvent({
+        type: "workspace_plan_changed",
+        authUserId,
+        specialization,
+        coachIdentityKey: syncEventCoachKey,
+        changedAt: Date.now(),
+      });
+    }
     setShowDraftInPlan(false);
-    await closePlanLoading(true);
+    await closePlanLoadingForSession(sessionToken, true);
   }, [
     activePlan,
     applyWorkspaceMutation,
     beginPlanLoading,
-    closePlanLoading,
+    closePlanLoadingForSession,
     coachIdentityPayload,
     draftPlan,
     intake,
     invokeCoachChatWithRecovery,
+    authUserId,
+    isCurrentWorkspaceSession,
     onTierRequired,
     planType,
     specialization,
+    syncEventCoachKey,
     threadId,
   ]);
 
@@ -914,6 +939,7 @@ export function useCoachWorkspace({
     async (content: string, clearDraft: boolean) => {
       if (assistantBusy) return;
       if (!coach || !content) return;
+      const sessionToken = workspaceSessionTokenRef.current;
       dispatchAsync({ type: "send/start" });
       if (clearDraft) setDraft("");
       lastSendRef.current = content;
@@ -938,6 +964,7 @@ export function useCoachWorkspace({
           setMessages((prev) => prev.filter((message) => message.id !== messageId));
         },
       });
+      if (!isCurrentWorkspaceSession(sessionToken)) return;
 
       if (workflowResult.status === "tier_required") {
         onTierRequired?.();
@@ -951,6 +978,7 @@ export function useCoachWorkspace({
       }
 
       await applyWorkspaceMutation(workflowResult.payload);
+      if (!isCurrentWorkspaceSession(sessionToken)) return;
       dispatchAsync({ type: "send/succeed" });
     },
     [
@@ -962,6 +990,7 @@ export function useCoachWorkspace({
       draftPlan,
       intake,
       invokeCoachChatWithRecovery,
+      isCurrentWorkspaceSession,
       onTierRequired,
       planType,
       scrollToBottom,

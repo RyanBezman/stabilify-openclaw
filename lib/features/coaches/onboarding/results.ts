@@ -1,8 +1,9 @@
 import type { CoachDashboardSnapshot } from "../services/dashboard";
-import type { CoachSpecialization } from "../types";
+import type { ActiveCoach, CoachSpecialization } from "../types";
 
 export type CoachOnboardingPlanStart = "workout" | "nutrition" | "both";
 export type CoachOnboardingTrack = "workout" | "nutrition";
+export type CoachOnboardingGeneratedTracks = Record<CoachOnboardingTrack, boolean>;
 
 export type CoachOnboardingResultTrack = {
   track: CoachOnboardingTrack;
@@ -15,10 +16,12 @@ export type CoachOnboardingResultTrack = {
   ctaLabel: string;
 };
 
-const generatedByPlanStart: Record<
-  CoachOnboardingPlanStart,
-  Record<CoachOnboardingTrack, boolean>
-> = {
+type SnapshotHydrationCandidate = {
+  coach: ActiveCoach;
+  specialization: CoachSpecialization;
+};
+
+const generatedByPlanStart: Record<CoachOnboardingPlanStart, CoachOnboardingGeneratedTracks> = {
   both: { workout: true, nutrition: true },
   workout: { workout: true, nutrition: false },
   nutrition: { workout: false, nutrition: true },
@@ -41,6 +44,84 @@ export function wasTrackGenerated(
   return generatedByPlanStart[planStart][track];
 }
 
+export function buildGeneratedTracksFromPlanStart(
+  planStart: CoachOnboardingPlanStart,
+): CoachOnboardingGeneratedTracks {
+  return {
+    workout: generatedByPlanStart[planStart].workout,
+    nutrition: generatedByPlanStart[planStart].nutrition,
+  };
+}
+
+export function buildOnboardingResultsSnapshotCandidates(args: {
+  generatedTracks: CoachOnboardingGeneratedTracks;
+  workoutCoach: ActiveCoach;
+  nutritionCoach: ActiveCoach;
+}): SnapshotHydrationCandidate[] {
+  const candidates: SnapshotHydrationCandidate[] = [];
+
+  if (args.generatedTracks.nutrition) {
+    candidates.push({
+      coach: args.nutritionCoach,
+      specialization: "nutrition",
+    });
+  }
+
+  if (args.generatedTracks.workout) {
+    candidates.push({
+      coach: args.workoutCoach,
+      specialization: "workout",
+    });
+  }
+
+  return candidates;
+}
+
+export async function hydrateOnboardingResultsSnapshot(args: {
+  generatedTracks: CoachOnboardingGeneratedTracks;
+  workoutCoach: ActiveCoach;
+  nutritionCoach: ActiveCoach;
+  loadSnapshot: (options: {
+    coach?: ActiveCoach | null;
+    specialization?: "workout" | "nutrition";
+  }) => Promise<CoachDashboardSnapshot>;
+}): Promise<{ snapshot: CoachDashboardSnapshot | null; error: string | null }> {
+  const candidates = buildOnboardingResultsSnapshotCandidates({
+    generatedTracks: args.generatedTracks,
+    workoutCoach: args.workoutCoach,
+    nutritionCoach: args.nutritionCoach,
+  });
+
+  if (candidates.length === 0) {
+    return {
+      snapshot: null,
+      error: null,
+    };
+  }
+
+  let lastError: string | null = null;
+  for (const candidate of candidates) {
+    try {
+      const snapshot = await args.loadSnapshot({
+        coach: candidate.coach,
+        specialization: candidate.specialization,
+      });
+
+      return {
+        snapshot,
+        error: null,
+      };
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "Couldn't load your results.";
+    }
+  }
+
+  return {
+    snapshot: null,
+    error: lastError ?? "Couldn't load your results.",
+  };
+}
+
 function trackCtaLabel(args: {
   track: CoachOnboardingTrack;
   generated: boolean;
@@ -58,11 +139,11 @@ function trackCtaLabel(args: {
 }
 
 export function buildOnboardingResultTracks(
-  planStart: CoachOnboardingPlanStart,
+  generatedTracks: CoachOnboardingGeneratedTracks,
   snapshot: CoachDashboardSnapshot | null,
 ): CoachOnboardingResultTrack[] {
-  const workoutGenerated = wasTrackGenerated(planStart, "workout");
-  const nutritionGenerated = wasTrackGenerated(planStart, "nutrition");
+  const workoutGenerated = generatedTracks.workout;
+  const nutritionGenerated = generatedTracks.nutrition;
 
   const workoutPlanReady = workoutGenerated && Boolean(snapshot?.training.planId);
   const nutritionPlanReady = nutritionGenerated && Boolean(snapshot?.nutrition.planId);

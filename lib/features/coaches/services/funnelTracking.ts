@@ -198,7 +198,23 @@ async function insertCoachFunnelEvent(
       })
   );
 
-  const { error } = await supabase.from("analytics_events").insert({
+  if (idempotencyKey) {
+    const { data: existingEvent, error: existingEventError } = await supabase
+      .from("analytics_events")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("idempotency_key", idempotencyKey)
+      .limit(1)
+      .maybeSingle<{ id: string }>();
+
+    if (existingEventError) {
+      warnTrackingIssue(`Failed to check duplicate analytics event: ${input.eventName}.`, existingEventError);
+    } else if (existingEvent?.id) {
+      return;
+    }
+  }
+
+  const payload = {
     user_id: context.userId,
     event_name: input.eventName,
     occurred_at: normalizeOccurredAt(input.occurredAt),
@@ -213,7 +229,8 @@ async function insertCoachFunnelEvent(
     app_version: APP_VERSION,
     session_id: SESSION_ID,
     metadata,
-  });
+  };
+  const { error } = await supabase.from("analytics_events").insert(payload);
 
   if (error && !isUniqueViolation(error)) {
     warnTrackingIssue(`Failed to insert analytics event: ${input.eventName}.`, error);
@@ -304,4 +321,8 @@ export async function trackPlanDecisionMadeEvent(args: {
       feedback_context: args.context ?? "checkin_review",
     },
   });
+}
+
+export function __resetCoachFunnelTrackingCacheForTests() {
+  cachedTier = null;
 }

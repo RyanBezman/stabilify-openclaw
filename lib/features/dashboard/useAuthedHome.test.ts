@@ -141,6 +141,18 @@ function buildDashboardData(overrides?: {
   autoSupportEnabled?: boolean;
   autoSupportConsentAt?: string | null;
   appleHealthStepsEnabled?: boolean;
+  goal?: {
+    goalType: "maintain" | "lose" | "gain";
+    startWeight: number;
+    targetMin: number | null;
+    targetMax: number | null;
+    targetWeight: number | null;
+  } | null;
+  weighIns?: Array<{
+    weight: number;
+    unit: "lb" | "kg";
+    localDate: string;
+  }>;
 }) {
   return {
     profile: {
@@ -162,9 +174,26 @@ function buildDashboardData(overrides?: {
       appleHealthStepsEnabled: overrides?.appleHealthStepsEnabled ?? false,
       dailyStepGoal: 10000,
     },
-    goal: null,
+    goal: overrides?.goal
+      ? {
+          id: "goal-1",
+          goalType: overrides.goal.goalType,
+          targetMin: overrides.goal.targetMin,
+          targetMax: overrides.goal.targetMax,
+          targetWeight: overrides.goal.targetWeight,
+          startWeight: overrides.goal.startWeight,
+          startDate: "2026-01-01",
+        }
+      : null,
     routine: null,
-    weighIns: [] as Array<{ weight: number; localDate: string }>,
+    weighIns:
+      overrides?.weighIns?.map((entry, index) => ({
+        id: `weigh-in-${index}`,
+        weight: entry.weight,
+        unit: entry.unit,
+        recordedAt: `2026-03-${String(index + 1).padStart(2, "0")}T12:00:00.000Z`,
+        localDate: entry.localDate,
+      })) ?? [],
     gymSessions: [] as Array<{ id: string; sessionDate: string; status: "verified" | "partial" | "provisional" }>,
     gymWeekStart: "2026-03-02",
     gymWeekEnd: "2026-03-08",
@@ -482,6 +511,33 @@ describe("useAuthedHome support nudge hardening", () => {
 
     expect(hook.current.refreshing).toBe(false);
     expect(hook.current.showSkeleton).toBe(false);
+
+    hook.unmount();
+  });
+
+  it("computes target progress from the latest logged weigh-in instead of the starting weight", async () => {
+    mocks.fetchDashboardData.mockResolvedValueOnce({
+      data: buildDashboardData({
+        goal: {
+          goalType: "lose",
+          startWeight: 200,
+          targetMin: null,
+          targetMax: null,
+          targetWeight: 180,
+        },
+        weighIns: [
+          { weight: 188, unit: "lb", localDate: "2026-03-03" },
+          { weight: 191, unit: "lb", localDate: "2026-03-02" },
+        ],
+      }),
+    });
+    mocks.fetchCurrentWeekSupportRequest.mockResolvedValueOnce({ data: null });
+
+    const hook = renderUseAuthedHome();
+    await flushAsyncWork();
+
+    expect(hook.current.profileSummary.startWeightValue).toBe("200 lb");
+    expect(hook.current.profileSummary.targetValue).toBe("8 lb");
 
     hook.unmount();
   });

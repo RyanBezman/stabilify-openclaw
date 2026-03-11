@@ -1,4 +1,4 @@
-import type { Session, User } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "../../../supabase";
 import { fail, ok, type Result } from "../../shared";
 
@@ -107,16 +107,4 @@ export async function exchangeOAuthCodeForSession(
     return fail(error);
   }
   return ok({ ok: true });
-}
-
-export function subscribeToAuthStateChanges(
-  onSessionChange: (session: Session | null) => void | Promise<void>,
-) {
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    void onSessionChange(session);
-  });
-
-  return () => {
-    data.subscription.unsubscribe();
-  };
 }

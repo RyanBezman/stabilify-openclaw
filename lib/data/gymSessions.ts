@@ -256,6 +256,15 @@ export async function saveGymSession(
     .single();
 
   if (saveError) {
+    if (proofPath) {
+      const { error: cleanupError } = await supabase.storage
+        .from("gym-proofs")
+        .remove([proofPath]);
+      if (cleanupError) {
+        // eslint-disable-next-line no-console
+        console.warn("Failed to clean up uploaded gym proof after save error:", cleanupError);
+      }
+    }
     return fail(saveError);
   }
 

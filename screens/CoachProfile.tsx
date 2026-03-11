@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import Card from "../components/ui/Card";
 import CoachAvatar from "../components/coaches/CoachAvatar";
+import CoachWorkspaceSkeleton from "../components/coaches/CoachWorkspaceSkeleton";
 import { useCoach } from "../lib/features/coaches";
 import type { CoachSpecialization } from "../lib/features/coaches";
 import type { RootStackParamList } from "../lib/navigation/types";
@@ -18,11 +19,13 @@ export default function CoachProfileScreen({ navigation, route }: ScreenProps) {
     (route.params?.specialization as CoachSpecialization | undefined) ??
     route.params?.coach?.specialization ??
     "workout";
-  const coach = route.params?.coach ?? getActiveCoach(specialization);
-
-  void hydrated; // kept for signature consistency; profile is purely static UI.
+  const coach = getActiveCoach(specialization);
 
   const copy = useMemo(() => (coach ? coachPersonalityCopy[coach.personality] : null), [coach]);
+
+  if (!coach && !hydrated) {
+    return <CoachWorkspaceSkeleton />;
+  }
 
   if (!coach || !copy) {
     return (

@@ -31,6 +31,8 @@ export function useLogGymSession() {
   const [capturedAt, setCapturedAt] = useState<Date | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationGranted, setLocationGranted] = useState(false);
+  const [canContinueWithoutLocation, setCanContinueWithoutLocation] = useState(false);
+  const [continueWithoutLocation, setContinueWithoutLocation] = useState(false);
   const [coords, setCoords] = useState<{
     latitude: number;
     longitude: number;
@@ -41,9 +43,9 @@ export function useLogGymSession() {
 
   const currentStep = useMemo(() => {
     if (!photoUri) return 1;
-    if (!coords) return 2;
+    if (!coords && !continueWithoutLocation) return 2;
     return 3;
-  }, [photoUri, coords]);
+  }, [continueWithoutLocation, photoUri, coords]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -109,6 +111,11 @@ export function useLogGymSession() {
       setPhotoFileName(capturedAsset.fileName ?? null);
       setPhotoBase64(capturedAsset.base64 ?? null);
       setCapturedAt(new Date());
+      setLocationError(null);
+      setCanContinueWithoutLocation(false);
+      setContinueWithoutLocation(false);
+      setCoords(null);
+      setLocationCapturedAt(null);
     } catch {
       Alert.alert("Camera error", "Could not capture the photo. Please try again.");
     } finally {
@@ -132,6 +139,7 @@ export function useLogGymSession() {
 
     if (!granted) {
       setLocationError("Location permission is required to verify sessions.");
+      setCanContinueWithoutLocation(true);
       return;
     }
 
@@ -147,10 +155,21 @@ export function useLogGymSession() {
       });
       setLocationCapturedAt(new Date());
       setLocationError(null);
+      setCanContinueWithoutLocation(false);
+      setContinueWithoutLocation(false);
     } catch {
       setLocationError("Couldn't read your location. Try again.");
+      setCanContinueWithoutLocation(true);
     }
   }, [locationGranted]);
+
+  const handleContinueWithoutLocation = useCallback(() => {
+    if (!photoUri) {
+      return;
+    }
+
+    setContinueWithoutLocation(true);
+  }, [photoUri]);
 
   const handleReset = useCallback(() => {
     setPhotoUri(null);
@@ -160,6 +179,8 @@ export function useLogGymSession() {
     setCapturedAt(null);
     setLocationError(null);
     setLocationGranted(false);
+    setCanContinueWithoutLocation(false);
+    setContinueWithoutLocation(false);
     setCoords(null);
     setLocationCapturedAt(null);
   }, []);
@@ -168,17 +189,10 @@ export function useLogGymSession() {
     if (!photoUri || !capturedAt || saving) {
       return { saved: false };
     }
-    if (!locationGranted) {
-      Alert.alert(
-        "Location required",
-        "We need your location to verify gym sessions.",
-      );
-      return { saved: false };
-    }
-    if (!coords) {
+    if (!coords && !continueWithoutLocation) {
       Alert.alert(
         "Capture location",
-        "Please capture your location to verify this session.",
+        "Capture your location or continue without it to save a partial session.",
       );
       return { saved: false };
     }
@@ -194,7 +208,8 @@ export function useLogGymSession() {
       photoMimeType,
       photoFileName,
       photoBase64,
-      location: coords,
+      location: coords ?? undefined,
+      locationPermissionDenied: continueWithoutLocation && !locationGranted,
     });
     if (mountedRef.current) {
       setSaving(false);
@@ -213,6 +228,7 @@ export function useLogGymSession() {
     };
   }, [
     capturedAt,
+    continueWithoutLocation,
     coords,
     locationGranted,
     photoBase64,
@@ -232,10 +248,13 @@ export function useLogGymSession() {
     locationError,
     locationCapturedAt,
     coords,
+    canContinueWithoutLocation,
     currentStep,
     saveSession,
     handleCapture,
     handleCaptureLocation,
+    handleContinueWithoutLocation,
+    continueWithoutLocation,
     handleReset,
   };
 }

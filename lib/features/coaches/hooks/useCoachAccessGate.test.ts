@@ -20,7 +20,27 @@ vi.mock("../../billing", () => ({
   fetchMembershipTier: mocks.fetchMembershipTier,
 }));
 
-import { __resetCoachAccessGateCacheForTests, useCoachAccessGate } from "./useCoachAccessGate";
+import {
+  __resetCoachAccessGateCacheForTests,
+  syncCoachAccessGateAuthUser,
+  useCoachAccessGate,
+} from "./useCoachAccessGate";
+
+function createDeferred<T>() {
+  let resolve: ((value: T | PromiseLike<T>) => void) | null = null;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return {
+    promise,
+    resolve(value: T) {
+      if (!resolve) {
+        throw new Error("Deferred promise already settled.");
+      }
+      resolve(value);
+    },
+  };
+}
 
 async function flushAsyncWork(ticks = 5) {
   for (let index = 0; index < ticks; index += 1) {
@@ -96,7 +116,33 @@ describe("useCoachAccessGate", () => {
     hook.unmount();
   });
 
-  it("stays in gating on first render even with stale cached free tier", async () => {
+  it("ignores an in-flight tier refresh after force-locking to free", async () => {
+    const tierRequest = createDeferred<{ data: { tier: "pro" } }>();
+    mocks.fetchMembershipTier.mockImplementation(() => tierRequest.promise);
+
+    const hook = renderTestHook(() => useCoachAccessGate());
+    await flushAsyncWork(2);
+
+    act(() => {
+      hook.result.current.lockToFreeTier();
+    });
+
+    expect(hook.result.current.viewState).toBe("locked");
+
+    await act(async () => {
+      tierRequest.resolve({ data: { tier: "pro" } });
+      await Promise.resolve();
+    });
+    await flushAsyncWork();
+
+    expect(hook.result.current.viewState).toBe("locked");
+    expect(hook.result.current.isPro).toBe(false);
+
+    hook.unmount();
+  });
+
+  it("reuses the cached tier state on remount instead of re-entering gating", async () => {
+    syncCoachAccessGateAuthUser("user-1");
     mocks.fetchMembershipTier
       .mockResolvedValueOnce({
         data: { tier: "free" },
@@ -109,6 +155,31 @@ describe("useCoachAccessGate", () => {
     await flushAsyncWork();
     expect(firstMount.result.current.viewState).toBe("locked");
     firstMount.unmount();
+
+    const secondMount = renderTestHook(() => useCoachAccessGate());
+    expect(secondMount.result.current.viewState).toBe("locked");
+    await flushAsyncWork();
+    expect(secondMount.result.current.viewState).toBe("ready");
+
+    secondMount.unmount();
+  });
+
+  it("clears cached tier state when the authenticated user changes", async () => {
+    syncCoachAccessGateAuthUser("user-1");
+    mocks.fetchMembershipTier
+      .mockResolvedValueOnce({
+        data: { tier: "free" },
+      })
+      .mockResolvedValueOnce({
+        data: { tier: "pro" },
+      });
+
+    const firstMount = renderTestHook(() => useCoachAccessGate());
+    await flushAsyncWork();
+    expect(firstMount.result.current.viewState).toBe("locked");
+    firstMount.unmount();
+
+    syncCoachAccessGateAuthUser("user-2");
 
     const secondMount = renderTestHook(() => useCoachAccessGate());
     expect(secondMount.result.current.viewState).toBe("gating");

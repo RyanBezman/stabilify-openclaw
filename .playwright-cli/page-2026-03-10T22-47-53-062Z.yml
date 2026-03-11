@@ -1,0 +1,71 @@
+- generic [ref=e364]:
+  - generic [ref=e366]:
+    - generic [ref=e368] [cursor=pointer]: 
+    - generic [ref=e374]: Noah
+    - generic [ref=e376] [cursor=pointer]: 
+  - generic [ref=e378]:
+    - generic [ref=e385]: Noah
+    - generic [ref=e386]: Workout plan
+    - generic [ref=e387]:
+      - generic [ref=e388]:
+        - generic [ref=e389]:
+          - generic [ref=e390]:
+            - generic [ref=e391]: Upper/Lower Foundations
+            - generic [ref=e392]: 4 days/week · active
+          - generic [ref=e394]: ACTIVE
+        - generic [ref=e395]:
+          - generic [ref=e396]:
+            - generic [ref=e397]: Days / week
+            - generic [ref=e398]: "4"
+          - generic [ref=e399]:
+            - generic [ref=e400]: Sessions
+            - generic [ref=e401]: "4"
+        - generic [ref=e403] [cursor=pointer]:
+          - generic [ref=e404]:
+            - generic [ref=e405]: Notes
+            - generic [ref=e406]: 2 notes
+          - generic [ref=e407]:
+            - generic [ref=e408]: Show
+            - generic [ref=e409]: 
+      - generic [ref=e411] [cursor=pointer]:
+        - generic [ref=e412]:
+          - generic [ref=e413]: Weekly schedule
+          - generic [ref=e414]: 4 days
+        - generic [ref=e415]:
+          - generic [ref=e416]: Hide
+          - generic [ref=e417]: 
+      - generic [ref=e418]:
+        - generic [ref=e419] [cursor=pointer]:
+          - generic [ref=e420]:
+            - generic [ref=e421]: Day 1
+            - generic [ref=e422]: Upper Push/Pull • 4 exercises
+          - generic [ref=e423]: Hide
+        - generic [ref=e424]:
+          - generic [ref=e425]:
+            - generic [ref=e426]: Bench Press
+            - generic [ref=e427]: 4 x 6-8
+          - generic [ref=e428]:
+            - generic [ref=e429]: Chest-Supported Row
+            - generic [ref=e430]: 4 x 8-10
+          - generic [ref=e431]:
+            - generic [ref=e432]: Incline Dumbbell Press
+            - generic [ref=e433]: 3 x 8-10
+          - generic [ref=e434]:
+            - generic [ref=e435]: Lat Pulldown
+            - generic [ref=e436]: 3 x 10-12
+      - generic [ref=e438] [cursor=pointer]:
+        - generic [ref=e439]:
+          - generic [ref=e440]: Day 2
+          - generic [ref=e441]: Lower Strength • 4 exercises
+        - generic [ref=e442]: Show
+      - generic [ref=e444] [cursor=pointer]:
+        - generic [ref=e445]:
+          - generic [ref=e446]: Day 3
+          - generic [ref=e447]: Upper Hypertrophy • 4 exercises
+        - generic [ref=e448]: Show
+      - generic [ref=e450] [cursor=pointer]:
+        - generic [ref=e451]:
+          - generic [ref=e452]: Day 4
+          - generic [ref=e453]: Lower Hypertrophy • 4 exercises
+        - generic [ref=e454]: Show
+      - generic [ref=e458] [cursor=pointer]: Revise days/week

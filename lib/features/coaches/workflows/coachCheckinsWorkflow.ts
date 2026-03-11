@@ -73,6 +73,7 @@ function toWorkflowErrorInfo(error: unknown): WorkflowErrorInfo {
 }
 
 type CoachCheckinsWorkflowOptions = {
+  authUserId?: string | null;
   coach?: ActiveCoach | null;
   limit?: number;
 };
@@ -82,11 +83,12 @@ type SubmitCoachCheckinWorkflowOptions = CoachCheckinsWorkflowOptions & {
 };
 
 export async function hydrateCoachCheckinsWorkflow({
+  authUserId,
   coach,
   limit,
 }: CoachCheckinsWorkflowOptions): Promise<WorkflowResultWithPayload<CoachCheckinsPayload>> {
   try {
-    const payload = await fetchNutritionCheckins({ coach, limit });
+    const payload = await fetchNutritionCheckins({ authUserId, coach, limit });
     return { status: "success", payload };
   } catch (error) {
     if (isTierRestrictedCoachError(error)) {
@@ -100,12 +102,13 @@ export async function hydrateCoachCheckinsWorkflow({
 }
 
 export async function submitCoachCheckinWorkflow({
+  authUserId,
   coach,
   limit,
   input,
 }: SubmitCoachCheckinWorkflowOptions): Promise<WorkflowResultWithPayload<CoachCheckinsPayload>> {
   try {
-    const payload = await submitWeeklyCheckinV2(input, { coach, limit });
+    const payload = await submitWeeklyCheckinV2(input, { authUserId, coach, limit });
     return { status: "success", payload };
   } catch (error) {
     if (isTierRestrictedCoachError(error)) {

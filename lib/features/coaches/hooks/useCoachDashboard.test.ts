@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   fetchNutritionCheckins: vi.fn(),
   subscribeCoachSyncEvents: vi.fn(),
   syncListeners: new Set<(event: unknown) => void>(),
+  useCoach: vi.fn(),
 }));
 
 vi.mock("../services/dashboard", () => ({
@@ -20,7 +21,13 @@ vi.mock("../services/checkins", () => ({
 }));
 
 vi.mock("../services/syncEvents", () => ({
+  coachSyncIdentityKey: (coach: ActiveCoach | null | undefined) =>
+    coach ? `${coach.specialization}:${coach.gender}:${coach.personality}` : null,
   subscribeCoachSyncEvents: mocks.subscribeCoachSyncEvents,
+}));
+
+vi.mock("./CoachContext", () => ({
+  useCoach: mocks.useCoach,
 }));
 
 import { useCoachDashboard } from "./useCoachDashboard";
@@ -32,6 +39,13 @@ const coach: ActiveCoach = {
   displayName: "Ruth",
   tagline: "Direct and clear",
 };
+
+const workoutCoach: ActiveCoach = {
+  ...coach,
+  specialization: "workout",
+};
+
+let currentAuthUserId = "user-1";
 
 function createDeferred<T>() {
   let resolve: ((value: T | PromiseLike<T>) => void) | null = null;
@@ -85,13 +99,26 @@ function buildSnapshot() {
 function renderUseCoachDashboard(options?: {
   coach?: ActiveCoach | null;
   hydrated?: boolean;
+  specialization?: "workout" | "nutrition";
 }) {
-  return renderTestHook(() =>
-    useCoachDashboard({
-      coach: options?.coach ?? coach,
-      hydrated: options?.hydrated ?? true,
-      specialization: "nutrition",
-    }),
+  return renderTestHook(
+    (props: {
+      coach: ActiveCoach | null;
+      hydrated: boolean;
+      specialization: "workout" | "nutrition";
+    }) =>
+      useCoachDashboard({
+        coach: props.coach,
+        hydrated: props.hydrated,
+        specialization: props.specialization,
+      }),
+    {
+      initialProps: {
+        coach: options?.coach ?? coach,
+        hydrated: options?.hydrated ?? true,
+        specialization: options?.specialization ?? "nutrition",
+      },
+    }
   );
 }
 
@@ -107,9 +134,12 @@ describe("useCoachDashboard", () => {
   beforeEach(() => {
     mocks.hydrateCoachDashboard.mockReset();
     mocks.fetchNutritionCheckins.mockReset();
+    mocks.useCoach.mockReset();
     mocks.fetchNutritionCheckins.mockResolvedValue({
       history: [],
     });
+    currentAuthUserId = "user-1";
+    mocks.useCoach.mockImplementation(() => ({ authUserId: currentAuthUserId }));
     mocks.syncListeners.clear();
     mocks.subscribeCoachSyncEvents.mockImplementation((listener: (event: unknown) => void) => {
       mocks.syncListeners.add(listener);
@@ -172,6 +202,54 @@ describe("useCoachDashboard", () => {
     hook.unmount();
   });
 
+  it("ignores stale dashboard responses after the authenticated user changes", async () => {
+    const staleLoad = createDeferred<ReturnType<typeof buildSnapshot>>();
+    const freshLoad = createDeferred<ReturnType<typeof buildSnapshot>>();
+
+    mocks.hydrateCoachDashboard
+      .mockImplementationOnce(async () => await staleLoad.promise)
+      .mockImplementationOnce(async () => await freshLoad.promise);
+
+    const hook = renderUseCoachDashboard();
+    await flushAsyncWork(1);
+
+    currentAuthUserId = "user-2";
+    hook.rerender({
+      coach,
+      hydrated: true,
+      specialization: "nutrition",
+    });
+    await flushAsyncWork(1);
+
+    await act(async () => {
+      staleLoad.resolve({
+        ...buildSnapshot(),
+        today: {
+          directive: "Stale account snapshot",
+          statusIndicators: ["Old"],
+        },
+      });
+      await Promise.resolve();
+    });
+
+    expect(hook.result.current.snapshot).toBeNull();
+
+    await act(async () => {
+      freshLoad.resolve({
+        ...buildSnapshot(),
+        today: {
+          directive: "Fresh account snapshot",
+          statusIndicators: ["New"],
+        },
+      });
+      await Promise.resolve();
+    });
+
+    expect(hook.result.current.snapshot?.today.directive).toBe("Fresh account snapshot");
+
+    hook.unmount();
+  });
+
   it("keeps snapshot reference stable when refresh data is unchanged", async () => {
     const firstSnapshot = buildSnapshot();
     const secondSnapshot = {
@@ -208,6 +286,41 @@ describe("useCoachDashboard", () => {
     hook.unmount();
   });
 
+  it("preserves analytics when checkin history refresh fails after a successful load", async () => {
+    mocks.hydrateCoachDashboard.mockResolvedValue(buildSnapshot());
+    mocks.fetchNutritionCheckins
+      .mockResolvedValueOnce({
+        history: [
+          {
+            weekStart: "2026-02-16",
+            adherenceScore: 78,
+            adherencePercent: 78,
+          },
+          {
+            weekStart: "2026-02-23",
+            adherenceScore: 84,
+            adherencePercent: 84,
+          },
+        ],
+      })
+      .mockRejectedValueOnce(new Error("Temporary checkin failure."));
+
+    const hook = renderUseCoachDashboard();
+    await flushAsyncWork();
+
+    const initialCompletionRate = hook.result.current.analytics.completionRate;
+    const initialTrend = hook.result.current.weeklyRecap.adherenceTrendDirection;
+
+    await act(async () => {
+      await hook.result.current.refresh("refresh");
+    });
+
+    expect(hook.result.current.analytics.completionRate).toBe(initialCompletionRate);
+    expect(hook.result.current.weeklyRecap.adherenceTrendDirection).toBe(initialTrend);
+
+    hook.unmount();
+  });
+
   it("applies optimistic pending-review state from check-in submission events", async () => {
     const deferredRefresh = createDeferred<ReturnType<typeof buildSnapshot>>();
     mocks.hydrateCoachDashboard
@@ -221,7 +334,9 @@ describe("useCoachDashboard", () => {
       for (const listener of mocks.syncListeners) {
         listener({
           type: "checkin_submitted",
+          authUserId: "user-1",
           specialization: "nutrition",
+          coachIdentityKey: "nutrition:woman:strict",
           planUpdatedForReview: true,
           submittedAt: Date.now(),
         });
@@ -248,6 +363,34 @@ describe("useCoachDashboard", () => {
     hook.unmount();
   });
 
+  it("matches nutrition sync events to the surface specialization even when the passed coach is workout-scoped", async () => {
+    mocks.hydrateCoachDashboard.mockResolvedValue(buildSnapshot());
+
+    const hook = renderUseCoachDashboard({
+      coach: workoutCoach,
+      specialization: "nutrition",
+    });
+    await flushAsyncWork();
+
+    act(() => {
+      for (const listener of mocks.syncListeners) {
+        listener({
+          type: "checkin_submitted",
+          authUserId: "user-1",
+          specialization: "nutrition",
+          coachIdentityKey: "nutrition:woman:strict",
+          planUpdatedForReview: true,
+          submittedAt: Date.now(),
+        });
+      }
+    });
+
+    expect(hook.result.current.effectiveNutritionPendingReview).toBe(true);
+    expect(hook.result.current.nutritionSyncing).toBe(true);
+
+    hook.unmount();
+  });
+
   it("clears optimistic pending-review state when nutrition draft is resolved", async () => {
     mocks.hydrateCoachDashboard.mockResolvedValue({
       ...buildSnapshot(),
@@ -264,6 +407,9 @@ describe("useCoachDashboard", () => {
       for (const listener of mocks.syncListeners) {
         listener({
           type: "nutrition_draft_resolved",
+          authUserId: "user-1",
+          specialization: "nutrition",
+          coachIdentityKey: "nutrition:woman:strict",
           resolution: "promoted",
           resolvedAt: Date.now(),
         });
@@ -276,6 +422,82 @@ describe("useCoachDashboard", () => {
     await flushAsyncWork();
 
     expect(hook.result.current.nutritionSyncing).toBe(false);
+
+    hook.unmount();
+  });
+
+  it("ignores sync events for a different auth user", async () => {
+    mocks.hydrateCoachDashboard.mockResolvedValue({
+      ...buildSnapshot(),
+      nutrition: {
+        ...buildSnapshot().nutrition,
+        planUpdatedForReview: true,
+      },
+    });
+
+    const hook = renderUseCoachDashboard();
+    await flushAsyncWork();
+
+    act(() => {
+      for (const listener of mocks.syncListeners) {
+        listener({
+          type: "nutrition_draft_resolved",
+          authUserId: "user-2",
+          specialization: "nutrition",
+          coachIdentityKey: "nutrition:woman:strict",
+          resolution: "promoted",
+          resolvedAt: Date.now(),
+        });
+      }
+    });
+
+    expect(hook.result.current.effectiveNutritionPendingReview).toBe(true);
+    expect(hook.result.current.nutritionSyncing).toBe(false);
+
+    hook.unmount();
+  });
+
+  it("drops the previous coach snapshot immediately when the dashboard coach changes", async () => {
+    const nextLoad = createDeferred<ReturnType<typeof buildSnapshot>>();
+
+    mocks.hydrateCoachDashboard
+      .mockResolvedValueOnce(buildSnapshot())
+      .mockReturnValueOnce(nextLoad.promise);
+
+    const hook = renderUseCoachDashboard();
+    await flushAsyncWork();
+
+    expect(hook.result.current.snapshot?.today.directive).toBe("Protein at each meal.");
+    expect(hook.result.current.blockingLoad).toBe(false);
+
+    hook.rerender({
+      coach: {
+        specialization: "nutrition",
+        gender: "woman",
+        personality: "sweet",
+        displayName: "Lena",
+        tagline: "Supportive and calm",
+      },
+      hydrated: true,
+      specialization: "nutrition",
+    });
+    await flushAsyncWork(1);
+
+    expect(hook.result.current.snapshot).toBeNull();
+    expect(hook.result.current.blockingLoad).toBe(true);
+
+    await act(async () => {
+      nextLoad.resolve({
+        ...buildSnapshot(),
+        today: {
+          directive: "Walk after lunch.",
+          statusIndicators: ["Hydrated"],
+        },
+      });
+      await Promise.resolve();
+    });
+
+    expect(hook.result.current.snapshot?.today.directive).toBe("Walk after lunch.");
 
     hook.unmount();
   });

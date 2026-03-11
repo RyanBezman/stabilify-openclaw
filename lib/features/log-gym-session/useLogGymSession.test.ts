@@ -161,6 +161,78 @@ describe("useLogGymSession", () => {
     expect(mocks.getCurrentPositionAsync).not.toHaveBeenCalled();
     expect(hook.result.current.locationError).toBe("Location permission is required to verify sessions.");
     expect(hook.result.current.coords).toBeNull();
+    expect(hook.result.current.currentStep).toBe(1);
+
+    hook.unmount();
+  });
+
+  it("allows saving a partial session after a location denial", async () => {
+    mocks.launchCameraAsync.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///photo.jpg",
+          mimeType: "image/jpeg",
+          fileName: "photo.jpg",
+          base64: "YmFzZTY0",
+        },
+      ],
+    });
+    mocks.getForegroundPermissionsAsync.mockResolvedValue({ status: "denied" });
+    mocks.requestForegroundPermissionsAsync.mockResolvedValue({ status: "denied" });
+    mocks.saveGymSession.mockResolvedValue({
+      data: {
+        sessionId: "session-1",
+        status: "partial",
+        statusReason: "permission_denied",
+        distanceMeters: null,
+      },
+    });
+
+    const hook = renderTestHook(() => useLogGymSession());
+    await flushAsyncWork();
+
+    await act(async () => {
+      await hook.result.current.handleCapture();
+    });
+
+    expect(hook.result.current.currentStep).toBe(2);
+
+    await act(async () => {
+      await hook.result.current.handleCaptureLocation();
+    });
+
+    expect(hook.result.current.locationError).toBe("Location permission is required to verify sessions.");
+    expect(hook.result.current.canContinueWithoutLocation).toBe(true);
+    expect(hook.result.current.currentStep).toBe(2);
+
+    act(() => {
+      hook.result.current.handleContinueWithoutLocation();
+    });
+
+    expect(hook.result.current.currentStep).toBe(3);
+    expect(hook.result.current.continueWithoutLocation).toBe(true);
+
+    await act(async () => {
+      const result = await hook.result.current.saveSession();
+      expect(result).toEqual({
+        saved: true,
+        sessionId: "session-1",
+        status: "partial",
+        statusReason: "permission_denied",
+        distanceMeters: null,
+      });
+    });
+
+    expect(mocks.saveGymSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        photoUri: "file:///photo.jpg",
+        location: undefined,
+        locationPermissionDenied: true,
+        status: "partial",
+        timezone: "America/New_York",
+      }),
+    );
 
     hook.unmount();
   });

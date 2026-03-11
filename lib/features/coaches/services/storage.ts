@@ -28,11 +28,20 @@ type PersistedCoachStateV2 = {
   updatedAt: number;
 };
 
-type PersistedCoachWorkspaceState = CoachWorkspaceState;
-
 type PersistedCoachStateV3 = {
   version: 3;
   bySpecialization: Record<CoachSpecialization, CoachWorkspaceState>;
+  updatedAt: number;
+};
+
+type PersistedCoachUserState = {
+  bySpecialization: Record<CoachSpecialization, CoachWorkspaceState>;
+  updatedAt: number;
+};
+
+type PersistedCoachStateV4 = {
+  version: 4;
+  byUserId: Record<string, PersistedCoachUserState>;
   updatedAt: number;
 };
 
@@ -46,6 +55,16 @@ create table if not exists coach_state (
 `;
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+let storageMutationQueue: Promise<void> = Promise.resolve();
+
+function queueStorageMutation<T>(operation: () => Promise<T>): Promise<T> {
+  const queued = storageMutationQueue.then(operation, operation);
+  storageMutationQueue = queued.then(
+    () => undefined,
+    () => undefined
+  );
+  return queued;
+}
 
 async function getDb() {
   if (!dbPromise) {
@@ -56,6 +75,17 @@ async function getDb() {
     })();
   }
   return dbPromise;
+}
+
+async function writeAllStates(
+  db: SQLite.SQLiteDatabase,
+  nextState: PersistedCoachStateV4
+) {
+  await db.runAsync(
+    "insert into coach_state(id, json, updated_at) values(1, ?, ?) on conflict(id) do update set json = excluded.json, updated_at = excluded.updated_at",
+    JSON.stringify(nextState),
+    nextState.updatedAt
+  );
 }
 
 function withSpecialization(
@@ -113,6 +143,24 @@ function defaultStateV3(): PersistedCoachStateV3 {
       workout: defaultWorkspaceState("workout"),
       nutrition: defaultWorkspaceState("nutrition"),
     },
+    updatedAt: Date.now(),
+  };
+}
+
+function defaultUserState(): PersistedCoachUserState {
+  return {
+    bySpecialization: {
+      workout: defaultWorkspaceState("workout"),
+      nutrition: defaultWorkspaceState("nutrition"),
+    },
+    updatedAt: Date.now(),
+  };
+}
+
+function defaultStateV4(): PersistedCoachStateV4 {
+  return {
+    version: 4,
+    byUserId: {},
     updatedAt: Date.now(),
   };
 }
@@ -201,81 +249,186 @@ function normalizeStateV3(
   return next;
 }
 
-async function readAllStates(): Promise<PersistedCoachStateV3> {
+function normalizeUserId(userId?: string | null): string | null {
+  if (typeof userId !== "string") {
+    return null;
+  }
+
+  const trimmed = userId.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizeUserState(
+  input: Partial<PersistedCoachUserState> | null | undefined
+): PersistedCoachUserState {
+  const next = defaultUserState();
+  if (!input || typeof input !== "object") return next;
+
+  const bySpecialization = input.bySpecialization as
+    | Partial<Record<CoachSpecialization, Partial<CoachWorkspaceState>>>
+    | undefined;
+
+  next.bySpecialization.workout = normalizeWorkspaceState(
+    bySpecialization?.workout,
+    "workout"
+  );
+  next.bySpecialization.nutrition = normalizeWorkspaceState(
+    bySpecialization?.nutrition,
+    "nutrition"
+  );
+  next.updatedAt =
+    typeof input.updatedAt === "number" && Number.isFinite(input.updatedAt)
+      ? input.updatedAt
+      : Date.now();
+  return next;
+}
+
+function normalizeStateV4(
+  input: Partial<PersistedCoachStateV4> | null | undefined
+): PersistedCoachStateV4 {
+  const next = defaultStateV4();
+  if (!input || typeof input !== "object") return next;
+
+  const byUserId = input.byUserId;
+  if (byUserId && typeof byUserId === "object") {
+    for (const [userId, userState] of Object.entries(byUserId)) {
+      const resolvedUserId = normalizeUserId(userId);
+      if (!resolvedUserId) {
+        continue;
+      }
+      next.byUserId[resolvedUserId] = normalizeUserState(
+        userState as Partial<PersistedCoachUserState>
+      );
+    }
+  }
+
+  next.updatedAt =
+    typeof input.updatedAt === "number" && Number.isFinite(input.updatedAt)
+      ? input.updatedAt
+      : Date.now();
+  return next;
+}
+
+function migrateToV4(
+  state: PersistedCoachStateV3
+): PersistedCoachStateV4 {
+  const next = defaultStateV4();
+  next.updatedAt = state.updatedAt ?? Date.now();
+  return next;
+}
+
+async function readAllStates(): Promise<PersistedCoachStateV4> {
   const db = await getDb();
   const row = await db.getFirstAsync<{ json: string }>(
     "select json from coach_state where id = 1"
   );
-  if (!row?.json) return defaultStateV3();
+  if (!row?.json) return defaultStateV4();
 
   try {
     const parsed = JSON.parse(row.json) as
       | PersistedCoachStateV1
       | PersistedCoachStateV2
-      | PersistedCoachStateV3;
+      | PersistedCoachStateV3
+      | PersistedCoachStateV4;
 
-    if (!parsed) return defaultStateV3();
+    if (!parsed) return defaultStateV4();
+
+    if ((parsed as PersistedCoachStateV4).version === 4) {
+      return normalizeStateV4(parsed as PersistedCoachStateV4);
+    }
 
     if ((parsed as PersistedCoachStateV3).version === 3) {
-      return normalizeStateV3(parsed as PersistedCoachStateV3);
+      const migratedState = migrateToV4(
+        normalizeStateV3(parsed as PersistedCoachStateV3)
+      );
+      await writeAllStates(db, migratedState);
+      return migratedState;
     }
 
     if ((parsed as PersistedCoachStateV2).version === 2) {
-      return migrateToV3(parsed as PersistedCoachStateV2);
+      const migratedState = migrateToV4(
+        migrateToV3(parsed as PersistedCoachStateV2)
+      );
+      await writeAllStates(db, migratedState);
+      return migratedState;
     }
 
     if ((parsed as PersistedCoachStateV1).version === 1) {
-      return migrateToV3(migrateToV2(parsed as PersistedCoachStateV1));
+      const migratedState = migrateToV4(
+        migrateToV3(migrateToV2(parsed as PersistedCoachStateV1))
+      );
+      await writeAllStates(db, migratedState);
+      return migratedState;
     }
 
-    return defaultStateV3();
+    return defaultStateV4();
   } catch {
-    return defaultStateV3();
+    return defaultStateV4();
   }
 }
 
 export async function loadCoachState(
-  specialization: CoachSpecialization = "workout"
+  specialization: CoachSpecialization = "workout",
+  userId?: string | null
 ): Promise<CoachWorkspaceState> {
+  const resolvedUserId = normalizeUserId(userId);
+  if (!resolvedUserId) {
+    return defaultWorkspaceState(specialization);
+  }
+
+  await storageMutationQueue;
   const states = await readAllStates();
-  return normalizeWorkspaceState(states.bySpecialization[specialization], specialization);
+  const userState = normalizeUserState(states.byUserId[resolvedUserId]);
+  return normalizeWorkspaceState(userState.bySpecialization[specialization], specialization);
 }
 
 export async function saveCoachState(
   partial: Partial<CoachWorkspaceState>,
-  specialization: CoachSpecialization = "workout"
+  specialization: CoachSpecialization = "workout",
+  userId?: string | null
 ) {
-  const db = await getDb();
-  const current = await readAllStates();
-  const currentWorkspace = normalizeWorkspaceState(
-    current.bySpecialization[specialization],
-    specialization
-  );
+  const resolvedUserId = normalizeUserId(userId);
+  if (!resolvedUserId) {
+    return;
+  }
 
-  const nextWorkspace: CoachWorkspaceState = {
-    ...currentWorkspace,
-    ...partial,
-    activeCoach: withSpecialization(
-      (partial.activeCoach ?? currentWorkspace.activeCoach) as
-        | (Omit<ActiveCoach, "specialization"> & { specialization?: CoachSpecialization })
-        | null,
+  await queueStorageMutation(async () => {
+    const db = await getDb();
+    const current = await readAllStates();
+    const currentUserState = normalizeUserState(current.byUserId[resolvedUserId]);
+    const currentWorkspace = normalizeWorkspaceState(
+      currentUserState.bySpecialization[specialization],
       specialization
-    ),
-    updatedAt: Date.now(),
-  };
+    );
 
-  const nextState: PersistedCoachStateV3 = {
-    version: 3,
-    bySpecialization: {
-      ...current.bySpecialization,
-      [specialization]: nextWorkspace,
-    },
-    updatedAt: Date.now(),
-  };
+    const nextWorkspace: CoachWorkspaceState = {
+      ...currentWorkspace,
+      ...partial,
+      activeCoach: withSpecialization(
+        (partial.activeCoach ?? currentWorkspace.activeCoach) as
+          | (Omit<ActiveCoach, "specialization"> & { specialization?: CoachSpecialization })
+          | null,
+        specialization
+      ),
+      updatedAt: Date.now(),
+    };
 
-  await db.runAsync(
-    "insert into coach_state(id, json, updated_at) values(1, ?, ?) on conflict(id) do update set json = excluded.json, updated_at = excluded.updated_at",
-    JSON.stringify(nextState),
-    nextState.updatedAt
-  );
+    const nextState: PersistedCoachStateV4 = {
+      version: 4,
+      byUserId: {
+        ...current.byUserId,
+        [resolvedUserId]: {
+          ...currentUserState,
+          bySpecialization: {
+            ...currentUserState.bySpecialization,
+            [specialization]: nextWorkspace,
+          },
+          updatedAt: Date.now(),
+        },
+      },
+      updatedAt: Date.now(),
+    };
+
+    await writeAllStates(db, nextState);
+  });
 }

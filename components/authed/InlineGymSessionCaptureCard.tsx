@@ -36,10 +36,14 @@ export default function InlineGymSessionCaptureCard({
     loadError,
     photoUri,
     locationError,
+    coords,
+    canContinueWithoutLocation,
+    continueWithoutLocation,
     currentStep,
     saveSession,
     handleCapture,
     handleCaptureLocation,
+    handleContinueWithoutLocation,
     handleReset,
   } = useLogGymSession();
 
@@ -113,7 +117,9 @@ export default function InlineGymSessionCaptureCard({
           <StepVerifyLocation
             photoUri={photoUri}
             locationError={locationError}
+            canContinueWithoutLocation={canContinueWithoutLocation}
             onCaptureLocation={handleCaptureLocation}
+            onContinueWithoutLocation={handleContinueWithoutLocation}
             onReset={handleReset}
           />
         ) : null}
@@ -122,6 +128,8 @@ export default function InlineGymSessionCaptureCard({
           <StepReadyToSave
             saving={saving}
             photoUri={photoUri}
+            locationCaptured={Boolean(coords)}
+            savingPartial={continueWithoutLocation}
             onSave={handleSave}
             onReset={handleReset}
             hideSaveLoadingState

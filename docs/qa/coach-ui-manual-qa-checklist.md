@@ -48,12 +48,15 @@ Expected:
 - Plan-start step shows one unified coach avatar (no split workout/nutrition avatars).
 - User is routed to `CoachOnboardingResults` after success.
 - Results screen shows both `Training` and `Nutrition` cards with generated/not-generated status and per-track CTAs.
+- If one requested track fails to generate, onboarding still lands on `CoachOnboardingResults`, shows a warning banner, and marks only the failed track as `Not generated`.
+- If nutrition snapshot loading fails after a partial success, `CoachOnboardingResults` still renders the workout card using the workout snapshot instead of collapsing into an error state.
 
 3. Open `Coaches` tab.
 Expected:
 - Dashboard root loads (not coach workspace hub).
 - For Pro users, no `Pro required` / `Upgrade to Pro` lock card flashes during initial tier check.
 - When loading dashboard data for an already-selected coach, `Coach Dashboard` header + avatar stay anchored at top while body cards skeletonize.
+- When an already-selected coach exists, the coach-selection skeleton must not flash on first load or tab revisit; use the dashboard shell/skeleton instead.
 - After the dashboard has rendered once, switching tabs away and back must keep the current dashboard content mounted while refresh happens; no full-screen loader or transient lock card should appear on revisit.
 - Dashboard uses full-width app shell (no centered max-width coach column).
 - Dashboard exposes a floating `Chat with Coach` CTA above the tab bar instead of a header chat control.
@@ -155,5 +158,25 @@ Expected:
 1. Membership lock path still routes to Billing screen.
 2. Pro users opening `Coaches` do not briefly render the lock card before dashboard content.
 3. `Training` and `Nutrition` cards still open relevant plan screens.
-4. Removing coach from dashboard returns to selection UI.
-5. Once `CoachWorkspace` or the dashboard has rendered usable content, tab revisits do not regress to a full-screen blocking loader unless the content was explicitly invalidated.
+4. Opening `Training` or `Nutrition` from `CoachOnboardingResults` keeps the workspace header/top shell visible while the plan surface hydrates; the loading state must include the top header instead of rendering only the lower plan card body.
+5. Removing coach from dashboard returns to selection UI.
+6. Coach selection continues to show all six personalities for each gender in both the picker and onboarding persona step.
+7. Switching to a different coach when saved setup exists opens a chooser with `Keep current setup`, `Rebuild from current setup`, and `Edit setup first`.
+8. `Keep current setup` swaps the active coach without forcing onboarding, keeps accepted plans available after the next workspace hydrate, and clears old chat thread state.
+9. Re-selecting the exact same coach through `Keep current setup` does not clear the existing thread history or delete saved draft plans.
+10. `Rebuild from current setup` opens prefilled onboarding at review, and `Edit setup first` opens prefilled onboarding at the first editable step.
+11. Removing a coach returns to selection without deleting the saved setup; selecting a new coach afterward still offers the chooser flow instead of forcing fresh onboarding.
+12. If coach removal fails after only one specialization clears on the server, the previous workout + nutrition pairing is restored before the user retries; the next refresh must not show a split unified coach state.
+13. Once `CoachWorkspace` or the dashboard has rendered usable content, tab revisits do not regress to a full-screen blocking loader unless the content was explicitly invalidated.
+14. If a coach is already selected, tab revisits do not regress to the coach-picker loading skeleton while onboarding or tier checks refresh in the background.
+15. Signing out and into a different account on the same device does not briefly show the previous account's coach selection, dashboard shell, chat history, or Pro lock/ready state before the new account finishes hydrating.
+16. If a coach chat or weekly check-in request fails and retries while auth changes mid-request, the retry does not repair or overwrite the new account's coach selection.
+17. Two accounts on the same device that select the same coach persona do not inherit each other's cached weekly check-in history, current check-in state, or wizard draft values before refresh completes.
+18. If the user switches coaches while a background workspace prefetch is still in flight, the previous coach's thread, plan, or intake never flashes into the newly selected coach's workspace.
+19. Switching from one coach to another within `CoachWorkspace` clears the previous coach's plan/chat surface immediately and shows a fresh blocking workspace skeleton until the new coach hydrates.
+20. Resolving a nutrition draft only updates the matching user + coach session, and the weekly check-in review CTA stays cleared after navigating away and back.
+21. If a coach chat reply or plan mutation is still in flight while the active coach changes, the late response from the old coach never restores old messages, plans, or loading overlays into the new coach workspace.
+22. The shared `Coaches` dashboard preserves the last non-empty analytics rings/trends if the auxiliary nutrition check-in refresh fails while the main dashboard snapshot succeeds.
+23. The shared `Coaches` dashboard reacts immediately to nutrition check-in submit and draft-resolution events even when the visible avatar/name came from the workout coach half of the unified selection.
+24. After onboarding success, coach switch/remove, or sign-in to another account, `CoachWorkspace` and `CoachProfile` never resurrect an old coach from stale navigation params; they always reflect the live active selection once hydration completes.
+25. If unified coach linking saves workout but fails to link nutrition, later refreshes do not restore the old nutrition coach; the server-side nutrition selection stays cleared until the user explicitly links or regenerates it.

@@ -38,6 +38,10 @@ import type {
   CoachWorkspaceViewProps,
 } from "../lib/features/coaches";
 import { useCoachRenderDiagnostics } from "../lib/features/coaches";
+import {
+  resolveCoachWorkspaceEntryState,
+  shouldShowCoachWorkspaceBlockingSkeleton,
+} from "../lib/features/coaches/hooks/coachSurfaceLoading";
 import AppScreen from "../components/ui/AppScreen";
 
 export function CoachWorkspaceView({
@@ -179,6 +183,10 @@ export function CoachWorkspaceView({
     sending,
     messages: messages.length,
   });
+
+  if (!coach && !hydrated) {
+    return <CoachWorkspaceSkeleton />;
+  }
 
   if (!coach) {
     return (
@@ -833,7 +841,14 @@ export default function CoachWorkspaceScreen({
   const { getActiveCoach, hydrated, setActiveCoach } = useCoach();
   const specialization: CoachSpecialization =
     route.params?.specialization ?? route.params?.coach?.specialization ?? "workout";
-  const coach = route.params?.coach ?? getActiveCoach(specialization);
+  const routeCoach =
+    route.params?.coach?.specialization === specialization ? route.params.coach : null;
+  const { coach, selectionHydrated } = resolveCoachWorkspaceEntryState({
+    activeCoach: getActiveCoach(specialization),
+    routeCoach,
+    hydrated,
+    allowRouteCoachFallback: Boolean(route.params?.openIntake || route.params?.openDraft),
+  });
   const [removing, setRemoving] = useState(false);
   const [checkingOnboarding, setCheckingOnboarding] = useState(true);
   const {
@@ -892,7 +907,25 @@ export default function CoachWorkspaceScreen({
     navigation.navigate("Authed", { screen: "Coaches", params: { specialization } });
   };
 
-  if (checkingOnboarding) {
+  const openCoachPicker = () => {
+    navigation.navigate("Authed", {
+      screen: "Coaches",
+      params: {
+        specialization,
+        forcePicker: true,
+      },
+    });
+  };
+
+  if (
+    shouldShowCoachWorkspaceBlockingSkeleton({
+      viewState,
+      isPro,
+      hydrated: selectionHydrated,
+      checkingOnboarding,
+      hasCoach: Boolean(coach),
+    })
+  ) {
     return <CoachWorkspaceSkeleton />;
   }
 
@@ -904,7 +937,7 @@ export default function CoachWorkspaceScreen({
         onRetry={() => void refreshMembershipTier({ blocking: true })}
         onUpgrade={() => navigation.navigate("BillingPlans")}
         onBack={handleBack}
-        onBrowseCoaches={() => navigation.navigate("Authed", { screen: "Coaches", params: { specialization } })}
+        onBrowseCoaches={openCoachPicker}
       />
     );
   }
@@ -914,7 +947,7 @@ export default function CoachWorkspaceScreen({
       <CoachWorkspaceView
         coach={coach}
         specialization={specialization}
-        hydrated={viewState === "ready" && isPro ? hydrated : false}
+        hydrated={viewState === "ready" && isPro ? selectionHydrated : false}
         initialTab={route.params?.tab}
         openIntakeOnMount={route.params?.openIntake}
         openDraftOnMount={route.params?.openDraft}
@@ -926,18 +959,31 @@ export default function CoachWorkspaceScreen({
         showBack
         onBack={handleBack}
         onTierRequired={lockToFreeTier}
-        onRequestChangeCoach={() => navigation.navigate("Authed", { screen: "Coaches", params: { specialization } })}
+        onRequestChangeCoach={openCoachPicker}
         onRequestRemoveCoach={async () => {
           setRemoving(true);
           try {
             const authResult = await fetchCurrentUserId();
             const userId = authResult.data?.userId;
-            if (authResult.error) return;
-            if (!userId) return;
+            if (authResult.error) {
+              Alert.alert("Couldn't remove coach", authResult.error);
+              return;
+            }
+            if (!userId) {
+              Alert.alert("Couldn't remove coach", "You must be signed in to remove your coach.");
+              return;
+            }
             const res = await clearUnifiedCoachOnServer(userId);
-            if (res.error) return;
-            setActiveCoach("workout", null);
-            setActiveCoach("nutrition", null);
+            if (res.error) {
+              Alert.alert("Couldn't remove coach", res.error);
+              return;
+            }
+            setActiveCoach("workout", null, {
+              preserveWorkspace: "keep_active_plan",
+            });
+            setActiveCoach("nutrition", null, {
+              preserveWorkspace: "keep_active_plan",
+            });
             navigation.navigate("Authed", { screen: "Coaches", params: { specialization } });
           } finally {
             setRemoving(false);
@@ -947,7 +993,7 @@ export default function CoachWorkspaceScreen({
       {removing ? (
         <LoadingOverlay
           title="Removing coach"
-          subtitle="Resetting workout and nutrition history..."
+          subtitle="Returning you to coach selection while keeping your saved setup available."
         />
       ) : null}
     </View>

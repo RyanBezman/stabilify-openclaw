@@ -1,3 +1,4 @@
+import { coachPersonalityCopy } from "../models/personalityCopy";
 import type { CoachOnboardingDraft, CoachOnboardingStepId } from "./models";
 
 export function validateCoachOnboardingStep(step: CoachOnboardingStepId, draft: CoachOnboardingDraft): string | null {
@@ -20,8 +21,8 @@ export function validateCoachOnboardingStep(step: CoachOnboardingStepId, draft: 
   }
 
   if (step === "persona") {
-    if (!["strict", "hype", "sweet"].includes(draft.persona.personality)) {
-      return "Select one of the V1 coach personalities.";
+    if (!Object.prototype.hasOwnProperty.call(coachPersonalityCopy, draft.persona.personality)) {
+      return "Select one of the available coach personalities.";
     }
   }
 

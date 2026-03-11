@@ -4,6 +4,8 @@ import Button from "../../ui/Button";
 type StepReadyToSaveProps = {
   saving: boolean;
   photoUri: string | null;
+  locationCaptured: boolean;
+  savingPartial?: boolean;
   onSave: () => void | Promise<void>;
   onReset: () => void;
   hideSaveLoadingState?: boolean;
@@ -12,6 +14,8 @@ type StepReadyToSaveProps = {
 export default function StepReadyToSave({
   saving,
   photoUri,
+  locationCaptured,
+  savingPartial = false,
   onSave,
   onReset,
   hideSaveLoadingState = false,
@@ -37,10 +41,22 @@ export default function StepReadyToSave({
               <Text className="text-sm text-white">Photo captured</Text>
             </View>
             <View className="flex-row items-center gap-2">
-              <View className="h-5 w-5 items-center justify-center rounded-full bg-emerald-500">
-                <Text className="text-[10px] font-bold text-white">✓</Text>
+              <View
+                className={`h-5 w-5 items-center justify-center rounded-full ${
+                  locationCaptured ? "bg-emerald-500" : "bg-amber-500"
+                }`}
+              >
+                <Text className="text-[10px] font-bold text-white">
+                  {locationCaptured ? "✓" : "!"}
+                </Text>
               </View>
-              <Text className="text-sm text-white">Location captured</Text>
+              <Text className="text-sm text-white">
+                {locationCaptured
+                  ? "Location captured"
+                  : savingPartial
+                    ? "Location unavailable, this will save as partial"
+                    : "Location still needed"}
+              </Text>
             </View>
           </View>
         </View>

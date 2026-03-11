@@ -14,8 +14,6 @@ type ProgressChartProps = {
   lineColor?: string;
 };
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
 export default function ProgressChart({
   points,
   className,
@@ -24,6 +22,7 @@ export default function ProgressChart({
 }: ProgressChartProps) {
   const [chartWidth, setChartWidth] = useState(0);
   const pulse = useRef(new Animated.Value(0)).current;
+  const [pulseValue, setPulseValue] = useState(0);
   const hasData = points.length > 0;
   const paddingX = 8;
   const paddingY = 10;
@@ -56,14 +55,18 @@ export default function ProgressChart({
     return () => animation.stop();
   }, [hasData, pulse]);
 
-  const pulseRadius = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [12, 18],
-  });
-  const pulseOpacity = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.05],
-  });
+  useEffect(() => {
+    const subscription = pulse.addListener(({ value }) => {
+      setPulseValue(value);
+    });
+
+    return () => {
+      pulse.removeListener(subscription);
+    };
+  }, [pulse]);
+
+  const pulseRadius = 12 + pulseValue * 6;
+  const pulseOpacity = 0.3 - pulseValue * 0.25;
 
   const values = useMemo(() => points.map((point) => point.value), [points]);
   const minValue = hasData ? Math.min(...values) : 0;
@@ -137,7 +140,7 @@ export default function ProgressChart({
               <G key={`point-${index}`}>
                 {isLast ? (
                   <>
-                    <AnimatedCircle
+                    <Circle
                       cx={point.x}
                       cy={point.y}
                       r={pulseRadius}

@@ -3,14 +3,18 @@ import { Image, Text, TouchableOpacity, View } from "react-native";
 type StepVerifyLocationProps = {
   photoUri: string | null;
   locationError: string | null;
+  canContinueWithoutLocation: boolean;
   onCaptureLocation: () => void | Promise<void>;
+  onContinueWithoutLocation: () => void;
   onReset: () => void;
 };
 
 export default function StepVerifyLocation({
   photoUri,
   locationError,
+  canContinueWithoutLocation,
   onCaptureLocation,
+  onContinueWithoutLocation,
   onReset,
 }: StepVerifyLocationProps) {
   return (
@@ -58,6 +62,21 @@ export default function StepVerifyLocation({
         <View className="mb-3 rounded-2xl bg-rose-950/40 px-4 py-3">
           <Text className="text-sm text-rose-300">{locationError}</Text>
         </View>
+      ) : null}
+
+      {canContinueWithoutLocation ? (
+        <TouchableOpacity
+          onPress={onContinueWithoutLocation}
+          activeOpacity={0.7}
+          className="mb-4 items-center rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3"
+        >
+          <Text className="text-sm font-semibold text-amber-200">
+            Continue without location
+          </Text>
+          <Text className="mt-1 text-xs text-amber-100/70">
+            This session will save as partial instead of verified.
+          </Text>
+        </TouchableOpacity>
       ) : null}
 
       <TouchableOpacity

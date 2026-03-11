@@ -1,0 +1,143 @@
+- generic [ref=e9]:
+  - generic [ref=e10]:
+    - generic [ref=e17]:
+      - generic [ref=e81]:
+        - generic [ref=e83]:
+          - img [ref=e86]
+          - generic [ref=e88]: Stabilify
+        - button [ref=e89] [cursor=pointer]:
+          - generic [ref=e90]: 
+          - generic [ref=e92]: "1"
+      - generic [ref=e93]:
+        - generic [ref=e94]:
+          - generic [ref=e98]:
+            - generic [ref=e99]: Ryan Bezman
+            - generic [ref=e100]: "Maintain goal: 200-210 lb"
+          - generic [ref=e101]:
+            - generic [ref=e102]: Streak
+            - generic [ref=e103]: 3 days
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e106]: Starting weight
+            - generic [ref=e107]: 205 lb
+          - generic [ref=e108]:
+            - generic [ref=e109]: Status
+            - generic [ref=e110]: In range
+      - generic [ref=e111]:
+        - generic [ref=e112]:
+          - generic [ref=e113]: Progress
+          - generic [ref=e114] [cursor=pointer]:
+            - generic [ref=e115]: Last 7 days
+            - generic [ref=e116]: ▾
+        - generic [ref=e117]:
+          - generic [ref=e119]:
+            - generic [ref=e120]:
+              - img [ref=e121]
+              - generic [ref=e124]:
+                - generic [ref=e125]: 43%
+                - generic [ref=e126]: 3/7
+            - generic [ref=e127]: Weigh-ins
+          - generic [ref=e129]:
+            - generic [ref=e130]:
+              - img [ref=e131]
+              - generic [ref=e134]:
+                - generic [ref=e135]: 0%
+                - generic [ref=e136]: 0/4
+            - generic [ref=e137]: Gym sessions
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - img [ref=e141]
+              - generic [ref=e144]:
+                - generic [ref=e145]: —
+                - generic [ref=e146]: 0/10.0k
+            - generic [ref=e147]: Steps
+        - generic [ref=e148]: Week of Mar 9
+      - generic [ref=e149]:
+        - generic [ref=e150] [cursor=pointer]:
+          - generic [ref=e152]: Log weight
+          - generic [ref=e154]: 
+        - generic [ref=e156] [cursor=pointer]:
+          - generic [ref=e158]: Set gym location
+          - generic [ref=e160]: 
+      - generic [ref=e161]:
+        - generic [ref=e162]:
+          - generic [ref=e163]: Weight trend
+          - generic [ref=e164]: Range 204.8 lb - 205.6 lb
+        - img [ref=e459]
+        - generic [ref=e199]:
+          - generic [ref=e200]: Feb 18
+          - generic [ref=e201]: Mar 10
+      - generic [ref=e202]:
+        - generic [ref=e203]: Recent weigh-ins
+        - generic [ref=e204]:
+          - generic [ref=e205]:
+            - generic [ref=e206]: Mar 10
+            - generic [ref=e207]: 205.4 lb
+          - generic [ref=e208]:
+            - generic [ref=e209]: Mar 9
+            - generic [ref=e210]: 204.8 lb
+          - generic [ref=e211]:
+            - generic [ref=e212]: Mar 8
+            - generic [ref=e213]: 205.6 lb
+          - generic [ref=e214]:
+            - generic [ref=e215]: Feb 28
+            - generic [ref=e216]: 205.6 lb
+          - generic [ref=e217]:
+            - generic [ref=e218]: Feb 27
+            - generic [ref=e219]: 205.6 lb
+      - generic [ref=e220]:
+        - generic [ref=e222]: "Cadence: Daily"
+        - generic [ref=e223]: Reminds at 07:30
+    - generic [ref=e230]:
+      - generic [ref=e492]: Coach
+      - generic [ref=e494]:
+        - generic [ref=e496] [cursor=pointer]: Woman
+        - generic [ref=e498] [cursor=pointer]: Man
+      - generic [ref=e499]:
+        - button "Select Dante, Hype coach" [ref=e503] [cursor=pointer]:
+          - generic [ref=e508]:
+            - generic [ref=e509]: Dante
+            - generic [ref=e510]: Hype
+        - button "Select Viktor, Strict coach" [ref=e514] [cursor=pointer]:
+          - generic [ref=e519]:
+            - generic [ref=e520]: Viktor
+            - generic [ref=e521]: Strict
+        - button "Select Eli, Sweet coach" [ref=e525] [cursor=pointer]:
+          - generic [ref=e530]:
+            - generic [ref=e531]: Eli
+            - generic [ref=e532]: Sweet
+        - button "Select Sam, Relaxed coach" [ref=e536] [cursor=pointer]:
+          - generic [ref=e541]:
+            - generic [ref=e542]: Sam
+            - generic [ref=e543]: Relaxed
+        - button "Select Leo, Bubbly coach" [ref=e547] [cursor=pointer]:
+          - generic [ref=e552]:
+            - generic [ref=e553]: Leo
+            - generic [ref=e554]: Bubbly
+        - generic [ref=e557]:
+          - button "Select Noah, Analyst coach" [ref=e558] [cursor=pointer]:
+            - generic [ref=e559]:
+              - generic [ref=e563]:
+                - generic [ref=e564]: Noah
+                - generic [ref=e565]: Analyst
+              - generic [ref=e567]: ✓
+          - generic [ref=e568]:
+            - generic [ref=e569]: Data-driven coaching with clear explanations and tweaks that compound.
+            - generic "Confirm Noah as your coach" [ref=e570] [cursor=pointer]:
+              - generic [ref=e572]: Confirm
+  - generic [ref=e70]:
+    - button "Home" [ref=e71] [cursor=pointer]:
+      - generic [ref=e352]: 
+      - generic [ref=e72]: Home
+    - button "Feed" [ref=e73] [cursor=pointer]:
+      - generic [ref=e353]: 
+      - generic [ref=e74]: Feed
+    - button "Search" [ref=e75] [cursor=pointer]:
+      - generic [ref=e354]: 
+      - generic [ref=e76]: Search
+    - button "Coaches" [ref=e77] [cursor=pointer]:
+      - generic [ref=e355]: 
+      - generic [ref=e78]: Coaches
+    - button "Profile" [ref=e79] [cursor=pointer]:
+      - generic [ref=e356]: 
+      - generic [ref=e80]: Profile

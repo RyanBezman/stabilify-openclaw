@@ -20,15 +20,24 @@ export {
   setUnifiedCoachOnServer,
   upsertCoachUserProfileJson,
 } from "./services/api";
+export { preserveUnifiedCoachSetupOnServer } from "./services/preserveSetup";
+export { persistUnifiedCoachSelectionOnServer } from "./services/unifiedCoachSelection";
 
 export {
+  buildOnboardingResultsSnapshotCandidates,
+  buildGeneratedTracksFromPlanStart,
   buildOnboardingResultTracks,
+  hydrateOnboardingResultsSnapshot,
+  COACH_ONBOARDING_STEPS,
+  createInitialCoachOnboardingDraft,
+  mapCoachUserProfileJsonToDraft,
   submitCoachOnboardingWorkflow,
   useCoachOnboarding,
   wasTrackGenerated,
 } from "./onboarding";
 export type {
   CoachOnboardingDraft,
+  CoachOnboardingGeneratedTracks,
   CoachOnboardingPlanStart,
   CoachOnboardingResultTrack,
   CoachOnboardingStepId,

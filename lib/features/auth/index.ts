@@ -5,6 +5,5 @@ export {
   fetchCurrentAuthUser,
   fetchCurrentUserId,
   signOutCurrentUser,
-  subscribeToAuthStateChanges,
 } from "./services/auth";
 export type { AuthedTabsProps } from "./types";

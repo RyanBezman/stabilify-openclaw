@@ -6,16 +6,23 @@ import Card from "../components/ui/Card";
 import {
   buildOnboardingResultTracks,
   coachFromSelection,
-  hydrateCoachDashboard,
+  hydrateOnboardingResultsSnapshot,
 } from "../lib/features/coaches";
 import type { RootStackParamList } from "../lib/navigation/types";
 import AppScreen from "../components/ui/AppScreen";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CoachOnboardingResults">;
-type DashboardSnapshot = Awaited<ReturnType<typeof hydrateCoachDashboard>>;
+type DashboardSnapshot = Awaited<
+  ReturnType<typeof hydrateOnboardingResultsSnapshot>
+>["snapshot"];
 
 export default function CoachOnboardingResults({ navigation, route }: Props) {
-  const { coachGender, coachPersonality, planStart } = route.params;
+  const {
+    coachGender,
+    coachPersonality,
+    generatedTracks,
+    warning,
+  } = route.params;
   const workoutCoach = useMemo(
     () => coachFromSelection("workout", coachGender, coachPersonality),
     [coachGender, coachPersonality],
@@ -36,19 +43,19 @@ export default function CoachOnboardingResults({ navigation, route }: Props) {
     const run = async () => {
       setLoading(true);
       setError(null);
-      try {
-        const result = await hydrateCoachDashboard({
-          coach: nutritionCoach,
-          specialization: "nutrition",
-        });
-        if (!mounted) return;
-        setSnapshot(result);
-      } catch (loadError) {
-        if (!mounted) return;
-        setError(loadError instanceof Error ? loadError.message : "Couldn't load your results.");
-      } finally {
-        if (mounted) setLoading(false);
-      }
+      const result = await hydrateOnboardingResultsSnapshot({
+        generatedTracks,
+        workoutCoach,
+        nutritionCoach,
+        loadSnapshot: async ({ coach, specialization }) => {
+          const { hydrateCoachDashboard } = await import("../lib/features/coaches");
+          return hydrateCoachDashboard({ coach, specialization });
+        },
+      });
+      if (!mounted) return;
+      setSnapshot(result.snapshot);
+      setError(result.error);
+      setLoading(false);
     };
 
     void run();
@@ -56,11 +63,11 @@ export default function CoachOnboardingResults({ navigation, route }: Props) {
     return () => {
       mounted = false;
     };
-  }, [nutritionCoach, reloadKey]);
+  }, [generatedTracks, nutritionCoach, reloadKey, workoutCoach]);
 
   const trackCards = useMemo(
-    () => buildOnboardingResultTracks(planStart, snapshot),
-    [planStart, snapshot],
+    () => buildOnboardingResultTracks(generatedTracks, snapshot),
+    [generatedTracks, snapshot],
   );
 
   return (
@@ -70,6 +77,12 @@ export default function CoachOnboardingResults({ navigation, route }: Props) {
         <Text className="mt-2 text-sm leading-relaxed text-neutral-400">
           Review both tracks before jumping into the dashboard.
         </Text>
+
+        {warning ? (
+          <Card className="mt-4 border border-amber-500/30 bg-amber-500/10 p-4">
+            <Text className="text-sm font-semibold text-amber-200">{warning}</Text>
+          </Card>
+        ) : null}
 
         {loading ? (
           <View className="mt-6 items-center rounded-2xl border border-neutral-800 bg-neutral-900 p-6">

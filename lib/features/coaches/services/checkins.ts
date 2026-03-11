@@ -14,8 +14,7 @@ import {
   invokeCoachChat,
   type CoachWorkspaceResponse,
 } from "./chatClient";
-import { fetchCurrentUserId } from "../../auth";
-import { setActiveCoachOnServer } from "./api";
+import { invokeCoachChatWithActiveCoachRecovery } from "./activeCoachRecovery";
 import { computeAdherenceScore } from "../models/checkinScoring";
 import type {
   ArtifactAdjustmentRecommendations,
@@ -68,6 +67,7 @@ const DEFAULT_CHECKIN_ARTIFACT: Omit<WeeklyCheckinArtifact, "timestamp" | "curre
 };
 
 type CheckinsRequestOptions = {
+  authUserId?: string | null;
   limit?: number;
   coach?: ActiveCoach | null;
 };
@@ -545,44 +545,21 @@ function coachIdentityPayload(coach?: ActiveCoach | null) {
   };
 }
 
-function hasNoActiveCoachSelectedError(error: unknown) {
-  const raw = String((error as Error)?.message ?? error);
-  return raw.includes("No active coach selected");
-}
-
 async function invokeCheckinsWithCoachRecovery(
   body: Record<string, unknown>,
-  coach?: ActiveCoach | null
+  coach?: ActiveCoach | null,
+  authUserId?: string | null
 ) {
-  try {
-    return await invokeCoachChat(body);
-  } catch (error) {
-    if (!coach || !hasNoActiveCoachSelectedError(error)) {
-      throw error;
-    }
-
-    const authResult = await fetchCurrentUserId();
-    const userId = authResult.data?.userId;
-    if (authResult.error || !userId) {
-      throw error;
-    }
-
-    const repair = await setActiveCoachOnServer(userId, "nutrition", coach);
-    if (repair.error) {
-      throw new Error(repair.error ?? "Couldn't repair active nutrition coach.");
-    }
-
-    try {
-      return await invokeCoachChat(body);
-    } catch (retryError) {
-      if (!hasNoActiveCoachSelectedError(retryError)) {
-        throw retryError;
-      }
-      throw new Error(
-        "No active nutrition coach could be resolved after re-saving your selection. Please re-select a coach and try again."
-      );
-    }
-  }
+  return invokeCoachChatWithActiveCoachRecovery({
+    authUserId: authUserId ?? null,
+    body,
+    coach,
+    invokeCoachChat,
+    repairFailureMessage: "Couldn't repair active nutrition coach.",
+    specialization: "nutrition",
+    unresolvedCoachMessage:
+      "No active nutrition coach could be resolved after re-saving your selection. Please re-select a coach and try again.",
+  });
 }
 
 function hasExtendedCheckinInput(input: WeeklyCheckinInput) {
@@ -687,7 +664,7 @@ export async function fetchNutritionCheckins(
     specialization: "nutrition",
     limit: options?.limit ?? 26,
     ...coachIdentityPayload(options?.coach),
-  }, options?.coach);
+  }, options?.coach, options?.authUserId);
 
   return mapCheckinsPayload(data);
 }
@@ -747,7 +724,7 @@ export async function submitWeeklyCheckinV2(
     limit: options?.limit ?? 26,
     checkin: checkinPayload,
     ...coachIdentityPayload(options?.coach),
-  }, options?.coach);
+  }, options?.coach, options?.authUserId);
 
   return mapCheckinsPayload(data);
 }

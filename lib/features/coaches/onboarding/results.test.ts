@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { CoachDashboardSnapshot } from "../services/dashboard";
-import { buildOnboardingResultTracks, wasTrackGenerated } from "./results";
+import {
+  buildOnboardingResultsSnapshotCandidates,
+  buildGeneratedTracksFromPlanStart,
+  buildOnboardingResultTracks,
+  hydrateOnboardingResultsSnapshot,
+  wasTrackGenerated,
+} from "./results";
+import type { ActiveCoach } from "../types";
 
 const snapshot: CoachDashboardSnapshot = {
   today: {
@@ -38,9 +45,28 @@ const snapshot: CoachDashboardSnapshot = {
   },
 };
 
+const workoutCoach: ActiveCoach = {
+  specialization: "workout",
+  gender: "woman",
+  personality: "strict",
+  displayName: "Ruth",
+  tagline: "Direct",
+};
+
+const nutritionCoach: ActiveCoach = {
+  specialization: "nutrition",
+  gender: "woman",
+  personality: "strict",
+  displayName: "Ruth",
+  tagline: "Direct",
+};
+
 describe("onboarding results helper", () => {
   it("marks both tracks generated when planStart is both", () => {
-    const tracks = buildOnboardingResultTracks("both", snapshot);
+    const tracks = buildOnboardingResultTracks(
+      buildGeneratedTracksFromPlanStart("both"),
+      snapshot,
+    );
 
     expect(tracks[0]).toMatchObject({
       track: "workout",
@@ -57,7 +83,10 @@ describe("onboarding results helper", () => {
   });
 
   it("marks only workout generated when planStart is workout", () => {
-    const tracks = buildOnboardingResultTracks("workout", snapshot);
+    const tracks = buildOnboardingResultTracks(
+      buildGeneratedTracksFromPlanStart("workout"),
+      snapshot,
+    );
 
     expect(tracks[0]).toMatchObject({
       track: "workout",
@@ -73,7 +102,10 @@ describe("onboarding results helper", () => {
   });
 
   it("marks only nutrition generated when planStart is nutrition", () => {
-    const tracks = buildOnboardingResultTracks("nutrition", snapshot);
+    const tracks = buildOnboardingResultTracks(
+      buildGeneratedTracksFromPlanStart("nutrition"),
+      snapshot,
+    );
 
     expect(tracks[0]).toMatchObject({
       track: "workout",
@@ -93,5 +125,73 @@ describe("onboarding results helper", () => {
     expect(wasTrackGenerated("both", "nutrition")).toBe(true);
     expect(wasTrackGenerated("workout", "nutrition")).toBe(false);
     expect(wasTrackGenerated("nutrition", "workout")).toBe(false);
+  });
+
+  it("allows partial generation state to override the requested plan start", () => {
+    const tracks = buildOnboardingResultTracks(
+      {
+        workout: true,
+        nutrition: false,
+      },
+      snapshot,
+    );
+
+    expect(tracks[0]).toMatchObject({
+      track: "workout",
+      generated: true,
+      openIntake: false,
+    });
+    expect(tracks[1]).toMatchObject({
+      track: "nutrition",
+      generated: false,
+      openIntake: true,
+      ctaLabel: "Create nutrition plan",
+    });
+  });
+
+  it("falls back to workout snapshot loading when nutrition results are unavailable", async () => {
+    const loadSnapshot = async (args: {
+      coach?: ActiveCoach | null;
+      specialization?: "workout" | "nutrition";
+    }) => {
+      if (args.specialization === "nutrition") {
+        throw new Error("Nutrition snapshot unavailable.");
+      }
+
+      return snapshot;
+    };
+
+    const result = await hydrateOnboardingResultsSnapshot({
+      generatedTracks: {
+        workout: true,
+        nutrition: true,
+      },
+      workoutCoach,
+      nutritionCoach,
+      loadSnapshot,
+    });
+
+    expect(result).toEqual({
+      snapshot,
+      error: null,
+    });
+  });
+
+  it("skips nutrition snapshot candidates when nutrition was not generated", () => {
+    expect(
+      buildOnboardingResultsSnapshotCandidates({
+        generatedTracks: {
+          workout: true,
+          nutrition: false,
+        },
+        workoutCoach,
+        nutritionCoach,
+      }),
+    ).toEqual([
+      {
+        coach: workoutCoach,
+        specialization: "workout",
+      },
+    ]);
   });
 });

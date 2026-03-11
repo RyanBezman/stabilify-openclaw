@@ -13,19 +13,40 @@ type RefreshMembershipTierOptions = {
 let cachedMembershipTier: MembershipTier | null = null;
 let cachedTierLoading = true;
 let cachedTierError: string | null = null;
+let cachedInitialCheckComplete = false;
+let cachedAuthUserId: string | null = null;
+let cachedTierRequestGeneration = 0;
+
+function resetCoachAccessGateCacheState() {
+  cachedMembershipTier = null;
+  cachedTierLoading = true;
+  cachedTierError = null;
+  cachedInitialCheckComplete = false;
+}
+
+export function syncCoachAccessGateAuthUser(userId: string | null) {
+  if (cachedAuthUserId === userId) {
+    return;
+  }
+
+  cachedAuthUserId = userId;
+  cachedTierRequestGeneration += 1;
+  resetCoachAccessGateCacheState();
+}
 
 export function useCoachAccessGate() {
   const [membershipTier, setMembershipTier] = useState<MembershipTier | null>(cachedMembershipTier);
   const [tierLoading, setTierLoading] = useState(cachedTierLoading);
   const [tierError, setTierError] = useState<string | null>(cachedTierError);
-  const [initialCheckComplete, setInitialCheckComplete] = useState(false);
+  const [initialCheckComplete, setInitialCheckComplete] = useState(cachedInitialCheckComplete);
   const membershipTierRef = useRef<MembershipTier | null>(cachedMembershipTier);
-  const initialCheckCompleteRef = useRef(false);
+  const initialCheckCompleteRef = useRef(cachedInitialCheckComplete);
   const tierRequestRef = useRef(0);
 
   const refreshMembershipTier = useCallback(async (options?: RefreshMembershipTierOptions) => {
     const blocking = options?.blocking ?? false;
     const requestId = ++tierRequestRef.current;
+    const requestGeneration = cachedTierRequestGeneration;
     const currentTier = membershipTierRef.current;
 
     if (blocking) {
@@ -36,7 +57,10 @@ export function useCoachAccessGate() {
     cachedTierError = null;
 
     const result = await fetchMembershipTier();
-    if (requestId !== tierRequestRef.current) return;
+    if (
+      requestId !== tierRequestRef.current
+      || requestGeneration !== cachedTierRequestGeneration
+    ) return;
 
     const shouldResetTier = blocking || currentTier === null;
 
@@ -53,6 +77,7 @@ export function useCoachAccessGate() {
         cachedTierLoading = false;
       }
       initialCheckCompleteRef.current = true;
+      cachedInitialCheckComplete = true;
       setInitialCheckComplete(true);
       return;
     }
@@ -70,6 +95,7 @@ export function useCoachAccessGate() {
         cachedTierLoading = false;
       }
       initialCheckCompleteRef.current = true;
+      cachedInitialCheckComplete = true;
       setInitialCheckComplete(true);
       return;
     }
@@ -82,6 +108,7 @@ export function useCoachAccessGate() {
       cachedTierLoading = false;
     }
     initialCheckCompleteRef.current = true;
+    cachedInitialCheckComplete = true;
     setInitialCheckComplete(true);
   }, []);
 
@@ -94,6 +121,7 @@ export function useCoachAccessGate() {
   );
 
   const lockToFreeTier = useCallback(() => {
+    cachedTierRequestGeneration += 1;
     membershipTierRef.current = "free";
     setMembershipTier("free");
     setTierLoading(false);
@@ -102,6 +130,7 @@ export function useCoachAccessGate() {
     cachedTierLoading = false;
     cachedTierError = null;
     initialCheckCompleteRef.current = true;
+    cachedInitialCheckComplete = true;
     setInitialCheckComplete(true);
   }, []);
 
@@ -123,7 +152,7 @@ export function useCoachAccessGate() {
 }
 
 export function __resetCoachAccessGateCacheForTests() {
-  cachedMembershipTier = null;
-  cachedTierLoading = true;
-  cachedTierError = null;
+  cachedAuthUserId = null;
+  cachedTierRequestGeneration = 0;
+  resetCoachAccessGateCacheState();
 }

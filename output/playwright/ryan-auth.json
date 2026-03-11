@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:19006",
+      "localStorage": [
+        {
+          "name": "sb-avbbhbomyiolzidglsae-auth-token",
+          "value": "{\"access_token\":\"eyJhbGciOiJFUzI1NiIsImtpZCI6IjRmZWQ5ZTJkLTk3NDItNGM2MC04NzU5LTI0NGRiNDhhZjQyMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2F2YmJoYm9teWlvbHppZGdsc2FlLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJlMTNhMDM1Mi1jNWU4LTQyMGYtOGE5OS00ZjU0MjEzMTI4NDUiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzczMTg1NDU2LCJpYXQiOjE3NzMxODE4NTYsImVtYWlsIjoiYUBhb2wuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZnVsbF9uYW1lIjoiUnlhbiBCZXptYW4ifSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJwYXNzd29yZCIsInRpbWVzdGFtcCI6MTc3MzE4MTg1Nn1dLCJzZXNzaW9uX2lkIjoiNTY0NTU2ODQtMTczNy00Zjk0LTk5ZDktMzM1Y2RiMjEzYTVjIiwiaXNfYW5vbnltb3VzIjpmYWxzZX0.C681V85xO9T2gh9eFSadcJgaxmPT_PdFzDe2bFZ5y2WRowSlBEHfqO9MGO0tgcb2ntN6LZn07jAbeYiYu99QxA\",\"token_type\":\"bearer\",\"expires_in\":3600,\"expires_at\":1773185456,\"refresh_token\":\"sc3zaprl3qcv\",\"user\":{\"id\":\"e13a0352-c5e8-420f-8a99-4f5421312845\",\"aud\":\"authenticated\",\"role\":\"authenticated\",\"email\":\"a@aol.com\",\"email_confirmed_at\":\"2026-03-10T14:46:32.337442Z\",\"phone\":\"\",\"confirmed_at\":\"2026-03-10T14:46:32.337442Z\",\"last_sign_in_at\":\"2026-03-10T22:30:56.77908356Z\",\"app_metadata\":{\"provider\":\"email\",\"providers\":[\"email\"]},\"user_metadata\":{\"email_verified\":true,\"full_name\":\"Ryan Bezman\"},\"identities\":[{\"identity_id\":\"e25b756a-3a8d-4b56-b9f2-d16b0b55e371\",\"id\":\"e13a0352-c5e8-420f-8a99-4f5421312845\",\"user_id\":\"e13a0352-c5e8-420f-8a99-4f5421312845\",\"identity_data\":{\"email\":\"a@aol.com\",\"email_verified\":false,\"phone_verified\":false,\"sub\":\"e13a0352-c5e8-420f-8a99-4f5421312845\"},\"provider\":\"email\",\"last_sign_in_at\":\"2026-03-10T14:46:32.329736Z\",\"created_at\":\"2026-03-10T14:46:32.32979Z\",\"updated_at\":\"2026-03-10T14:46:32.32979Z\",\"email\":\"a@aol.com\"}],\"created_at\":\"2026-03-10T14:46:32.319274Z\",\"updated_at\":\"2026-03-10T22:30:56.887471Z\",\"is_anonymous\":false},\"weak_password\":null}"
+        }
+      ]
+    }
+  ]
+}

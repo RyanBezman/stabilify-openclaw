@@ -1,0 +1,18 @@
+- generic [ref=e2]:
+  - generic [ref=e101]:
+    - button "Home" [ref=e102] [cursor=pointer]:
+      - generic [ref=e103]: Home
+    - button "Feed" [ref=e104] [cursor=pointer]:
+      - generic [ref=e105]: 
+      - generic [ref=e106]: Feed
+    - button "Search" [ref=e107] [cursor=pointer]:
+      - generic [ref=e108]: 
+      - generic [ref=e109]: Search
+    - button "Coaches" [ref=e110] [cursor=pointer]:
+      - generic [ref=e111]: 
+      - generic [ref=e112]: Coaches
+    - button "Profile" [ref=e113] [cursor=pointer]:
+      - generic [ref=e114]: 
+      - generic [ref=e115]: Profile
+  - generic:
+    - img
