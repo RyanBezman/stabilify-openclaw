@@ -163,15 +163,16 @@ export default function ProgressOverviewCard({
   const hasStepTarget = stepSummary.target > 0;
   const resolvedStepValue = stepSummary.steps ?? 0;
   const clampedSteps = Math.max(0, resolvedStepValue);
+  const hasStepValue = stepSummary.steps !== null;
   const stepsProgress =
-    stepSummary.enabled && hasStepTarget && !stepSummary.loading && stepSummary.steps !== null
+    stepSummary.enabled && hasStepTarget && hasStepValue
       ? clampProgress(clampedSteps / stepSummary.target)
       : 0;
   const stepsValueText = !stepSummary.enabled
     ? "Off"
-    : stepSummary.loading
+    : stepSummary.loading && !hasStepValue
       ? "..."
-      : stepSummary.steps === null
+      : !hasStepValue
         ? "—"
         : formatStepValue(clampedSteps);
   const stepsSubText = !stepSummary.enabled

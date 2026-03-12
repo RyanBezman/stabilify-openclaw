@@ -335,4 +335,21 @@ describe("ProgressOverviewCard", () => {
     expect(textValues).toContain("8400");
     expect(textValues).toContain("Avg/day");
   });
+
+  it("keeps the previous step value visible while a new filtered summary is loading", () => {
+    const { root } = renderCard({
+      stepSummary: {
+        enabled: true,
+        loading: true,
+        mode: "average",
+        steps: 2800,
+        target: 12000,
+      },
+    });
+    const textValues = getTextValues(root);
+
+    expect(textValues).toContain("2800");
+    expect(textValues).toContain("Avg/day");
+    expect(textValues).not.toContain("...");
+  });
 });
