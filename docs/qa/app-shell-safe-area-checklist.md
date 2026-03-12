@@ -1,6 +1,6 @@
 # App Shell Safe Area Checklist
 
-Last updated: 2026-03-11
+Last updated: 2026-03-12
 
 ## Goal
 
@@ -20,7 +20,7 @@ Verify that the shared app shell paints edge-to-edge behind safe areas and that 
 - The app background reaches the Dynamic Island area, lower home-indicator area, and left/right safe areas without flashing or exposing the navigator default background.
 - Content remains inset away from unsafe regions while the background still fills the full device frame.
 - Form-heavy and detail-heavy screens stay centered with readable line lengths on tablets and landscape phones instead of stretching edge-to-edge.
-- The floating tab bar keeps the existing icon spacing and color system while its active state animates without clipping into the home-indicator safe area.
+- The floating tab bar keeps the existing icon spacing and color system without clipping into the home-indicator safe area.
 
 ## Analytics
 
@@ -42,8 +42,8 @@ Expected:
 3. Tap across all bottom tabs on an iPhone with a home indicator.
 Expected:
 - Tabs remain evenly distributed across the bar with no icon crowding or overlap.
-- Active tab icons and labels keep the existing violet/neutral colors while the selection background animates beneath them.
-- The animated active background stays fully above the home indicator and does not clip at the bar edges.
+- Active tab icons and labels keep the existing violet/neutral colors with no crowding or overlap.
+- The floating bar stays fully above the home indicator and does not clip at the bar edges.
 
 4. Open the keyboard on at least one auth screen and one tab screen.
 Expected:
