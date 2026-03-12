@@ -1,6 +1,6 @@
 # Apple Health Steps QA Checklist
 
-Last updated: 2026-03-10
+Last updated: 2026-03-12
 
 ## Goal
 
@@ -14,8 +14,8 @@ Validate Apple Health step tracking opt-in and Home progress rendering across fi
 4. Enable `Track steps` and accept Health permission.
 5. Tap `Save settings` and confirm save succeeds.
 6. Go to `Today` and verify `Progress` shows three rings: `Weigh-ins`, `Gym sessions`, and `Steps`.
-7. Leave the filter on `Last 7 days` and confirm the `Steps` ring leaves loading state and displays today's value.
-8. Switch the filter to `Last 3 months` and confirm the `Steps` ring changes to average daily steps for that selected window.
+7. Leave the filter on `7 days` and confirm the `Steps` ring leaves loading state and displays today's value.
+8. Open the time range menu, switch the filter to `3 months`, and confirm the `Steps` ring changes to average daily steps for that selected window.
 9. Change `Daily step goal` in Profile Settings, save, and confirm Home still reflects the new saved target in the Steps ring progress.
 10. Disable `Track steps`, save settings, and confirm Home shows `Steps` ring in `Off` state with `Enable`.
 11. Tap the disabled Steps ring on Home and confirm it opens Profile Settings.

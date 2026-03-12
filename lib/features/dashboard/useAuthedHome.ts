@@ -40,11 +40,10 @@ export type HomeConsistencyOption = {
 };
 
 const CONSISTENCY_OPTIONS: HomeConsistencyOption[] = [
-  { id: "7d", label: "Last 7 days", days: 7 },
-  { id: "1m", label: "Last month", days: 30 },
-  { id: "3m", label: "Last 3 months", days: 90 },
-  { id: "6m", label: "Last 6 months", days: 180 },
-  { id: "1y", label: "Last year", days: 365 },
+  { id: "7d", label: "7 days", days: 7 },
+  { id: "1m", label: "1 month", days: 30 },
+  { id: "3m", label: "3 months", days: 90 },
+  { id: "6m", label: "6 months", days: 180 },
 ];
 function convertWeightToPreferredUnit(
   value: number,
@@ -85,7 +84,6 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
   const [consistencyOption, setConsistencyOption] = useState(
     CONSISTENCY_OPTIONS[0],
   );
-  const [showConsistencyMenu, setShowConsistencyMenu] = useState(false);
   const hasUsableSnapshot = dashboard !== null;
   const loadRequestIdRef = useRef(0);
   const loadInFlightRef = useRef(false);
@@ -536,11 +534,6 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
 
   const selectConsistencyOption = useCallback((option: HomeConsistencyOption) => {
     setConsistencyOption(option);
-    setShowConsistencyMenu(false);
-  }, []);
-
-  const toggleConsistencyMenu = useCallback(() => {
-    setShowConsistencyMenu((prev) => !prev);
   }, []);
 
   const refreshDashboard = useCallback(
@@ -584,14 +577,12 @@ export function useAuthedHome(user?: AuthedHomeUser | null) {
     appleHealthStepsEnabled,
     consistencyOptions: CONSISTENCY_OPTIONS,
     consistencyOption,
-    showConsistencyMenu,
     consistency,
     trendPoints,
     recentWeighIns,
     cadenceSummary,
     reminderSummary,
     selectConsistencyOption,
-    toggleConsistencyMenu,
     requestGymValidationForToday,
     allowAutoSupportFromNudge,
     deferAutoSupportFromNudge,

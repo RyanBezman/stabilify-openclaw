@@ -13,6 +13,8 @@ vi.mock("react-native", async () => {
     testID?: string;
     className?: string;
     onPress?: () => void;
+    style?: object;
+    visible?: boolean;
   };
 
   const createMockComponent = (name: string) => {
@@ -57,6 +59,26 @@ vi.mock("react-native", async () => {
     Text: createMockComponent("Text"),
     View: createMockComponent("View"),
     TouchableOpacity: createMockComponent("TouchableOpacity"),
+    Pressable: createMockComponent("Pressable"),
+    Modal: ({ children, visible, ...props }: MockProps) =>
+      visible ? ReactModule.createElement("Modal", props, children) : null,
+    StyleSheet: {
+      create: <T,>(styles: T) => styles,
+      absoluteFillObject: {
+        position: "absolute",
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+      },
+      hairlineWidth: 1,
+    },
+    useWindowDimensions: () => ({
+      width: 390,
+      height: 844,
+      scale: 2,
+      fontScale: 1,
+    }),
     Animated: {
       Value: AnimatedValue,
       timing: (animatedValue: AnimatedValue, config: { toValue: number }) => ({
@@ -74,6 +96,14 @@ vi.mock("react-native", async () => {
   };
 });
 
+vi.mock("@expo/vector-icons", async () => {
+  const ReactModule = await vi.importActual<typeof import("react")>("react");
+  return {
+    Ionicons: ({ name, ...props }: { name: string }) =>
+      ReactModule.createElement("Ionicons", { ...props, name }),
+  };
+});
+
 vi.mock("react-native-svg", async () => {
   const ReactModule = await vi.importActual<typeof import("react")>("react");
 
@@ -81,7 +111,8 @@ vi.mock("react-native-svg", async () => {
     children?: ReactNode;
   };
 
-  const Svg = ({ children, ...props }: SvgProps) => ReactModule.createElement("Svg", props, children);
+  const Svg = ({ children, ...props }: SvgProps) =>
+    ReactModule.createElement("Svg", props, children);
   const Circle = ({ children, ...props }: SvgProps) =>
     ReactModule.createElement("Circle", props, children);
 
@@ -112,9 +143,9 @@ import ProgressOverviewCard, {
 } from "./ProgressOverviewCard";
 
 const CONSISTENCY_OPTIONS = [
-  { id: "7d", label: "Last 7 days", days: 7 },
-  { id: "1m", label: "Last month", days: 30 },
-  { id: "3m", label: "Last 3 months", days: 90 },
+  { id: "7d", label: "7 days", days: 7 },
+  { id: "1m", label: "1 month", days: 30 },
+  { id: "3m", label: "3 months", days: 90 },
 ];
 
 function getTextValues(root: ReactTestInstance) {
@@ -132,8 +163,15 @@ function press(node: ReactTestInstance) {
 }
 
 function renderCard(overrides?: Partial<ProgressOverviewCardProps>) {
-  const onSelectConsistencyOption = vi.fn<(option: { id: string; label: string; days: number }) => void>();
-  const onToggleConsistencyMenu = vi.fn();
+  const onSelectConsistencyOption = vi.fn<
+    (
+      option: {
+        id: string;
+        label: string;
+        days: number;
+      },
+    ) => void
+  >();
   const onPressWeighIn = vi.fn();
   const onLogSession = vi.fn();
   const onSetupGym = vi.fn();
@@ -145,8 +183,6 @@ function renderCard(overrides?: Partial<ProgressOverviewCardProps>) {
     consistencyOptions: CONSISTENCY_OPTIONS,
     consistencyOption: CONSISTENCY_OPTIONS[0],
     onSelectConsistencyOption,
-    showConsistencyMenu: false,
-    onToggleConsistencyMenu,
     consistencyDaysWithWeighIns: 2,
     consistencyTotalDays: 7,
     consistencyPercent: 0.7,
@@ -184,7 +220,6 @@ function renderCard(overrides?: Partial<ProgressOverviewCardProps>) {
     root: renderer!.root,
     props,
     onSelectConsistencyOption,
-    onToggleConsistencyMenu,
     onPressWeighIn,
     onLogSession,
     onSetupGym,
@@ -212,16 +247,14 @@ describe("ProgressOverviewCard", () => {
     expect(textValues).not.toContain("Mar 2");
   });
 
-  it("supports consistency selector toggle and option selection", () => {
-    const { root, onToggleConsistencyMenu, onSelectConsistencyOption } = renderCard({
-      showConsistencyMenu: true,
-    });
+  it("opens the consistency menu and forwards option selection", () => {
+    const { root, onSelectConsistencyOption } = renderCard();
 
     act(() => {
       press(root.findByProps({ testID: "progress-overview-consistency-selector" }));
     });
 
-    expect(onToggleConsistencyMenu).toHaveBeenCalledTimes(1);
+    expect(root.findByProps({ testID: "progress-overview-consistency-backdrop" })).toBeTruthy();
 
     act(() => {
       press(root.findByProps({ testID: "progress-overview-consistency-option-1m" }));
@@ -231,12 +264,18 @@ describe("ProgressOverviewCard", () => {
   });
 
   it("keeps the selected period label and menu options", () => {
-    const { root } = renderCard({ showConsistencyMenu: true });
+    const { root } = renderCard();
+
+    act(() => {
+      press(root.findByProps({ testID: "progress-overview-consistency-selector" }));
+    });
+
     const textValues = getTextValues(root);
 
-    expect(textValues).toContain("Last 7 days");
-    expect(textValues).toContain("Last month");
-    expect(textValues).toContain("Last 3 months");
+    expect(textValues).toContain("7 days");
+    expect(textValues).toContain("1 month");
+    expect(textValues).toContain("3 months");
+    expect(textValues).not.toContain("Time range");
   });
 
   it("renders tap-to-enable copy for disabled steps and forwards presses", () => {
@@ -296,5 +335,4 @@ describe("ProgressOverviewCard", () => {
     expect(textValues).toContain("8400");
     expect(textValues).toContain("Avg/day");
   });
-
 });

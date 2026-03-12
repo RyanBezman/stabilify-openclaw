@@ -84,14 +84,12 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
     stepSummary,
     consistencyOptions,
     consistencyOption,
-    showConsistencyMenu,
     consistency,
     trendPoints,
     recentWeighIns,
     cadenceSummary,
     reminderSummary,
     selectConsistencyOption,
-    toggleConsistencyMenu,
     requestGymValidationForToday,
     allowAutoSupportFromNudge,
     deferAutoSupportFromNudge,
@@ -299,8 +297,6 @@ export default function AuthedHome({ navigation, route, user }: AuthedHomeProps)
               consistencyOptions={consistencyOptions}
               consistencyOption={consistencyOption}
               onSelectConsistencyOption={selectConsistencyOption}
-              showConsistencyMenu={showConsistencyMenu}
-              onToggleConsistencyMenu={toggleConsistencyMenu}
               consistencyDaysWithWeighIns={consistency.daysWithWeighIns}
               consistencyTotalDays={consistency.totalDays}
               consistencyPercent={consistency.percent}
