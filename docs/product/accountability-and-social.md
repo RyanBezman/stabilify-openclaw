@@ -157,6 +157,10 @@ Status mapping:
   - title: `Allow private auto-support?`
   - disclosure: `When you're behind, Stabilify can post a private support request to your close friends. It won't share weight, photos, or location details.`
   - saved acknowledgement: `Private auto-support is on for future behind-goal triggers. This week's request stays suppressed and won't backfill.`
+- Gym location permission disclosure must appear immediately before the first foreground location prompt used for gym setup or gym-session verification.
+- Required gym location disclosure copy:
+  - title: `Use location for gym check-ins?`
+  - disclosure: `Stabilify uses your location only while you find your gym or log a gym session. This helps verify that a check-in happened at your saved gym so it can count as verified. We do not use background location, and your exact location is not shared in support posts.`
 - Home + gym log surfaces must show plain-English reason text for non-verified gym sessions.
 - Home + gym log surfaces must show next-action guidance for each non-verified `status_reason`.
 - Notification entry points:

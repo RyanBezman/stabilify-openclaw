@@ -26,6 +26,17 @@ type LocationPermissionResponse = {
   status: "granted" | "denied" | "undetermined";
 };
 
+type AlertButton = {
+  text: string;
+  style?: "default" | "cancel" | "destructive";
+  onPress?: () => void;
+};
+
+type AlertOptions = {
+  cancelable?: boolean;
+  onDismiss?: () => void;
+};
+
 const mocks = vi.hoisted(() => ({
   useCameraPermissions: vi.fn<() => [CameraPermission | null, () => Promise<CameraPermissionResponse>]>(),
   requestCameraPermission: vi.fn<() => Promise<CameraPermissionResponse>>(),
@@ -35,7 +46,14 @@ const mocks = vi.hoisted(() => ({
   getCurrentPositionAsync: vi.fn<() => Promise<{ coords: { latitude: number; longitude: number } }>>(),
   fetchGymSessionDefaults: vi.fn<() => Promise<{ data: { timezone: string } | null; error?: string }>>(),
   saveGymSession: vi.fn(),
-  alert: vi.fn<(title: string, message?: string) => void>(),
+  alert: vi.fn<
+    (
+      title: string,
+      message?: string,
+      buttons?: AlertButton[],
+      options?: AlertOptions,
+    ) => void
+  >(),
 }));
 
 vi.mock("react-native", () => ({
@@ -79,6 +97,13 @@ async function flushAsyncWork(ticks = 4) {
 describe("useLogGymSession", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.alert.mockImplementation((_title, _message, buttons) => {
+      const preferredButton =
+        buttons?.find((button) => button.text === "Continue")
+        ?? buttons?.find((button) => button.text === "Open settings")
+        ?? buttons?.[0];
+      preferredButton?.onPress?.();
+    });
     mocks.requestCameraPermission.mockResolvedValue({ granted: true });
     mocks.useCameraPermissions.mockReturnValue([{ granted: true }, mocks.requestCameraPermission]);
     mocks.launchCameraAsync.mockResolvedValue({ canceled: true, assets: [] });
@@ -139,6 +164,12 @@ describe("useLogGymSession", () => {
 
     expect(mocks.getForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
     expect(mocks.requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1);
+    expect(mocks.alert).toHaveBeenCalledWith(
+      "Use location for gym check-ins?",
+      expect.stringContaining("only while you find your gym or log a gym session"),
+      expect.any(Array),
+      expect.objectContaining({ cancelable: true }),
+    );
     expect(hook.result.current.coords).toEqual({
       latitude: 40.7128,
       longitude: -74.006,
@@ -162,6 +193,27 @@ describe("useLogGymSession", () => {
     expect(hook.result.current.locationError).toBe("Location permission is required to verify sessions.");
     expect(hook.result.current.coords).toBeNull();
     expect(hook.result.current.currentStep).toBe(1);
+
+    hook.unmount();
+  });
+
+  it("lets the user back out before the OS location prompt", async () => {
+    mocks.getForegroundPermissionsAsync.mockResolvedValue({ status: "undetermined" });
+    mocks.alert.mockImplementation((_title, _message, buttons) => {
+      const notNowButton = buttons?.find((button) => button.text === "Not now");
+      notNowButton?.onPress?.();
+    });
+
+    const hook = renderTestHook(() => useLogGymSession());
+    await flushAsyncWork();
+
+    await act(async () => {
+      await hook.result.current.handleCaptureLocation();
+    });
+
+    expect(mocks.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
+    expect(hook.result.current.locationError).toBe("Location helps verify this gym check-in.");
+    expect(hook.result.current.canContinueWithoutLocation).toBe(true);
 
     hook.unmount();
   });

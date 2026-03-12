@@ -131,7 +131,7 @@ export default function GymProofSettingsCard({
               Location verification
             </Text>
             <Text className="mt-1.5 text-sm leading-5 text-neutral-400">
-              Boost your streak with photo + GPS check-in at the gym.
+              Use photo + location check-ins to verify gym sessions. Location is only used while finding your gym or logging a check-in.
             </Text>
           </View>
           <Switch

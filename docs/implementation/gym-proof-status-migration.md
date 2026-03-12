@@ -1,6 +1,6 @@
 # Gym Proof Status Migration
 
-Last updated: 2026-03-11
+Last updated: 2026-03-12
 
 ## Goal
 
@@ -63,6 +63,8 @@ Align gym proof state contracts across database, runtime types, and UI with poli
 - Retry CTA is shown for `provisional` sessions (location mismatch) to encourage a fresh verified log.
 - Weekly progress card still shows "Verified sessions only" so scoring expectations are unchanged.
 - Gym settings manual fallback requires selecting a geocoded address suggestion before location verification is considered configured (name-only/manual text is not sufficient).
+- Before the first foreground location prompt for gym setup or check-in verification, show the in-app primer titled `Use location for gym check-ins?`.
+- The primer copy must explain that location is used only while finding the gym or logging a gym session, that no background location is used, and that exact location is not shared in support posts.
 
 ## Analytics
 
@@ -89,3 +91,4 @@ Align gym proof state contracts across database, runtime types, and UI with poli
    - selecting a suggestion sets location coordinates,
    - editing the address text after selection clears the selected geocode until a new suggestion is chosen.
 8. On a fresh database, log a session with a photo and confirm the upload succeeds because the private `gym-proofs` bucket exists.
+9. On first location access from onboarding, gym settings, and log-gym-session flows, confirm the primer appears before the OS location prompt and uses the required disclosure copy.

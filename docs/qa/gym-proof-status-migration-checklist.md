@@ -1,6 +1,6 @@
 # Gym Proof Status Migration QA
 
-Last updated: 2026-03-10
+Last updated: 2026-03-12
 
 ## Goal
 
@@ -49,6 +49,7 @@ Validate that gym proof status + `status_reason` migration is correct across sch
 - "Verified today" lock state appears only for `verified`.
 - Log session success modal shows reason + guidance when saved status is non-verified.
 - Gym settings manual address flow only treats location as configured after a suggestion is selected from debounced geocode results.
+- First-time location access for gym setup/check-in shows an in-app disclosure before the OS permission prompt.
 
 ## Analytics
 
@@ -79,10 +80,12 @@ Validate that gym proof status + `status_reason` migration is correct across sch
    - changing address text after selection requires re-selecting a suggestion before save.
 10. On Home, tap `Add gym session` and confirm step 1 appears without auto-opening camera.
 11. Confirm camera permission is only requested after tapping `Open camera`.
-12. Confirm location permission is only requested after tapping `Tap to capture location`.
-13. Deny or fail location capture and confirm the flow offers `Continue without location`.
-14. Continue without location, save, and confirm the session is stored as `partial` with a non-null `status_reason`.
-15. Confirm the inline gym flow shows 4 steps (take photo, verify location, confirm/save, analyzing) and card height stays constant across all states.
-16. While inline gym flow/analyzing card is visible, confirm lower `Add gym session` row is hidden and `Log weight` row remains visible.
-17. On a fresh database, log a session with a proof photo and confirm save does not fail with a storage bucket error.
-18. Confirm the Home Progress card footer does not render a gym week label.
+12. Confirm first-time location access shows the `Use location for gym check-ins?` primer before the OS permission prompt.
+13. Confirm the primer copy says location is used only while finding a gym or logging a gym session, does not use background location, and exact location is not shared in support posts.
+14. Confirm location permission is only requested after tapping `Tap to capture location` or a nearby-gym search CTA.
+15. Deny or fail location capture and confirm the flow offers `Continue without location`.
+16. Continue without location, save, and confirm the session is stored as `partial` with a non-null `status_reason`.
+17. Confirm the inline gym flow shows 4 steps (take photo, verify location, confirm/save, analyzing) and card height stays constant across all states.
+18. While inline gym flow/analyzing card is visible, confirm lower `Add gym session` row is hidden and `Log weight` row remains visible.
+19. On a fresh database, log a session with a proof photo and confirm save does not fail with a storage bucket error.
+20. Confirm the Home Progress card footer does not render a gym week label.

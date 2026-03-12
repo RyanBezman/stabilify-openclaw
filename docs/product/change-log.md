@@ -1,5 +1,27 @@
 # Product Policy Change Log
 
+## 2026-03-12 - Gym location permission disclosure clarified
+
+### Added
+
+- Gym proof permission policy:
+  - show an in-app disclosure immediately before the first foreground location prompt for gym setup or gym-session verification.
+  - disclosure must state location is used only while finding a gym or logging a gym session.
+  - disclosure must state background location is not used and exact location is not shared in support posts.
+
+### Changed
+
+- Gym verification permission copy:
+  - the OS-level location prompt copy should explicitly say location is used while the app is in use to verify gym check-ins at the saved gym.
+
+### Removed
+
+- Ambiguity around why gym-location access is requested during setup and check-in flows.
+
+### Notes
+
+- This is a copy and permission-timing clarification only; it does not add background location collection.
+
 ## 2026-03-11 - Agent legibility harness added to merge gate
 
 ### Added

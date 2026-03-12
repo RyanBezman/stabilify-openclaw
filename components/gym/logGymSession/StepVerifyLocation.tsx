@@ -54,7 +54,7 @@ export default function StepVerifyLocation({
           Tap to capture location
         </Text>
         <Text className="mt-1 text-xs text-neutral-400">
-          Verify you're at the gym
+          Used only for this check-in, never in the background
         </Text>
       </TouchableOpacity>
 

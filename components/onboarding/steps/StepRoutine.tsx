@@ -9,6 +9,7 @@ import OptionPill from "../../ui/OptionPill";
 import Card from "../../ui/Card";
 import * as Location from "expo-location";
 import { fetchNearbyGyms } from "../../../lib/data/gyms";
+import { requestForegroundLocationPermissionWithPrimer } from "../../../lib/features/shared/locationPermission";
 
 type StepRoutineProps = {
   cadence: WeighInCadence | "";
@@ -31,7 +32,7 @@ type StepRoutineProps = {
   onGymSessionsTargetChange: (value: string) => void;
   onFindGyms: () => void;
   onGymsLoaded: (options: GymOption[]) => void;
-  onGymError: (message: string) => void;
+  onGymError: (message: string | null) => void;
   onGymSelect: (gym: GymOption) => void;
   onGymSearchChange: (value: string) => void;
   onToggleGymList: () => void;
@@ -79,9 +80,15 @@ export default function StepRoutine({
 }: StepRoutineProps) {
   const handleFindGyms = async () => {
     if (loadingGyms) return;
-    onFindGyms();
+    onGymError(null);
+
     try {
-      const permission = await Location.requestForegroundPermissionsAsync();
+      const permission = await requestForegroundLocationPermissionWithPrimer();
+      if (permission === null) {
+        return;
+      }
+
+      onFindGyms();
       if (permission.status !== "granted") {
         onGymError("Location permission is required to find nearby gyms.");
         Alert.alert(
@@ -122,7 +129,6 @@ export default function StepRoutine({
       onGymError("Couldn't load nearby gyms. Try again.");
     }
   };
-
 
   return (
     <View className="gap-5">
@@ -222,18 +228,20 @@ export default function StepRoutine({
               Set your gym location
             </Text>
             <HelperText className="mt-1">
-              We'll use this to verify sessions by distance. Powered by OpenStreetMap.
+              We only use your location while finding your gym or verifying a
+              check-in. It is never shared in support posts. Powered by
+              OpenStreetMap.
             </HelperText>
-          <TouchableOpacity
-            onPress={handleFindGyms}
-            className="mt-3 rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3"
-            activeOpacity={0.8}
-            disabled={loadingGyms}
-          >
-            <Text className="text-sm font-semibold text-white">
-              {loadingGyms ? "Searching nearby gyms..." : "Find nearby gyms"}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleFindGyms}
+              className="mt-3 rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3"
+              activeOpacity={0.8}
+              disabled={loadingGyms}
+            >
+              <Text className="text-sm font-semibold text-white">
+                {loadingGyms ? "Searching nearby gyms..." : "Find nearby gyms"}
+              </Text>
+            </TouchableOpacity>
             {gymError ? (
               <HelperText className="mt-2 text-rose-400">{gymError}</HelperText>
             ) : null}

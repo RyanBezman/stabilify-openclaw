@@ -7,6 +7,7 @@ import {
   saveGymSession,
 } from "../../data/gymSessions";
 import type { GymSessionStatus, GymSessionStatusReason } from "../../data/types";
+import { requestForegroundLocationPermissionWithPrimer } from "../shared/locationPermission";
 
 type SaveSessionResult = {
   saved: boolean;
@@ -127,12 +128,15 @@ export function useLogGymSession() {
     let granted = locationGranted;
 
     if (!granted) {
-      const existingPermission = await Location.getForegroundPermissionsAsync();
-      if (existingPermission.status === "granted") {
+      const permission = await requestForegroundLocationPermissionWithPrimer();
+      if (permission === null) {
+        setLocationError("Location helps verify this gym check-in.");
+        setCanContinueWithoutLocation(true);
+        return;
+      }
+
+      if (permission.status === "granted") {
         granted = true;
-      } else {
-        const requestedPermission = await Location.requestForegroundPermissionsAsync();
-        granted = requestedPermission.status === "granted";
       }
       setLocationGranted(granted);
     }

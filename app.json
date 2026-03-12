@@ -48,7 +48,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Stabilify to access your location to verify gym sessions."
+          "locationWhenInUsePermission": "Allow Stabilify to access your location while you use the app so gym check-ins can be verified at your saved gym."
         }
       ],
       [

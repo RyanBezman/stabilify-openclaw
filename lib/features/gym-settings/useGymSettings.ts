@@ -13,6 +13,7 @@ import {
 import { DEFAULT_GYM_RADIUS_METERS } from "./types";
 import type { GymOption } from "./types";
 import { isSessionRequired } from "../shared";
+import { requestForegroundLocationPermissionWithPrimer } from "../shared/locationPermission";
 
 export function useGymSettings() {
   const [loading, setLoading] = useState(true);
@@ -202,10 +203,14 @@ export function useGymSettings() {
     if (loadingGyms) return;
 
     setGymError(null);
-    setLoadingGyms(true);
 
     try {
-      const permission = await Location.requestForegroundPermissionsAsync();
+      const permission = await requestForegroundLocationPermissionWithPrimer();
+      if (permission === null) {
+        return;
+      }
+
+      setLoadingGyms(true);
       if (permission.status !== "granted") {
         setGymError("Location permission is required to find nearby gyms.");
         setLoadingGyms(false);
