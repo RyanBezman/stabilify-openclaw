@@ -21,6 +21,7 @@ type ProfileMenuSheetProps = {
   pendingFollowRequestsCount: number;
   signingOut: boolean;
   onClose: () => void;
+  onOpenCloseFriends: () => void;
   onOpenSettings: () => void;
   onOpenFollowRequests: () => void;
   onOpenUpgradePlan: () => void;
@@ -34,6 +35,7 @@ export default function ProfileMenuSheet({
   pendingFollowRequestsCount,
   signingOut,
   onClose,
+  onOpenCloseFriends,
   onOpenSettings,
   onOpenFollowRequests,
   onOpenUpgradePlan,
@@ -124,6 +126,17 @@ export default function ProfileMenuSheet({
                 testID="profile-settings-row"
               >
                 <Text className="text-base font-medium text-white">Settings</Text>
+                <Ionicons name="chevron-forward" size={16} color="#737373" />
+              </TouchableOpacity>
+
+              <View className="h-px bg-neutral-800" />
+
+              <TouchableOpacity
+                onPress={onOpenCloseFriends}
+                className="flex-row items-center justify-between px-5 py-4"
+                testID="profile-close-friends-row"
+              >
+                <Text className="text-base font-medium text-white">Close Friends</Text>
                 <Ionicons name="chevron-forward" size={16} color="#737373" />
               </TouchableOpacity>
 

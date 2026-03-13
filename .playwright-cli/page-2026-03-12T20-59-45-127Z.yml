@@ -1,0 +1,20 @@
+- generic [ref=e1]:
+  - generic [ref=e843]:
+    - generic [ref=e844]:
+      - generic [ref=e846] [cursor=pointer]: ←
+      - generic [ref=e847]: Blocked Accounts
+    - generic [ref=e848]: Blocked accounts stay hidden from your search results and can't follow you or view your searchable social surfaces until you unblock them.
+    - generic [ref=e850]:
+      - generic [ref=e855]:
+        - generic [ref=e856]: Terence Bezman
+        - generic [ref=e857]: "@terencebezman"
+        - generic [ref=e858]: Bulk mode.
+      - generic [ref=e862] [cursor=pointer]: Unblock
+  - dialog [ref=e864]:
+    - generic [ref=e867]:
+      - generic [ref=e870]: Unblock account
+      - generic [ref=e871]: Unblock @terencebezman? They can discover your public profile and send follow requests again.
+      - generic [ref=e872]:
+        - generic [ref=e875] [cursor=pointer]: Unblock
+        - button "Cancel" [ref=e876] [cursor=pointer]:
+          - generic [ref=e877]: Cancel

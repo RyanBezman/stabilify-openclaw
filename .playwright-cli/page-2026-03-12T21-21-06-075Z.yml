@@ -1,0 +1,18 @@
+- generic [ref=e205]:
+  - generic [ref=e206]:
+    - generic [ref=e208] [cursor=pointer]: ←
+    - generic [ref=e209]: Welcome Back
+  - generic [ref=e210]:
+    - generic [ref=e211]:
+      - generic [ref=e212]: Email
+      - textbox "john@example.com" [ref=e213]
+    - generic [ref=e214]:
+      - generic [ref=e215]: Password
+      - textbox "Enter your password" [ref=e216]
+  - generic [ref=e218]: Forgot password?
+  - generic [ref=e221] [cursor=pointer]: Sign In
+  - generic [ref=e224] [cursor=pointer]: Don't have an account? Sign up
+  - generic [ref=e227]: OR
+  - generic [ref=e230] [cursor=pointer]:
+    - img [ref=e232]
+    - generic [ref=e237]: Continue with Google

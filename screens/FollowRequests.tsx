@@ -11,6 +11,7 @@ import {
   fetchActionableNotifications,
   type ActionableNotification,
 } from "../lib/data/notifications";
+import { publishRelationshipSyncEvent } from "../lib/features/shared";
 import { getProfilePhotoSignedUrl } from "../lib/features/profile";
 import { formatShortDate } from "../lib/utils/metrics";
 import AppScreen from "../components/ui/AppScreen";
@@ -94,6 +95,11 @@ export default function FollowRequests({ navigation }: FollowRequestsProps) {
       setNotifications((prev) =>
         prev.filter((entry) => !(entry.type === "follow_request" && entry.requestId === requestId)),
       );
+      publishRelationshipSyncEvent({
+        type: "follow_state_changed",
+        targetUserId: requesterUserId,
+        nextState: action === "accept" ? "accepted" : "rejected",
+      });
     },
     [updatingFollowRequestId],
   );

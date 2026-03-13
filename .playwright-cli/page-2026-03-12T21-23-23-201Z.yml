@@ -1,0 +1,275 @@
+- generic [ref=e242]:
+  - generic [ref=e243]:
+    - generic [ref=e250]:
+      - generic [ref=e251]:
+        - generic [ref=e253]:
+          - img [ref=e415]
+          - generic [ref=e258]: Stabilify
+        - button [ref=e416] [cursor=pointer]:
+          - generic [ref=e260]: 
+          - generic [ref=e262]: "1"
+      - generic [ref=e263]:
+        - generic [ref=e264]:
+          - generic [ref=e268]:
+            - generic [ref=e269]: Ryan Bezman
+            - generic [ref=e270]: "Maintain goal: 200-210 lb"
+          - generic [ref=e271]:
+            - generic [ref=e272]: Streak
+            - generic [ref=e273]: 3 days
+        - generic [ref=e274]:
+          - generic [ref=e275]:
+            - generic [ref=e276]: Latest weigh-in
+            - generic [ref=e277]: 205.4 lb
+          - generic [ref=e278]:
+            - generic [ref=e279]: Status
+            - generic [ref=e280]: In range
+      - generic [ref=e281]:
+        - generic [ref=e282]:
+          - generic [ref=e283]: Progress
+          - button [ref=e417] [cursor=pointer]:
+            - generic [ref=e286]: 
+            - generic [ref=e287]: 7 days
+            - generic [ref=e288]: 
+        - generic [ref=e289]:
+          - generic [ref=e291]:
+            - generic [ref=e292]:
+              - img [ref=e293]
+              - generic [ref=e296]:
+                - generic [ref=e297]: 43%
+                - generic [ref=e298]: 3/7
+            - generic [ref=e299]: Weigh-ins
+          - generic [ref=e301]:
+            - generic [ref=e302]:
+              - img [ref=e303]
+              - generic [ref=e306]:
+                - generic [ref=e307]: 25%
+                - generic [ref=e308]: 1/4
+            - generic [ref=e309]: Gym sessions
+          - generic [ref=e312] [cursor=pointer]:
+            - generic [ref=e313]:
+              - img [ref=e314]
+              - generic [ref=e317]:
+                - generic [ref=e318]: "Off"
+                - generic [ref=e319]: Enable
+            - generic [ref=e320]: Steps
+      - generic [ref=e321]:
+        - generic [ref=e322] [cursor=pointer]:
+          - generic [ref=e324]: Log weight
+          - generic [ref=e326]: 
+        - generic [ref=e328] [cursor=pointer]:
+          - generic [ref=e330]: Set gym location
+          - generic [ref=e332]: 
+      - generic [ref=e333]:
+        - generic [ref=e334]:
+          - generic [ref=e335]: Weight trend
+          - generic [ref=e336]: Range 204.8 lb - 205.6 lb
+        - img [ref=e727]
+        - generic [ref=e371]:
+          - generic [ref=e372]: Feb 20
+          - generic [ref=e373]: Mar 12
+      - generic [ref=e374]:
+        - generic [ref=e375]: Recent weigh-ins
+        - generic [ref=e376]:
+          - generic [ref=e377]:
+            - generic [ref=e378]: Mar 12
+            - generic [ref=e379]: 205.4 lb
+          - generic [ref=e380]:
+            - generic [ref=e381]: Mar 11
+            - generic [ref=e382]: 204.8 lb
+          - generic [ref=e383]:
+            - generic [ref=e384]: Mar 10
+            - generic [ref=e385]: 205.6 lb
+          - generic [ref=e386]:
+            - generic [ref=e387]: Mar 2
+            - generic [ref=e388]: 205.6 lb
+          - generic [ref=e389]:
+            - generic [ref=e390]: Mar 1
+            - generic [ref=e391]: 205.6 lb
+      - generic [ref=e392]:
+        - generic [ref=e394]: "Cadence: Daily"
+        - generic [ref=e395]: Reminds at 07:30
+    - generic [ref=e422]:
+      - generic [ref=e424]: Feed
+      - generic [ref=e429]:
+        - generic [ref=e432]:
+          - button [ref=e811] [cursor=pointer]
+          - generic [ref=e437]:
+            - generic [ref=e439]:
+              - button [ref=e812] [cursor=pointer]:
+                - generic [ref=e441]: Ryan Bezman
+              - generic [ref=e442]: 5h ago
+            - generic [ref=e443]: "Quick reflection after this week: sleep and hydration made a bigger difference than I expected. I tracked my meals, kept portions steady, and still had enough energy to push the final set. The scale barely moved, but consistency is finally..."
+            - generic [ref=e445] [cursor=pointer]: Show more
+            - generic [ref=e448]: Public
+        - generic [ref=e451]:
+          - button [ref=e813] [cursor=pointer]
+          - generic [ref=e456]:
+            - generic [ref=e458]:
+              - button [ref=e814] [cursor=pointer]:
+                - generic [ref=e460]: Matthew Bezman
+              - generic [ref=e461]: Yesterday
+            - generic [ref=e462]: "Quick reflection after this week: sleep and hydration made a bigger difference than I expected. I tracked my meals, kept portions steady, and still had enough energy to push the final set. The scale barely moved, but consistency is finally..."
+            - generic [ref=e464] [cursor=pointer]: Show more
+            - generic [ref=e467]: Public
+        - generic [ref=e470]:
+          - button [ref=e815] [cursor=pointer]
+          - generic [ref=e475]:
+            - generic [ref=e477]:
+              - button [ref=e816] [cursor=pointer]:
+                - generic [ref=e479]: Chris Cafiso
+              - generic [ref=e480]: Yesterday
+            - generic [ref=e481]: "Longer note for accountability: I almost skipped this session after work, but I went anyway and kept it simple. Warmup, compound lifts, short cooldown, done. No heroics, just execution. This kind of boring consistency is exactly what I need..."
+            - generic [ref=e483] [cursor=pointer]: Show more
+            - generic [ref=e486]: Public
+        - generic [ref=e508]:
+          - button [ref=e817] [cursor=pointer]
+          - generic [ref=e513]:
+            - generic [ref=e515]:
+              - button [ref=e818] [cursor=pointer]:
+                - generic [ref=e517]: Ryan Bezman
+              - generic [ref=e518]: 2d ago
+            - generic [ref=e519]: Hit my target session and finished stronger than I started.
+            - generic [ref=e522]: Public
+        - generic [ref=e559]:
+          - button [ref=e819] [cursor=pointer]
+          - generic [ref=e564]:
+            - generic [ref=e566]:
+              - button [ref=e820] [cursor=pointer]:
+                - generic [ref=e568]: Chris Cafiso
+              - generic [ref=e569]: 3d ago
+            - generic [ref=e570]: Another day of consistency in the books.
+            - generic [ref=e573]: Public
+        - generic [ref=e542]:
+          - button [ref=e821] [cursor=pointer]
+          - generic [ref=e547]:
+            - generic [ref=e549]:
+              - button [ref=e822] [cursor=pointer]:
+                - generic [ref=e551]: Matthew Bezman
+              - generic [ref=e552]: 3d ago
+            - generic [ref=e553]: Kept the routine simple and actually followed through.
+            - generic [ref=e556]: Public
+        - generic [ref=e576]:
+          - button [ref=e823] [cursor=pointer]
+          - generic [ref=e581]:
+            - generic [ref=e583]:
+              - button [ref=e824] [cursor=pointer]:
+                - generic [ref=e585]: Ryan Bezman
+              - generic [ref=e586]: 4d ago
+            - generic [ref=e587]: Kept the routine simple and actually followed through.
+            - generic [ref=e590]: Public
+        - generic [ref=e762]:
+          - button [ref=e825] [cursor=pointer]
+          - generic [ref=e767]:
+            - generic [ref=e769]:
+              - button [ref=e826] [cursor=pointer]:
+                - generic [ref=e771]: Matthew Bezman
+              - generic [ref=e772]: 5d ago
+            - generic [ref=e773]: Locked in a clean workout today and kept the pace steady.
+            - generic [ref=e776]: Public
+        - generic [ref=e779]:
+          - button [ref=e827] [cursor=pointer]
+          - generic [ref=e784]:
+            - generic [ref=e786]:
+              - button [ref=e828] [cursor=pointer]:
+                - generic [ref=e788]: Chris Cafiso
+              - generic [ref=e789]: 5d ago
+            - generic [ref=e790]: Another day of consistency in the books.
+            - generic [ref=e793]: Public
+        - generic [ref=e796]:
+          - button [ref=e829] [cursor=pointer]
+          - generic [ref=e801]:
+            - generic [ref=e803]:
+              - button [ref=e830] [cursor=pointer]:
+                - generic [ref=e805]: Ryan Bezman
+              - generic [ref=e806]: 6d ago
+            - generic [ref=e807]: Hit my target session and finished stronger than I started.
+            - generic [ref=e810]: Public
+      - button [ref=e831] [cursor=pointer]:
+        - generic [ref=e609]: 
+    - generic [ref=e839]:
+      - generic [ref=e840]:
+        - generic [ref=e842]: ryanbezman
+        - button "Open profile menu" [ref=e843] [cursor=pointer]:
+          - generic [ref=e844]: 
+      - generic [ref=e845]:
+        - generic [ref=e846]:
+          - generic [ref=e847]:
+            - generic [ref=e848]:
+              - generic [ref=e854] [cursor=pointer]: 
+              - generic [ref=e856]: Pro
+            - generic [ref=e857]: Ryan Bezman
+            - generic [ref=e858]: "@ryanbezman"
+            - generic [ref=e859]: Lifting daily.
+          - generic [ref=e860]:
+            - generic [ref=e862]:
+              - generic [ref=e863]: "15"
+              - generic [ref=e864]: Posts
+            - generic [ref=e866]:
+              - generic [ref=e867]: "0"
+              - generic [ref=e868]: Followers
+            - generic [ref=e870]:
+              - generic [ref=e871]: "1"
+              - generic [ref=e872]: Following
+        - generic [ref=e873]:
+          - generic [ref=e875] [cursor=pointer]: Posts
+          - generic [ref=e877] [cursor=pointer]: Progress
+        - generic [ref=e879]:
+          - generic [ref=e880]:
+            - generic [ref=e887]:
+              - generic [ref=e888]:
+                - generic [ref=e889]:
+                  - generic [ref=e890]: Ryan Bezman
+                  - generic [ref=e891]: 5h ago
+                - generic [ref=e893] [cursor=pointer]: Delete
+              - generic [ref=e894]: "Quick reflection after this week: sleep and hydration made a bigger difference than I expected. I tracked my meals, kept portions steady, and still had enough energy to push the final set. The scale barely moved, but consistency is finally..."
+              - generic [ref=e896] [cursor=pointer]: Show more
+              - generic [ref=e899]: Public
+            - generic [ref=e906]:
+              - generic [ref=e907]:
+                - generic [ref=e908]:
+                  - generic [ref=e909]: Ryan Bezman
+                  - generic [ref=e910]: 2d ago
+                - generic [ref=e912] [cursor=pointer]: Delete
+              - generic [ref=e913]: Hit my target session and finished stronger than I started.
+              - generic [ref=e916]: Public
+            - generic [ref=e923]:
+              - generic [ref=e924]:
+                - generic [ref=e925]:
+                  - generic [ref=e926]: Ryan Bezman
+                  - generic [ref=e927]: 4d ago
+                - generic [ref=e929] [cursor=pointer]: Delete
+              - generic [ref=e930]: Kept the routine simple and actually followed through.
+              - generic [ref=e933]: Public
+            - generic [ref=e940]:
+              - generic [ref=e941]:
+                - generic [ref=e942]:
+                  - generic [ref=e943]: Ryan Bezman
+                  - generic [ref=e944]: 6d ago
+                - generic [ref=e946] [cursor=pointer]: Delete
+              - generic [ref=e947]: Hit my target session and finished stronger than I started.
+              - generic [ref=e950]: Public
+            - generic [ref=e957]:
+              - generic [ref=e958]:
+                - generic [ref=e959]:
+                  - generic [ref=e960]: Ryan Bezman
+                  - generic [ref=e961]: Mar 3
+                - generic [ref=e963] [cursor=pointer]: Delete
+              - generic [ref=e964]: Progress feels slow until you look back a few weeks.
+              - generic [ref=e967]: Public
+          - generic [ref=e971] [cursor=pointer]: Load more
+  - generic [ref=e398]:
+    - button "Home" [ref=e399] [cursor=pointer]:
+      - generic [ref=e400]: 
+      - generic [ref=e401]: Home
+    - button "Feed" [ref=e402] [cursor=pointer]:
+      - generic [ref=e403]: 
+      - generic [ref=e404]: Feed
+    - button "Search" [ref=e405] [cursor=pointer]:
+      - generic [ref=e406]: 
+      - generic [ref=e407]: Search
+    - button "Coaches" [ref=e408] [cursor=pointer]:
+      - generic [ref=e409]: 
+      - generic [ref=e410]: Coaches
+    - button "Profile" [active] [ref=e411] [cursor=pointer]:
+      - generic [ref=e412]: 
+      - generic [ref=e413]: Profile

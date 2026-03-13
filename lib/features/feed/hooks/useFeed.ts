@@ -8,6 +8,7 @@ import {
 import { isNearFeedBottom } from "../models/pagination";
 import {
   isAsyncWorkflowBusy,
+  subscribeRelationshipSyncEvents,
 } from "../../shared";
 import { DEFAULT_AUDIENCE_HINT } from "../models/audience";
 import type { AuthorContext } from "../models/authorContext";
@@ -90,6 +91,15 @@ export function useFeed() {
       active = false;
     };
   }, [applyAuthorContext]);
+
+  useEffect(() => {
+    return subscribeRelationshipSyncEvents(() => {
+      if (loading || refreshing) {
+        return;
+      }
+      void refreshFeed();
+    });
+  }, [loading, refreshFeed, refreshing]);
 
   const loadFeedPage = useCallback(async () => {
     if (loadingMore || loading || !hasMore) {

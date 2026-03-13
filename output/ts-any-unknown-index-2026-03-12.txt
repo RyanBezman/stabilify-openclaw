@@ -1,0 +1,214 @@
+supabase/functions/coach-chat/coordinator.ts:17:  checkin: unknown;
+supabase/functions/coach-chat/repositories/planVersions.ts:36:    planJson: Record<string, unknown>;
+test/setup.ts:18:console.error = (...args: unknown[]) => {
+supabase/functions/coach-chat/schemas.ts:6:  value?: unknown;
+supabase/functions/coach-chat/schemas.ts:66:function asRecord(value: unknown): Record<string, unknown> | null {
+supabase/functions/coach-chat/schemas.ts:68:  return value as Record<string, unknown>;
+supabase/functions/coach-chat/schemas.ts:71:function asNumber(value: unknown, fallback = 0) {
+supabase/functions/coach-chat/schemas.ts:76:function asInt(value: unknown, min: number, max: number, fallback: number) {
+supabase/functions/coach-chat/schemas.ts:81:function asBool(value: unknown, fallback = false) {
+supabase/functions/coach-chat/schemas.ts:85:function asText(value: unknown, fallback = "", max = 800) {
+supabase/functions/coach-chat/schemas.ts:90:function asNullableNumber(value: unknown) {
+supabase/functions/coach-chat/schemas.ts:96:function asNullableText(value: unknown, max = 1200) {
+supabase/functions/coach-chat/schemas.ts:103:function safeIsoTimestamp(value: unknown) {
+supabase/functions/coach-chat/schemas.ts:112:  raw: unknown,
+supabase/functions/coach-chat/schemas.ts:175:  raw: unknown
+supabase/functions/coach-chat/schemas.ts:180:  const normalizeDiff = (input: unknown): ArtifactDiffPatch[] => {
+supabase/functions/coach-chat/schemas.ts:213:export function normalizeCoachMessageArtifact(raw: unknown): ArtifactCoachMessage {
+supabase/functions/coach-chat/llmClient.ts:15:    schema: Record<string, unknown>;
+supabase/functions/coach-chat/openaiClient.ts:9:    schema: Record<string, unknown>;
+supabase/functions/coach-voice/index.ts:37:function json(status: number, body: unknown) {
+supabase/functions/coach-voice/index.ts:227:  const synthPayload: Record<string, unknown> = {
+lib/data/supportAutomation.ts:271:  const platform = input.platform.trim() || "unknown";
+supabase/functions/coach-chat/index.ts:108:  checkin_json?: Record<string, unknown> | null;
+supabase/functions/coach-chat/index.ts:112:  adjustment_json?: Record<string, unknown> | null;
+supabase/functions/coach-chat/index.ts:129:  checkin?: WeeklyCheckinInput & Record<string, unknown>;
+supabase/functions/coach-chat/index.ts:168:type CheckinFailureCategory = "validation" | "config" | "database" | "openai" | "timeout" | "auth" | "unknown";
+supabase/functions/coach-chat/index.ts:190:  [key: string]: unknown;
+supabase/functions/coach-chat/index.ts:199:function json(status: number, body: unknown) {
+supabase/functions/coach-chat/index.ts:282:function isValidWeightUnit(value: unknown): value is WeightUnit {
+supabase/functions/coach-chat/index.ts:293:function validateWeeklyCheckinInput(input: unknown): input is WeeklyCheckinInput {
+supabase/functions/coach-chat/index.ts:334:  value: unknown
+supabase/functions/coach-chat/index.ts:339:function normalizeFeedbackContext(value: unknown) {
+supabase/functions/coach-chat/index.ts:386:function inferCheckinFailureCategory(error: unknown): CheckinFailureCategory {
+supabase/functions/coach-chat/index.ts:391:  if (!raw) return "unknown";
+supabase/functions/coach-chat/index.ts:408:  return "unknown";
+supabase/functions/coach-chat/index.ts:428:function normalizeCheckinFailure(error: unknown, action: CheckinAction) {
+supabase/functions/coach-chat/index.ts:437:    unknown: 500,
+supabase/functions/coach-chat/index.ts:474:function normalizeCheckinSummaryTimeout(rawTimeout: unknown) {
+supabase/functions/coach-chat/index.ts:543:      ? (existing.checkin_json as Record<string, unknown>)
+supabase/functions/coach-chat/index.ts:570:  value?: unknown;
+supabase/functions/coach-chat/index.ts:602:function applyAddOrReplacePatch(target: unknown, path: string[], value: unknown) {
+supabase/functions/coach-chat/index.ts:605:  let cursor: unknown = target;
+supabase/functions/coach-chat/index.ts:625:    const record = cursor as Record<string, unknown>;
+supabase/functions/coach-chat/index.ts:646:  (cursor as Record<string, unknown>)[leaf] = cloneJsonValue(value);
+supabase/functions/coach-chat/index.ts:649:function applyRemovePatch(target: unknown, path: string[]) {
+supabase/functions/coach-chat/index.ts:652:  let cursor: unknown = target;
+supabase/functions/coach-chat/index.ts:663:    cursor = (cursor as Record<string, unknown>)[segment];
+supabase/functions/coach-chat/index.ts:676:  delete (cursor as Record<string, unknown>)[leaf];
+supabase/functions/coach-chat/index.ts:679:function normalizeDiffPatchList(value: unknown) {
+supabase/functions/coach-chat/index.ts:684:      const row = entry as Record<string, unknown>;
+supabase/functions/coach-chat/index.ts:705:function normalizeNutritionPatchSet(recommendations: Record<string, unknown>) {
+supabase/functions/coach-chat/index.ts:727:  const nextPlan = cloneJsonValue(activePlan) as Record<string, unknown>;
+supabase/functions/coach-chat/index.ts:745:  recommendations: Record<string, unknown>;
+supabase/functions/coach-chat/index.ts:773:    planJson: patchedPlan as Record<string, unknown>,
+supabase/functions/coach-chat/index.ts:785:function validateWorkoutIntake(input: unknown): input is WorkoutIntake {
+supabase/functions/coach-chat/index.ts:797:function validateNutritionIntake(input: unknown): input is NutritionIntake {
+supabase/functions/coach-chat/index.ts:810:function isValidWorkoutPlan(input: unknown): input is WorkoutPlan {
+supabase/functions/coach-chat/index.ts:851:function isValidNutritionPlan(input: unknown): input is NutritionPlan {
+supabase/functions/coach-chat/index.ts:872:function isValidPlanForType(input: unknown, planType: PlanType): input is CoachPlan {
+supabase/functions/coach-chat/index.ts:882:function validateIntakeForType(input: unknown, planType: PlanType): input is CoachIntake {
+supabase/functions/coach-chat/index.ts:893:function isValidCoachGender(value: unknown): value is CoachGender {
+supabase/functions/coach-chat/index.ts:897:function isValidCoachPersonality(value: unknown): value is CoachPersonality {
+supabase/functions/coach-chat/index.ts:1643:  input: unknown,
+supabase/functions/coach-chat/index.ts:1732:  row: Record<string, unknown>,
+supabase/functions/coach-chat/index.ts:1737:      ? (row.checkin_json as Record<string, unknown>)
+supabase/functions/coach-chat/index.ts:1741:      ? (row.adjustment_json as Record<string, unknown>)
+supabase/functions/coach-chat/index.ts:1789:    rows: (rows ?? []).map((row) => mapWeeklyCheckinRow(row as Record<string, unknown>, preferredUnit)),
+supabase/functions/coach-chat/index.ts:1814:    row: mapWeeklyCheckinRow(data as Record<string, unknown>, preferredUnit),
+supabase/functions/coach-chat/index.ts:1939:    `Use ${summaryWeightUnit} units for any weight mentions.`,
+supabase/functions/coach-chat/index.ts:2025:    checkinJson?: Record<string, unknown> | null;
+supabase/functions/coach-chat/index.ts:2029:    adjustmentJson?: Record<string, unknown> | null;
+supabase/functions/coach-chat/index.ts:2073:    row: mapWeeklyCheckinRow(data as Record<string, unknown>, preferredUnit),
+supabase/functions/coach-chat/index.ts:2103:    row: mapWeeklyCheckinRow(data as Record<string, unknown>, preferredUnit),
+supabase/functions/coach-chat/index.ts:2119:    planJson: plan as Record<string, unknown>,
+supabase/functions/coach-chat/index.ts:2293:      const parsed = JSON.parse(raw) as { assistant_text?: string; plan_json?: unknown };
+supabase/functions/coach-chat/index.ts:2311:  throw new Error(`Failed to parse structured plan output: ${parseError || "unknown parse error"}`);
+supabase/functions/coach-chat/index.ts:2990:              checkinJson: coordinatorOutput.normalizedCheckin as Record<string, unknown>,
+supabase/functions/coach-chat/index.ts:2994:              adjustmentJson: coordinatorOutput.recommendations as Record<string, unknown>,
+supabase/functions/coach-chat/index.ts:3012:              ? (coordinatorOutput.recommendations as Record<string, unknown>)
+supabase/functions/coach-chat/index.ts:3662:        : "No draft plan exists. Do not reference any prior draft details unless the user explicitly asks about history.",
+lib/data/activityEvents.ts:20:  payload?: Record<string, unknown>;
+lib/data/activityEvents.ts:93:      payload: (entry.payload as Record<string, unknown> | null) ?? {},
+components/gym/logGymSession/StepTakePhoto.tsx:9:  onRequestPermission: () => void | Promise<unknown>;
+lib/data/types.ts:50:  payload: Record<string, unknown>;
+lib/data/postPhotoPayload.ts:13:function toStringArray(value: unknown): string[] {
+lib/data/postPhotoPayload.ts:40:  let parsed: unknown;
+lib/data/postPhotoPayload.ts:51:  const pushMediaCandidate = (value: unknown) => {
+lib/data/postPhotoPayload.ts:65:    const objectValue = parsed as Record<string, unknown>;
+lib/data/postPhotoPayload.ts:95:    ? (parsed as Record<string, unknown>).mediaPaths
+lib/features/log-gym-session/useLogGymSession.test.ts:170:      expect.any(Array),
+components/coaches/checkins/CoachAdjustmentsCard.tsx:8:  value?: unknown;
+components/coaches/checkins/CoachAdjustmentsCard.tsx:21:function summarizeDiffValue(value: unknown) {
+screens/Onboarding.tsx:68:  const handleTimeChange = (_event: unknown, selected?: Date) => {
+lib/features/log-weigh-in/types.ts:58:  handleDateChange: (_event: unknown, selected?: Date) => void;
+lib/features/log-weigh-in/types.ts:59:  handleTimeChange: (_event: unknown, selected?: Date) => void;
+lib/features/log-weigh-in/useLogWeighIn.ts:118:  const handleDateChange = useCallback((_event: unknown, selected?: Date) => {
+lib/features/log-weigh-in/useLogWeighIn.ts:135:  const handleTimeChange = useCallback((_event: unknown, selected?: Date) => {
+lib/features/coaches/services/activeCoachRecovery.ts:4:export function hasNoActiveCoachSelectedError(error: unknown) {
+lib/features/coaches/services/activeCoachRecovery.ts:11:  body: Record<string, unknown>;
+lib/features/coaches/services/activeCoachRecovery.ts:13:  invokeCoachChat: (body: Record<string, unknown>) => Promise<T>;
+lib/features/coaches/services/api.ts:29:  profile_json: Record<string, unknown> | null;
+lib/features/coaches/services/api.ts:342:): Promise<Result<{ profile: Record<string, unknown> | null }>> {
+lib/features/coaches/services/api.ts:350:  return ok({ profile: (data?.profile_json as Record<string, unknown> | null) ?? null });
+lib/features/coaches/services/api.ts:353:function hasRequiredCoachProfileFields(profile: Record<string, unknown> | null): boolean {
+lib/features/coaches/services/api.ts:355:  const goals = profile.goals as Record<string, unknown> | undefined;
+lib/features/coaches/services/api.ts:356:  const schedule = profile.scheduleConstraints as Record<string, unknown> | undefined;
+lib/features/coaches/services/api.ts:378:  profileJson: Record<string, unknown>,
+lib/features/coaches/services/checkins.ts:75:function clampWholeNumber(value: unknown, min: number, max: number, fallback: number) {
+lib/features/coaches/services/checkins.ts:80:function clampDecimal(value: unknown, min: number, max: number, fallback: number, decimals = 1) {
+lib/features/coaches/services/checkins.ts:86:function normalizeText(value: unknown, options?: { maxLength?: number }) {
+lib/features/coaches/services/checkins.ts:94:function normalizeOptionalText(value: unknown, maxLength = 600): string | null {
+lib/features/coaches/services/checkins.ts:99:function normalizeOptionalNumber(value: unknown): number | null {
+lib/features/coaches/services/checkins.ts:105:function normalizeBool(value: unknown, fallback = false) {
+lib/features/coaches/services/checkins.ts:109:function normalizeTimestamp(value: unknown) {
+lib/features/coaches/services/checkins.ts:117:function normalizeDifficulty(value: unknown): WeeklyCheckinDifficulty {
+lib/features/coaches/services/checkins.ts:123:function normalizeSubjectiveAdherence(value: unknown): WeeklyCheckinAdherenceSubjective | null {
+lib/features/coaches/services/checkins.ts:129:function normalizeRating(value: unknown, fallback: WeeklyCheckinRating): WeeklyCheckinRating {
+lib/features/coaches/services/checkins.ts:133:function normalizeWeightSnapshot(input: unknown): WeeklyWeightSnapshot {
+lib/features/coaches/services/checkins.ts:164:function toRowRecord(value: unknown): Record<string, unknown> | null {
+lib/features/coaches/services/checkins.ts:166:  return value as Record<string, unknown>;
+lib/features/coaches/services/checkins.ts:169:function hasAnyKeys(value: unknown) {
+lib/features/coaches/services/checkins.ts:181:  value: unknown
+lib/features/coaches/services/checkins.ts:186:  const toDiff = (raw: unknown) => {
+lib/features/coaches/services/checkins.ts:227:function parseCoachMessage(value: unknown): ArtifactCoachMessage | null {
+lib/features/coaches/services/checkins.ts:302:  value: unknown,
+lib/features/coaches/services/checkins.ts:366:  input: unknown,
+lib/features/coaches/services/checkins.ts:549:  body: Record<string, unknown>,
+lib/features/coaches/services/checkins.ts:679:  const checkinPayload: Record<string, unknown> = {
+lib/features/coaches/onboarding/mapper.ts:11:function asRecord(value: unknown): Record<string, unknown> | null {
+lib/features/coaches/onboarding/mapper.ts:12:  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+lib/features/coaches/onboarding/mapper.ts:15:function asFiniteNumber(value: unknown): number | null {
+lib/features/coaches/onboarding/mapper.ts:19:function asOptionalString(value: unknown): string | null {
+lib/features/coaches/onboarding/mapper.ts:23:function asStringArray(value: unknown): string[] {
+lib/features/coaches/onboarding/mapper.ts:33:function isGoal(value: unknown): value is CoachOnboardingGoal {
+lib/features/coaches/onboarding/mapper.ts:37:function isExperienceLevel(value: unknown): value is CoachExperienceLevel {
+lib/features/coaches/onboarding/mapper.ts:41:function isEquipmentAccess(value: unknown): value is CoachEquipmentAccess {
+lib/features/coaches/onboarding/mapper.ts:51:function isSex(value: unknown): value is CoachOnboardingDraft["body"]["sex"] {
+lib/features/coaches/onboarding/mapper.ts:55:function isCoachGender(value: unknown): value is CoachGender {
+lib/features/coaches/onboarding/mapper.ts:59:function isCoachPersonality(value: unknown): value is CoachPersonality {
+lib/features/coaches/onboarding/mapper.ts:98:  profile: Record<string, unknown> | null,
+lib/features/coaches/services/workspaceUseCases.ts:3:type InvokeCoachChat = (body: Record<string, unknown>) => Promise<CoachWorkspaceResponse>;
+lib/features/coaches/services/workspaceUseCases.ts:9:  coachIdentityPayload: Record<string, unknown>;
+lib/features/coaches/services/workspaceUseCases.ts:13:  intake: Record<string, unknown>;
+lib/features/coaches/models/devDiagnostics.ts:3:type DiagnosticDetails = Record<string, unknown>;
+lib/features/coaches/models/devDiagnostics.ts:20:  const globalFlag = (globalThis as { __COACH_DIAGNOSTICS__?: unknown })
+lib/features/coaches/onboarding/workflow.ts:114:  let workoutResult: PromiseSettledResult<unknown>;
+lib/features/coaches/onboarding/workflow.ts:115:  let nutritionResult: PromiseSettledResult<unknown>;
+lib/features/coaches/services/voiceClient.ts:66:async function toCoachVoiceError(error: unknown): Promise<CoachVoiceError> {
+lib/features/coaches/services/voiceClient.ts:67:  const invokeError = error as { message?: string; context?: unknown } | null;
+lib/features/coaches/services/voiceClient.ts:94:async function invokeCoachVoice(body: Record<string, unknown>) {
+lib/features/coaches/services/voiceClient.ts:105:  return data as Record<string, unknown>;
+lib/features/coaches/services/chatClient.ts:26:  dashboard_snapshot?: Record<string, unknown>;
+lib/features/coaches/services/chatClient.ts:32:  checkin_artifact?: Record<string, unknown> | null;
+lib/features/coaches/services/chatClient.ts:33:  adjustment_recommendations?: Record<string, unknown> | null;
+lib/features/coaches/services/chatClient.ts:36:  coach_message?: Record<string, unknown> | null;
+lib/features/coaches/services/chatClient.ts:48:  checkin_json?: Record<string, unknown> | null;
+lib/features/coaches/services/chatClient.ts:52:  adjustment_json?: Record<string, unknown> | null;
+lib/features/coaches/services/chatClient.ts:98:async function toCoachChatError(error: unknown): Promise<CoachChatError> {
+lib/features/coaches/services/chatClient.ts:99:  const invokeError = error as { message?: string; context?: unknown } | null;
+lib/features/coaches/services/chatClient.ts:126:export function isTierRestrictedCoachError(error: unknown) {
+lib/features/coaches/services/chatClient.ts:136:export async function invokeCoachChat(body: Record<string, unknown>) {
+screens/CoachOnboardingFlow.tsx:129:      let profile: Record<string, unknown> | null = null;
+lib/features/coaches/services/preserveSetup.ts:9:  intake_json: Record<string, unknown> | null;
+lib/features/coaches/services/preserveSetup.ts:23:  plan_json: Record<string, unknown>;
+lib/features/coaches/services/preserveSetup.ts:244:  intakeJson: Record<string, unknown> | null,
+lib/features/coaches/services/checkins.test.ts:363:        trend: "unknown",
+lib/features/coaches/models/voiceProfile.test.ts:27:  it("falls back for unknown coach names", () => {
+lib/features/coaches/services/preserveSetup.test.ts:16:  intake_json: Record<string, unknown> | null;
+lib/features/coaches/services/preserveSetup.test.ts:30:  plan_json: Record<string, unknown>;
+lib/features/coaches/services/preserveSetup.test.ts:302:    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
+lib/features/coaches/services/activeCoachRecovery.test.ts:33:      .fn<(body: Record<string, unknown>) => Promise<{ ok: true }>>()
+lib/features/coaches/services/activeCoachRecovery.test.ts:55:      .fn<(body: Record<string, unknown>) => Promise<{ ok: true }>>()
+lib/features/coaches/services/chatClient.test.ts:97:    let thrown: unknown;
+lib/features/coaches/services/dashboard.ts:45:function normalizeText(value: unknown, fallback = "") {
+lib/features/coaches/services/dashboard.ts:49:function normalizeStringList(value: unknown) {
+lib/features/coaches/services/dashboard.ts:56:function asRecord(value: unknown): Record<string, unknown> {
+lib/features/coaches/services/dashboard.ts:57:  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+lib/features/coaches/services/dashboard.ts:60:function asFiniteNumber(value: unknown, fallback: number | null = null) {
+lib/features/coaches/services/dashboard.ts:64:function asBooleanOrNull(value: unknown): boolean | null {
+lib/features/coaches/services/funnelTracking.ts:21:type FunnelMetadata = Record<string, unknown>;
+lib/features/coaches/services/funnelTracking.ts:65:function warnTrackingIssue(message: string, error?: unknown) {
+lib/features/coaches/services/funnelTracking.ts:95:function isUniqueViolation(error: unknown) {
+lib/features/coaches/models/checkinFlow.ts:65:    subtitle: "Weight, waist, and any visible changes.",
+lib/features/coaches/workflows/coachCheckinsWorkflow.ts:23:function parseErrorCodeFromDetails(details: unknown): string | undefined {
+lib/features/coaches/workflows/coachCheckinsWorkflow.ts:63:function toWorkflowErrorInfo(error: unknown): WorkflowErrorInfo {
+lib/features/coaches/hooks/useCoachDashboard.test.ts:11:  syncListeners: new Set<(event: unknown) => void>(),
+lib/features/coaches/hooks/useCoachDashboard.test.ts:52:  let reject: ((reason?: unknown) => void) | null = null;
+lib/features/coaches/hooks/useCoachDashboard.test.ts:63:    reject: (reason?: unknown) => {
+lib/features/coaches/hooks/useCoachDashboard.test.ts:144:    mocks.subscribeCoachSyncEvents.mockImplementation((listener: (event: unknown) => void) => {
+lib/features/coaches/models/checkinScoring.ts:3:function clampWholeNumber(value: unknown, min: number, max: number, fallback: number) {
+lib/features/coaches/models/checkinScoring.ts:8:function normalizeRating(value: unknown, fallback: number) {
+lib/features/coaches/types/artifacts.ts:6:  value?: unknown;
+lib/features/coaches/workflows/coachWorkspaceWorkflow.ts:22:type InvokeCoachChat = (body: Record<string, unknown>) => Promise<CoachWorkspaceResponse>;
+lib/features/coaches/workflows/coachWorkspaceWorkflow.ts:73:  coachIdentityPayload: Record<string, unknown>;
+lib/features/coaches/workflows/coachWorkspaceWorkflow.ts:83:  coachIdentityPayload: Record<string, unknown>;
+lib/features/coaches/workflows/coachWorkspaceWorkflow.ts:96:  intake: Record<string, unknown>;
+lib/features/coaches/workflows/coachWorkspaceWorkflow.ts:97:  coachIdentityPayload: Record<string, unknown>;
+lib/features/coaches/workflows/coachWorkspaceWorkflow.ts:110:  coachIdentityPayload: Record<string, unknown>;
+lib/features/coaches/workflows/coachWorkspaceWorkflow.ts:122:  coachIdentityPayload: Record<string, unknown>;
+lib/features/coaches/workflows/coachWorkspaceWorkflow.ts:131:function isNutritionGoal(value: unknown): value is NutritionGoal {
+lib/features/coaches/workflows/coachWorkspaceWorkflow.ts:135:function toWorkflowErrorInfo(error: unknown): WorkflowErrorInfo {
+lib/features/coaches/hooks/useCoachDashboard.ts:32:function getSignature(value: unknown) {
+lib/features/coaches/hooks/CoachContext.test.tsx:120:        partial: Record<string, unknown>,
+lib/features/coaches/hooks/CoachContext.test.tsx:205:        partial: Record<string, unknown>,
+lib/features/coaches/hooks/CoachContext.test.tsx:284:        partial: Record<string, unknown>,
+lib/features/coaches/hooks/useCoachCheckins.test.ts:14:  syncListeners: new Set<(event: unknown) => void>(),
+lib/features/coaches/hooks/useCoachCheckins.test.ts:190:    mocks.subscribeCoachSyncEvents.mockImplementation((listener: (event: unknown) => void) => {
+lib/features/coaches/hooks/useCoachWorkspace.ts:218:    async (body: Record<string, unknown>) => {
+lib/features/coaches/hooks/useCoachWorkspace.ts:642:      intake: intakePayload as Record<string, unknown>,
+lib/features/shared/result.ts:33:  error: unknown,
+lib/features/shared/result.ts:47:  error: unknown,
+lib/features/shared/result.ts:62:      message?: unknown;
+lib/features/shared/result.ts:63:      error_description?: unknown;
+lib/features/shared/result.ts:64:      details?: unknown;

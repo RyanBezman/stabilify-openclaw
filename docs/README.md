@@ -1,6 +1,6 @@
 # Documentation Index
 
-Last updated: 2026-03-11
+Last updated: 2026-03-12
 
 ## Purpose
 
@@ -28,10 +28,14 @@ Single index for product policy, implementation contracts, QA runbooks, and anal
 11. `docs/implementation/screen-architecture.md`
 12. `docs/implementation/app-surface-strategy.md`
 13. `docs/implementation/coach-system-plan.md`
-14. `docs/implementation/adr-0001-policy-priority-split.md`
-15. `docs/qa/coach-ui-manual-qa-checklist.md`
-16. `docs/analytics/event-registry.md` (when analytics is affected)
-17. `docs/analytics/tracking-changelog.md` (when analytics is affected)
+14. `docs/implementation/social-blocking.md`
+15. `docs/implementation/close-friends-management.md`
+16. `docs/implementation/adr-0001-policy-priority-split.md`
+17. `docs/qa/coach-ui-manual-qa-checklist.md`
+18. `docs/qa/social-blocking-checklist.md`
+19. `docs/qa/close-friends-management-checklist.md`
+20. `docs/analytics/event-registry.md` (when analytics is affected)
+21. `docs/analytics/tracking-changelog.md` (when analytics is affected)
 
 ## Canonical Product Files
 

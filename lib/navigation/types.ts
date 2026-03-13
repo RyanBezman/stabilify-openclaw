@@ -43,6 +43,8 @@ export type RootStackParamList = {
   ProfileSettingsTextEdit: { fieldKey: EditableProfileSettingsFieldKey };
   UserProfile: { userId: string };
   FollowRequests: undefined;
+  CloseFriends: undefined;
+  BlockedAccounts: undefined;
   GymValidationRequestDetail: { requestId: string };
   BillingPlans: undefined;
   CreatePost: { defaultAudienceHint?: string } | undefined;

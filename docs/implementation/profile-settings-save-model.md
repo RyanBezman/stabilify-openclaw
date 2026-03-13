@@ -22,6 +22,7 @@ Define how Profile Settings saves user changes without a global save button.
   - phone notifications request system notification permission,
   - Apple Health step tracking requests Health access,
   - auto support keeps explicit consent confirmation before enable.
+- Profile Settings should expose navigation to relationship-safety controls such as blocked-account management.
 
 ## Data Contracts
 
@@ -39,6 +40,7 @@ Define how Profile Settings saves user changes without a global save button.
   - fields are presented in full-width edit rows rather than boxed nested cards,
   - helper text is kept minimal and only shown where it materially helps editing or validation,
   - preference pills and switches save immediately,
+  - relationship-safety destinations like `Blocked accounts` are exposed as grouped link rows,
   - no global `Save settings` button is shown.
 - `ProfileSettingsTextEdit` screen:
   - loads the latest saved profile settings before editing a field,
@@ -68,3 +70,4 @@ Define how Profile Settings saves user changes without a global save button.
 12. Confirm changing profile visibility saves immediately and updates dependent share defaults.
 13. Confirm disabling auto support saves immediately without requiring a second action.
 14. Confirm enabling auto support still requires consent confirmation before saving.
+15. Confirm Profile Settings includes a `Blocked accounts` drill-in row.

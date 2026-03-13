@@ -28,6 +28,8 @@ import CoachOnboardingFlow from "./screens/CoachOnboardingFlow";
 import CoachOnboardingResults from "./screens/CoachOnboardingResults";
 import UserProfile from "./screens/UserProfile";
 import FollowRequests from "./screens/FollowRequests";
+import CloseFriends from "./screens/CloseFriends";
+import BlockedAccounts from "./screens/BlockedAccounts";
 import GymValidationRequestDetail from "./screens/GymValidationRequestDetail";
 import { supabase } from "./lib/supabase";
 import type { RootStackParamList } from "./lib/navigation/types";
@@ -138,6 +140,8 @@ export default function App() {
               />
               <Stack.Screen name="UserProfile" component={UserProfile} />
               <Stack.Screen name="FollowRequests" component={FollowRequests} />
+              <Stack.Screen name="CloseFriends" component={CloseFriends} />
+              <Stack.Screen name="BlockedAccounts" component={BlockedAccounts} />
               <Stack.Screen
                 name="GymValidationRequestDetail"
                 component={GymValidationRequestDetail}

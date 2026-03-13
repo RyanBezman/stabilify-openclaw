@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
@@ -11,6 +12,7 @@ import { searchUsersByUsernamePrefix, type UserDirectoryRow } from "../lib/data/
 import { sanitizeUsername } from "../lib/utils/username";
 import { getProfilePhotoSignedUrl } from "../lib/features/profile";
 import { fetchCurrentUserId } from "../lib/features/auth";
+import { subscribeRelationshipSyncEvents } from "../lib/features/shared";
 import {
   FLOATING_TAB_SCREEN_SAFE_AREA_EDGES,
   useFloatingTabBarLayout,
@@ -25,6 +27,7 @@ type SearchUsersProps = CompositeScreenProps<
 export default function SearchUsers({ navigation }: SearchUsersProps) {
   const { contentBottomPadding } = useFloatingTabBarLayout();
   const [query, setQuery] = useState("");
+  const [searchRefreshKey, setSearchRefreshKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<UserDirectoryRow[]>([]);
@@ -46,6 +49,18 @@ export default function SearchUsers({ navigation }: SearchUsersProps) {
     return () => {
       active = false;
     };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      setSearchRefreshKey((value) => value + 1);
+    }, []),
+  );
+
+  useEffect(() => {
+    return subscribeRelationshipSyncEvents(() => {
+      setSearchRefreshKey((value) => value + 1);
+    });
   }, []);
 
   useEffect(() => {
@@ -111,7 +126,7 @@ export default function SearchUsers({ navigation }: SearchUsersProps) {
       active = false;
       clearTimeout(timeoutId);
     };
-  }, [currentUserId, query]);
+  }, [currentUserId, query, searchRefreshKey]);
 
   return (
     <AppScreen

@@ -31,6 +31,14 @@ export async function registerCurrentPushDevice(
 export type { PushRegistrationOutcome };
 export { deriveSurfaceLoadState } from "./surfaceLoadState";
 export type { SurfaceLoadState } from "./surfaceLoadState";
+export {
+  publishRelationshipSyncEvent,
+  subscribeRelationshipSyncEvents,
+} from "./relationshipSyncEvents";
+export type {
+  RelationshipFollowState,
+  RelationshipSyncEvent,
+} from "./relationshipSyncEvents";
 export type {
   AsyncWorkflowEvent,
   AsyncWorkflowState,

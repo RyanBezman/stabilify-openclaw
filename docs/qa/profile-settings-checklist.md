@@ -28,6 +28,7 @@ Validate the Profile Settings flow with drill-in text editing.
 - The text editor screen remains usable while the keyboard is open.
 - iPhone numeric steps entry should expose a keyboard dismissal control.
 - Helper text remains sparse and should only appear where it materially helps the user.
+- Safety controls should include a drill-in destination for blocked-account management.
 
 ## Analytics
 
@@ -54,3 +55,4 @@ Validate the Profile Settings flow with drill-in text editing.
 17. Toggle `Auto support post` on and confirm consent is still required before the setting stays on.
 18. After the screen has loaded once, switch to another tab and back. Confirm the existing rows, avatar, and section content stay mounted during refresh instead of showing a full-screen blocking loader.
 19. With existing settings visible, trigger a refresh path (tab revisit or pull-to-refresh if available) and confirm in-flight updates do not clear the current snapshot before the refreshed values land.
+20. Confirm a `Blocked accounts` row appears in Profile Settings and opens the blocked-accounts management screen.

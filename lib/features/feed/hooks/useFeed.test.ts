@@ -2,6 +2,10 @@ import { act } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_AUDIENCE_HINT } from "../models/audience";
 import { renderTestHook } from "../../../../test/utils/renderHook";
+import {
+  __resetRelationshipSyncEventsForTests,
+  publishRelationshipSyncEvent,
+} from "../../shared/relationshipSyncEvents";
 
 const mocks = vi.hoisted(() => ({
   fetchVisiblePostsForCurrentUser: vi.fn(),
@@ -77,6 +81,7 @@ describe("useFeed", () => {
   });
 
   afterEach(() => {
+    __resetRelationshipSyncEventsForTests();
     vi.clearAllMocks();
   });
 
@@ -203,6 +208,47 @@ describe("useFeed", () => {
     expect(hook.result.current.posts).toHaveLength(10);
     expect(hook.result.current.error).toBe("Pagination failed.");
     expect(hook.result.current.loadingMore).toBe(false);
+
+    hook.unmount();
+  });
+
+  it("refreshes feed when relationship sync events are published", async () => {
+    const firstPage = [createPost("post-1", "author-1", null)];
+    const refreshedPage = [createPost("post-2", "author-2", null)];
+
+    mocks.fetchVisiblePostsForCurrentUser
+      .mockResolvedValueOnce({
+        data: {
+          items: firstPage,
+          nextCursor: null,
+          hasMore: false,
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          items: refreshedPage,
+          nextCursor: null,
+          hasMore: false,
+        },
+      });
+
+    const hook = renderTestHook(() => useFeed());
+    await flushAsyncWork();
+
+    expect(hook.result.current.posts[0]?.id).toBe("post-1");
+
+    await act(async () => {
+      publishRelationshipSyncEvent({
+        type: "block_state_changed",
+        targetUserId: "target-1",
+        nextState: "blocked",
+      });
+      await Promise.resolve();
+    });
+    await flushAsyncWork();
+
+    expect(mocks.fetchVisiblePostsForCurrentUser).toHaveBeenCalledTimes(2);
+    expect(hook.result.current.posts[0]?.id).toBe("post-2");
 
     hook.unmount();
   });

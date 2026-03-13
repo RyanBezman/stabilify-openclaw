@@ -1,5 +1,109 @@
 # Product Policy Change Log
 
+## 2026-03-12 - Relationship state refresh consistency on social surfaces
+
+### Added
+
+- Social-surface consistency policy:
+  - relationship changes now publish shared invalidation signals so mounted social surfaces can refresh stale relationship-derived state immediately.
+
+### Changed
+
+- Blocking/unblocking UI consistency:
+  - `Feed`, `Search`, `User profile`, and own `Profile` summary counts are expected to update in-session after relationship changes without requiring manual app restart.
+
+### Removed
+
+- Dependence on manual pull-to-refresh for critical relationship-state consistency after block/unblock transitions.
+
+### Notes
+
+- This is a client consistency hardening update and does not change the canonical blocking rules themselves.
+
+## 2026-03-12 - Search hides blocked users and settings now manages blocks
+
+### Added
+
+- Blocking management policy:
+  - blocked accounts now have a dedicated `Blocked accounts` destination in Profile Settings for unblocking.
+
+### Changed
+
+- Search visibility policy:
+  - accounts you have blocked no longer appear in your Search results while the block is active.
+
+### Removed
+
+- The unblock dependency on rediscovering a blocked user through Search or an old profile route.
+
+### Notes
+
+- This change builds on the same-day blocking rollout and keeps unblock management available even when Search excludes blocked users.
+
+## 2026-03-12 - Blocking now hides blocked users from the blocker's content surfaces
+
+### Added
+
+- Blocker-side visibility policy:
+  - while a block is active, the blocker's feed and profile-progress surfaces no longer show the blocked user's posts or public progress.
+
+### Changed
+
+- Social blocking enforcement policy:
+  - blocking now applies symmetrically to content visibility on the blocker's side for posts and public progress, while still leaving enough profile discovery to reach `Unblock user`.
+
+### Removed
+
+- The gap where blocked users could still surface in the blocker's feed after the block succeeded.
+
+### Notes
+
+- Search/profile-directory discovery remains available to the blocker so the unblock path stays reachable.
+
+## 2026-03-12 - Close-friends removal management
+
+### Added
+
+- Social relationship management policy:
+  - users can open a `Close Friends` management screen from the Profile menu.
+  - users can remove a close friend directly from that list after destructive confirmation.
+
+### Changed
+
+- Close-friend access policy:
+  - removal now has an explicit in-app management path and takes effect immediately for future support posts and gym validation requests.
+
+### Removed
+
+- The UI gap where close-friend relationships existed in data but could not be removed in-app.
+
+### Notes
+
+- This change does not add analytics instrumentation; it adds first-class relationship management for existing close-friend links.
+
+## 2026-03-12 - User blocking added to social surfaces
+
+### Added
+
+- Social relationship safety policy:
+  - users can block and unblock another user from that user's profile.
+- Blocking enforcement policy:
+  - blocking immediately removes direct follow and close-friend ties,
+  - blocked viewers lose access to the blocker's searchable profile/feed surfaces.
+
+### Changed
+
+- Social relationship state policy:
+  - `follows.status = blocked` is now an active product state with explicit UX and read-policy behavior, not just a dormant enum value.
+
+### Removed
+
+- The gap where users could add followers or close friends but had no first-class way to cut off unwanted interaction.
+
+### Notes
+
+- This change does not add analytics instrumentation; it is a relationship-control and privacy hardening update.
+
 ## 2026-03-12 - Gym location permission disclosure clarified
 
 ### Added

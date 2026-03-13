@@ -1,5 +1,6 @@
 import { supabase } from "../supabase";
 import type { CloseFriendRow, FollowRow, FollowStatus } from "./types";
+import type { UserDirectoryRow } from "./userDirectory";
 import {
   fail,
   normalizeCursorPagination,
@@ -14,6 +15,16 @@ import {
 type FetchListInput = CursorPaginationInput & {
   userId?: string;
   status?: FollowStatus;
+};
+
+type BlockUserRpcRow = {
+  blocked_user_id: string;
+  status: FollowStatus;
+};
+
+type UnblockUserRpcRow = {
+  unblocked_user_id: string;
+  removed: boolean;
 };
 
 export type RelationshipCounts = {
@@ -39,6 +50,12 @@ export type PendingIncomingFollowRequest = {
   requesterUsername: string;
   requesterAvatarPath: string | null;
 };
+
+export type CloseFriendProfile = CloseFriendRow &
+  Pick<UserDirectoryRow, "avatarPath" | "bio" | "displayName" | "username">;
+
+export type BlockedProfile = FollowRow &
+  Pick<UserDirectoryRow, "avatarPath" | "bio" | "displayName" | "username">;
 
 async function getCurrentUserId(userId?: string): Promise<Result<{ userId: string }>> {
   if (userId) {
@@ -226,6 +243,21 @@ export async function followUser(
     return fail("Follow unavailable for this account.");
   }
 
+  const { data: blockedByTargetRow, error: blockedByTargetError } = await supabase
+    .from("follows")
+    .select("status")
+    .eq("follower_user_id", cleanTargetUserId)
+    .eq("followed_user_id", currentUserId)
+    .maybeSingle();
+
+  if (blockedByTargetError) {
+    return fail(blockedByTargetError);
+  }
+
+  if (blockedByTargetRow?.status === "blocked") {
+    return fail("Follow unavailable for this account.");
+  }
+
   const visibilityResult = await resolveTargetVisibility(cleanTargetUserId);
   if (visibilityResult.error || !visibilityResult.data) {
     return fail(visibilityResult.error ?? "Couldn't resolve target profile.");
@@ -363,6 +395,62 @@ async function removeFollower(followerUserId: string): Promise<Result<{ ok: true
   }
 
   return ok({ ok: true });
+}
+
+export async function blockUser(
+  targetUserId: string,
+): Promise<Result<{ blockedUserId: string; ok: true; status: "blocked" }>> {
+  const cleanTargetUserId = targetUserId.trim();
+  if (!cleanTargetUserId) {
+    return fail("Target user is required.", { code: "VALIDATION" });
+  }
+
+  const { data, error } = await supabase.rpc("block_user", {
+    target_user_id: cleanTargetUserId,
+  });
+
+  if (error) {
+    return fail(error);
+  }
+
+  const row = (Array.isArray(data) ? data[0] : null) as BlockUserRpcRow | null;
+  if (!row?.blocked_user_id || row.status !== "blocked") {
+    return fail("Couldn't block this user.");
+  }
+
+  return ok({
+    blockedUserId: row.blocked_user_id,
+    ok: true,
+    status: "blocked",
+  });
+}
+
+export async function unblockUser(
+  targetUserId: string,
+): Promise<Result<{ ok: true; removed: boolean; unblockedUserId: string }>> {
+  const cleanTargetUserId = targetUserId.trim();
+  if (!cleanTargetUserId) {
+    return fail("Target user is required.", { code: "VALIDATION" });
+  }
+
+  const { data, error } = await supabase.rpc("unblock_user", {
+    target_user_id: cleanTargetUserId,
+  });
+
+  if (error) {
+    return fail(error);
+  }
+
+  const row = (Array.isArray(data) ? data[0] : null) as UnblockUserRpcRow | null;
+  if (!row?.unblocked_user_id) {
+    return fail("Couldn't unblock this user.");
+  }
+
+  return ok({
+    ok: true,
+    removed: row.removed,
+    unblockedUserId: row.unblocked_user_id,
+  });
 }
 
 async function fetchFollowers(input?: FetchListInput): Promise<Result<PaginatedItems<FollowRow>>> {
@@ -545,7 +633,7 @@ async function addCloseFriend(friendUserId: string): Promise<Result<{ ok: true }
   return ok({ ok: true });
 }
 
-async function removeCloseFriend(friendUserId: string): Promise<Result<{ ok: true }>> {
+export async function removeCloseFriend(friendUserId: string): Promise<Result<{ ok: true }>> {
   const cleanFriendUserId = friendUserId.trim();
   if (!cleanFriendUserId) {
     return fail("Friend user is required.", { code: "VALIDATION" });
@@ -601,4 +689,122 @@ async function fetchCloseFriends(
     })) ?? [];
 
   return ok(toPaginatedItems(items, pagination));
+}
+
+export async function fetchCloseFriendProfiles(
+  input?: { userId?: string } & CursorPaginationInput,
+): Promise<Result<PaginatedItems<CloseFriendProfile>>> {
+  const closeFriendsResult = await fetchCloseFriends(input);
+  if (closeFriendsResult.error || !closeFriendsResult.data) {
+    return fail(closeFriendsResult.error ?? "Couldn't load close friends.");
+  }
+
+  const closeFriendPage = closeFriendsResult.data;
+  if (closeFriendPage.items.length === 0) {
+    return ok({
+      items: [],
+      nextCursor: closeFriendPage.nextCursor,
+      hasMore: closeFriendPage.hasMore,
+    });
+  }
+
+  const friendIds = closeFriendPage.items.map((entry) => entry.friendUserId);
+  const { data, error } = await supabase
+    .from("profile_directory")
+    .select("user_id, username, display_name, bio, avatar_path")
+    .in("user_id", friendIds);
+
+  if (error) {
+    return fail(error);
+  }
+
+  const profileById = new Map(
+    (data ?? []).map((entry) => [
+      entry.user_id as string,
+      {
+        username: entry.username as string,
+        displayName: entry.display_name as string,
+        bio: (entry.bio as string | null) ?? "",
+        avatarPath: (entry.avatar_path as string | null) ?? null,
+      },
+    ]),
+  );
+
+  const items = closeFriendPage.items.map((entry) => {
+    const profile = profileById.get(entry.friendUserId);
+    const fallbackSuffix = entry.friendUserId.slice(0, 8);
+
+    return {
+      ...entry,
+      username: profile?.username?.trim() || `user${fallbackSuffix}`,
+      displayName: profile?.displayName?.trim() || `User ${fallbackSuffix}`,
+      bio: profile?.bio ?? "",
+      avatarPath: profile?.avatarPath ?? null,
+    };
+  });
+
+  return ok({
+    items,
+    nextCursor: closeFriendPage.nextCursor,
+    hasMore: closeFriendPage.hasMore,
+  });
+}
+
+export async function fetchBlockedProfiles(
+  input?: { userId?: string } & CursorPaginationInput,
+): Promise<Result<PaginatedItems<BlockedProfile>>> {
+  const blockedResult = await fetchFollowing({ ...input, status: "blocked" });
+  if (blockedResult.error || !blockedResult.data) {
+    return fail(blockedResult.error ?? "Couldn't load blocked accounts.");
+  }
+
+  const blockedPage = blockedResult.data;
+  if (blockedPage.items.length === 0) {
+    return ok({
+      items: [],
+      nextCursor: blockedPage.nextCursor,
+      hasMore: blockedPage.hasMore,
+    });
+  }
+
+  const blockedUserIds = blockedPage.items.map((entry) => entry.followedUserId);
+  const { data, error } = await supabase
+    .from("profile_directory")
+    .select("user_id, username, display_name, bio, avatar_path")
+    .in("user_id", blockedUserIds);
+
+  if (error) {
+    return fail(error);
+  }
+
+  const profileById = new Map(
+    (data ?? []).map((entry) => [
+      entry.user_id as string,
+      {
+        username: entry.username as string,
+        displayName: entry.display_name as string,
+        bio: (entry.bio as string | null) ?? "",
+        avatarPath: (entry.avatar_path as string | null) ?? null,
+      },
+    ]),
+  );
+
+  const items = blockedPage.items.map((entry) => {
+    const profile = profileById.get(entry.followedUserId);
+    const fallbackSuffix = entry.followedUserId.slice(0, 8);
+
+    return {
+      ...entry,
+      username: profile?.username?.trim() || `user${fallbackSuffix}`,
+      displayName: profile?.displayName?.trim() || `User ${fallbackSuffix}`,
+      bio: profile?.bio ?? "",
+      avatarPath: profile?.avatarPath ?? null,
+    };
+  });
+
+  return ok({
+    items,
+    nextCursor: blockedPage.nextCursor,
+    hasMore: blockedPage.hasMore,
+  });
 }

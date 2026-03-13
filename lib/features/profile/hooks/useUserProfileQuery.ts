@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import { Animated } from "react-native";
 import type { PostRow } from "../../../data/types";
 import { fetchVisiblePostsByAuthorForCurrentUser } from "../../../data/posts";
-import type { ViewerFollowState } from "../../../data/relationships";
+import {
+  fetchPublicRelationshipCounts,
+  fetchViewerFollowState,
+  type ViewerFollowState,
+} from "../../../data/relationships";
 import type { UserDirectoryRow } from "../../../data/userDirectory";
 import { buildProfileProgressModel } from "../models/progressModel";
 import { canShowProgressTab } from "../models/visibility";
@@ -14,6 +18,7 @@ import {
   asyncWorkflowReducer,
   createAsyncWorkflowState,
   isAsyncWorkflowBusy,
+  subscribeRelationshipSyncEvents,
 } from "../../shared";
 
 type DashboardState = UserProfileDashboardState;
@@ -138,6 +143,7 @@ export function useUserProfileQuery({
   targetUserId,
   postsPageSize = DEFAULT_POSTS_PAGE_SIZE,
 }: UseUserProfileQueryParams) {
+  const mountedRef = useRef(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserDirectoryRow | null>(null);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(null);
@@ -166,6 +172,13 @@ export function useUserProfileQuery({
   const progressError = asyncState.progress.error;
 
   const contentOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const loadProfile = useCallback(async () => {
     dispatchAsync({ type: "profile/start" });
@@ -222,6 +235,40 @@ export function useUserProfileQuery({
   useEffect(() => {
     void loadProfile();
   }, [loadProfile]);
+
+  const refreshRelationshipSnapshot = useCallback(async () => {
+    const [followStateResult, relationshipCountsResult] = await Promise.all([
+      fetchViewerFollowState(targetUserId),
+      fetchPublicRelationshipCounts(targetUserId),
+    ]);
+
+    if (!mountedRef.current) {
+      return;
+    }
+
+    if (followStateResult.data && !followStateResult.error) {
+      setFollowState(followStateResult.data.status);
+    }
+
+    if (relationshipCountsResult.data && !relationshipCountsResult.error) {
+      setFollowersCount(relationshipCountsResult.data.followers);
+      setFollowingCount(relationshipCountsResult.data.following);
+    }
+  }, [targetUserId]);
+
+  useEffect(() => {
+    return subscribeRelationshipSyncEvents((event) => {
+      if (event.type === "close_friend_removed") {
+        return;
+      }
+
+      if (event.targetUserId !== targetUserId) {
+        return;
+      }
+
+      void refreshRelationshipSnapshot();
+    });
+  }, [refreshRelationshipSnapshot, targetUserId]);
 
   useEffect(() => {
     if (!loading) {
@@ -327,6 +374,7 @@ export function useUserProfileQuery({
     followersCount,
     setFollowersCount,
     followingCount,
+    setFollowingCount,
     followState,
     setFollowState,
     shouldRedirectToOwnProfile,

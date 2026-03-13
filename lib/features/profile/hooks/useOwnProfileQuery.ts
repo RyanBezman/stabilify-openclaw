@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { fetchActionableNotificationCount } from "../../../data/notifications";
+import { fetchRelationshipCounts } from "../../../data/relationships";
 import { buildProfileProgressModel } from "../models/progressModel";
 import { canShowProgressTab } from "../models/visibility";
 import { deriveOwnProfileIdentity } from "../models/ownProfileIdentity";
@@ -14,6 +16,7 @@ import {
 } from "../workflows/ownProfileWorkflow";
 import {
   isAsyncWorkflowBusy,
+  subscribeRelationshipSyncEvents,
 } from "../../shared";
 
 type DashboardState = Awaited<ReturnType<typeof refreshOwnProfile>>["dashboard"];
@@ -29,6 +32,7 @@ export function useOwnProfileQuery({
   postCount,
   refreshPostCount,
 }: UseOwnProfileQueryParams) {
+  const mountedRef = useRef(true);
   const [dashboard, setDashboard] = useState<DashboardState>(null);
   const [asyncState, dispatchAsync] = useReducer(ownProfileAsyncReducer, initialOwnProfileAsyncState);
   const [followersCount, setFollowersCount] = useState(0);
@@ -38,6 +42,13 @@ export function useOwnProfileQuery({
   const dashboardLoading = isAsyncWorkflowBusy(asyncState.dashboard);
   const refreshingProgress = isAsyncWorkflowBusy(asyncState.progressRefresh);
   const progressRefreshError = asyncState.progressRefresh.error;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const refreshProfile = useCallback(
     async (options?: { preserveOnError?: boolean }): Promise<{ error?: string }> => {
@@ -147,6 +158,32 @@ export function useOwnProfileQuery({
 
     dispatchAsync({ type: "progress/succeed" });
   }, [refreshPostCount, refreshProfile, refreshingProgress, user?.id]);
+
+  const refreshRelationshipSummary = useCallback(async () => {
+    const [relationshipCountsResult, notificationCountResult] = await Promise.all([
+      fetchRelationshipCounts(user?.id ?? undefined),
+      fetchActionableNotificationCount(user?.id ?? undefined),
+    ]);
+
+    if (!mountedRef.current) {
+      return;
+    }
+
+    if (relationshipCountsResult.data && !relationshipCountsResult.error) {
+      setFollowersCount(relationshipCountsResult.data.followers);
+      setFollowingCount(relationshipCountsResult.data.following);
+    }
+
+    if (notificationCountResult.data && !notificationCountResult.error) {
+      setPendingFollowRequestsCount(notificationCountResult.data.count);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    return subscribeRelationshipSyncEvents(() => {
+      void refreshRelationshipSummary();
+    });
+  }, [refreshRelationshipSummary]);
 
   // Backward-compatible aliases while callers migrate to explicit action names.
   const handleRefreshProgress = refreshProfileProgress;

@@ -1,0 +1,88 @@
+- generic [ref=e701]:
+  - generic [ref=e703]:
+    - generic [ref=e705] [cursor=pointer]: 
+    - generic [ref=e706]: Edit profile
+  - generic [ref=e707]:
+    - generic [ref=e712] [cursor=pointer]: Edit picture
+    - generic [ref=e713]: Ryan Bezman
+    - generic [ref=e714]: Tap a text field to edit it. Preference changes still save automatically.
+  - generic [ref=e715]:
+    - generic [ref=e716] [cursor=pointer]:
+      - generic [ref=e718]: Name
+      - generic [ref=e720]: Ryan Bezman
+      - generic [ref=e721]: 
+    - generic [ref=e722] [cursor=pointer]:
+      - generic [ref=e724]: Username
+      - generic [ref=e726]: ryanbezman
+      - generic [ref=e727]: 
+    - generic [ref=e728] [cursor=pointer]:
+      - generic [ref=e730]: Bio
+      - generic [ref=e732]: Lifting daily.
+      - generic [ref=e733]: 
+    - generic [ref=e735]:
+      - generic [ref=e737]: Unit
+      - generic [ref=e738]:
+        - generic [ref=e740] [cursor=pointer]: Pounds (lb)
+        - generic [ref=e742] [cursor=pointer]: Kilograms (kg)
+    - generic [ref=e743] [cursor=pointer]:
+      - generic [ref=e745]: Timezone
+      - generic [ref=e747]: America/New_York
+      - generic [ref=e748]: 
+    - generic [ref=e749] [cursor=pointer]:
+      - generic [ref=e751]: Steps
+      - generic [ref=e753]: 10,000
+      - generic [ref=e754]: 
+  - generic [ref=e755]: Privacy
+  - generic [ref=e756]:
+    - generic [ref=e758]:
+      - generic [ref=e760]: Profile
+      - generic [ref=e761]:
+        - generic [ref=e762]:
+          - generic [ref=e764] [cursor=pointer]: Private
+          - generic [ref=e766] [cursor=pointer]: Public
+        - generic [ref=e767]: Public makes your profile visible and defaults sharing to followers.
+    - generic [ref=e768]:
+      - generic [ref=e769]:
+        - generic [ref=e770]: Show Progress on public profile
+        - generic [ref=e771]: Turn off to hide your Progress tab from other users.
+      - switch [checked] [ref=e775] [cursor=pointer]
+    - generic [ref=e777] [cursor=pointer]:
+      - generic [ref=e778]:
+        - generic [ref=e779]: Advanced privacy
+        - generic [ref=e780]: Fine-tune social defaults for posts, gym events, and weigh-ins.
+      - generic [ref=e781]: 
+  - generic [ref=e782]: Support
+  - generic [ref=e783]:
+    - generic [ref=e784]:
+      - generic [ref=e785]:
+        - generic [ref=e786]: Auto support post
+        - generic [ref=e787]: Allow close-friends support posts when you are behind this week.
+      - switch [ref=e791] [cursor=pointer]
+    - generic [ref=e792]:
+      - generic [ref=e793]:
+        - generic [ref=e794]: Phone notifications
+        - generic [ref=e795]: Turn on to receive private behind-goal reminders on this device.
+      - switch [ref=e799] [cursor=pointer]
+    - generic [ref=e800]:
+      - generic [ref=e801]:
+        - generic [ref=e802]: Track steps
+        - generic [ref=e803]: Apple Health sync is available on iPhone only.
+      - switch [checked] [disabled] [ref=e807]
+  - generic [ref=e808]: Verification
+  - generic [ref=e810] [cursor=pointer]:
+    - generic [ref=e811]:
+      - generic [ref=e812]: Gym verification location
+      - generic [ref=e813]: Update your saved gym to control gym session verification.
+    - generic [ref=e814]: 
+  - generic [ref=e815]: Safety
+  - generic [ref=e817] [cursor=pointer]:
+    - generic [ref=e818]:
+      - generic [ref=e819]: Blocked accounts
+      - generic [ref=e820]: Review who you've blocked and unblock people when you're ready.
+    - generic [ref=e821]: 
+  - generic [ref=e822]:
+    - generic [ref=e823]: Developer tools
+    - generic [ref=e824]: Send a local notification from this screen to verify notification presentation in the dev build.
+    - generic [ref=e828] [cursor=pointer]: Send test notification
+    - generic [ref=e832] [cursor=pointer]: Send delayed notification (5s)
+    - generic [ref=e836] [cursor=pointer]: Show push registration info

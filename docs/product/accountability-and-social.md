@@ -1,6 +1,6 @@
 # Accountability and Social Policy
 
-Last updated: 2026-03-10
+Last updated: 2026-03-12
 
 ## Goal
 
@@ -20,6 +20,15 @@ Define free-tier accountability behavior, gym proof states, and support escalati
   - weekly average trend.
 - Keep range adherence and cadence adherence as separate signals.
 - Social defaults are private-first.
+- Blocking policy:
+  - users can block and unblock another user from that user's profile,
+  - blocking immediately removes any direct follow or close-friend relationship in either direction,
+  - a blocked user cannot send a new follow request or view the blocker's searchable social surfaces,
+  - accounts you have blocked should not appear in your Search results while the block is active,
+  - blocked accounts must remain manageable from Profile Settings so the blocker can unblock without re-discovering the user in Search.
+- Close-friend management:
+  - users can review and remove close friends from their own Profile menu,
+  - removal takes effect immediately for future support posts and gym validation requests.
 - Support escalation behavior:
   - close-friends audience by default,
   - supportive/direct message tone,
@@ -142,10 +151,36 @@ Status mapping:
   - `auto_support_enabled = false`,
   - or user has zero close friends.
 
+### Social relationship blocking
+
+- Canonical block state:
+  - `follows.status = blocked` means `follower_user_id` has blocked `followed_user_id`.
+- Blocking side effects:
+  - the block row replaces any existing same-direction follow row,
+  - any reverse-direction follow row is deleted,
+  - any close-friend link in either direction is deleted.
+- Blocked-viewer read policy:
+  - a blocker's profile directory row, profile, posts, public progress, and routine data are hidden from the blocked viewer.
+- Blocker-side visibility policy:
+  - while a block is active, the blocker's feed and profile-progress surfaces must not show the blocked user's posts or public progress until unblock.
+
 ## UX States
 
 - Keep support payload minimal and non-sensitive by default.
 - Default support message avoids exact weight/location/photo exposure.
+- User profile relationship actions:
+  - show `Block user` as a secondary destructive action on another user's profile,
+  - show `Unblock user` and a locked-state message after the viewer blocks that user.
+- Profile menu includes a `Close Friends` destination for managing the owner's close-friend list.
+- Profile Settings includes a `Blocked accounts` destination for reviewing and unblocking blocked users.
+- Close Friends screen behavior:
+  - lists the owner's current close friends,
+  - supports opening a listed user's profile,
+  - supports destructive removal confirmation before deleting a close-friend link.
+- Blocked Accounts screen behavior:
+  - lists the owner's currently blocked users,
+  - keeps blocked users out of Search while blocked,
+  - supports confirmation before unblocking a listed user.
 - iPhone `Log weigh-in` may import the latest Apple Health weight into the draft, but the user must explicitly save before it affects accountability data.
 - If explicit consent is missing, show consent prompt and suppress automated posting.
 - Home nudge card states:
@@ -213,6 +248,16 @@ Required events for this domain:
   - published when enabled + consented,
   - suppressed when consent missing,
   - disabled when auto support off.
+- Verify user blocking outcomes:
+  - blocking a followed user removes the visible follow state,
+  - blocking removes incoming follow access and close-friend ties,
+  - blocked viewers cannot reload the blocker's searchable profile/feed surfaces,
+  - blocked users do not appear in the blocker's Search results,
+  - blocked users are visible in the blocker's blocked-accounts manager until unblocked,
+  - unblocking restores the neutral `none` relationship state without auto-refollowing.
+- Verify close-friend removal outcomes:
+  - removed users disappear from the Close Friends screen immediately,
+  - removed users no longer count toward close-friend-only support and validation eligibility.
 - Verify one-request-per-week dedupe and first-reason freeze.
 - Verify no same-week post backfill after consent is granted.
 - Verify `Not now` hides suppressed nudge until next local day.

@@ -1,0 +1,106 @@
+- generic [ref=e242]:
+  - generic [ref=e250]:
+    - generic [ref=e251]:
+      - generic [ref=e253]:
+        - generic "Stabilify app icon" [ref=e254]:
+          - img "Stabilify app icon" [ref=e256]
+        - generic [ref=e258]: Stabilify
+      - button "Open notifications" [ref=e259] [cursor=pointer]:
+        - generic [ref=e260]: 
+        - generic [ref=e262]: "1"
+    - generic [ref=e263]:
+      - generic [ref=e264]:
+        - generic [ref=e268]:
+          - generic [ref=e269]: Ryan Bezman
+          - generic [ref=e270]: "Maintain goal: 200-210 lb"
+        - generic [ref=e271]:
+          - generic [ref=e272]: Streak
+          - generic [ref=e273]: 3 days
+      - generic [ref=e274]:
+        - generic [ref=e275]:
+          - generic [ref=e276]: Latest weigh-in
+          - generic [ref=e277]: 205.4 lb
+        - generic [ref=e278]:
+          - generic [ref=e279]: Status
+          - generic [ref=e280]: In range
+    - generic [ref=e281]:
+      - generic [ref=e282]:
+        - generic [ref=e283]: Progress
+        - button "Change progress filter. Current selection 7 days." [ref=e285] [cursor=pointer]:
+          - generic [ref=e286]: 
+          - generic [ref=e287]: 7 days
+          - generic [ref=e288]: 
+      - generic [ref=e289]:
+        - generic [ref=e291]:
+          - generic [ref=e292]:
+            - img [ref=e293]
+            - generic [ref=e296]:
+              - generic [ref=e297]: 43%
+              - generic [ref=e298]: 3/7
+          - generic [ref=e299]: Weigh-ins
+        - generic [ref=e301]:
+          - generic [ref=e302]:
+            - img [ref=e303]
+            - generic [ref=e306]:
+              - generic [ref=e307]: 25%
+              - generic [ref=e308]: 1/4
+          - generic [ref=e309]: Gym sessions
+        - generic [ref=e312] [cursor=pointer]:
+          - generic [ref=e313]:
+            - img [ref=e314]
+            - generic [ref=e317]:
+              - generic [ref=e318]: "Off"
+              - generic [ref=e319]: Enable
+          - generic [ref=e320]: Steps
+    - generic [ref=e321]:
+      - generic [ref=e322] [cursor=pointer]:
+        - generic [ref=e324]: Log weight
+        - generic [ref=e326]: 
+      - generic [ref=e328] [cursor=pointer]:
+        - generic [ref=e330]: Set gym location
+        - generic [ref=e332]: 
+    - generic [ref=e333]:
+      - generic [ref=e334]:
+        - generic [ref=e335]: Weight trend
+        - generic [ref=e336]: Range 204.8 lb - 205.6 lb
+      - img [ref=e338]
+      - generic [ref=e371]:
+        - generic [ref=e372]: Feb 20
+        - generic [ref=e373]: Mar 12
+    - generic [ref=e374]:
+      - generic [ref=e375]: Recent weigh-ins
+      - generic [ref=e376]:
+        - generic [ref=e377]:
+          - generic [ref=e378]: Mar 12
+          - generic [ref=e379]: 205.4 lb
+        - generic [ref=e380]:
+          - generic [ref=e381]: Mar 11
+          - generic [ref=e382]: 204.8 lb
+        - generic [ref=e383]:
+          - generic [ref=e384]: Mar 10
+          - generic [ref=e385]: 205.6 lb
+        - generic [ref=e386]:
+          - generic [ref=e387]: Mar 2
+          - generic [ref=e388]: 205.6 lb
+        - generic [ref=e389]:
+          - generic [ref=e390]: Mar 1
+          - generic [ref=e391]: 205.6 lb
+    - generic [ref=e392]:
+      - generic [ref=e394]: "Cadence: Daily"
+      - generic [ref=e395]: Reminds at 07:30
+  - generic [ref=e398]:
+    - button "Home" [ref=e399] [cursor=pointer]:
+      - generic [ref=e400]: 
+      - generic [ref=e401]: Home
+    - button "Feed" [ref=e402] [cursor=pointer]:
+      - generic [ref=e403]: 
+      - generic [ref=e404]: Feed
+    - button "Search" [ref=e405] [cursor=pointer]:
+      - generic [ref=e406]: 
+      - generic [ref=e407]: Search
+    - button "Coaches" [ref=e408] [cursor=pointer]:
+      - generic [ref=e409]: 
+      - generic [ref=e410]: Coaches
+    - button "Profile" [ref=e411] [cursor=pointer]:
+      - generic [ref=e412]: 
+      - generic [ref=e413]: Profile

@@ -10,6 +10,7 @@ import ProfileProgressSection from "../components/profile/ProfileProgressSection
 import ProfileTabPicker, { type ProfileContentTab } from "../components/profile/ProfileTabPicker";
 import ProfileLockedState from "../components/profile/ProfileLockedState";
 import Button from "../components/ui/Button";
+import ConfirmationSheet from "../components/ui/ConfirmationSheet";
 import { useUserFollowActions } from "../lib/features/profile";
 import { useUserProfileQuery } from "../lib/features/profile";
 import AppScreen from "../components/ui/AppScreen";
@@ -34,6 +35,7 @@ export default function UserProfile({ navigation, route }: UserProfileProps) {
     followState,
     setFollowState,
     setFollowersCount,
+    setFollowingCount,
     shouldRedirectToOwnProfile,
     contentOpacity,
     isOwner,
@@ -44,12 +46,24 @@ export default function UserProfile({ navigation, route }: UserProfileProps) {
     handleLoadMorePosts,
   } = useUserProfileQuery({ targetUserId });
 
-  const { followLoading, followButtonLabel, handleFollowPress } = useUserFollowActions({
+  const {
+    blockButtonLabel,
+    blockLoading,
+    confirmation,
+    confirmAction,
+    dismissConfirmation,
+    followLoading,
+    followButtonLabel,
+    handleBlockPress,
+    handleFollowPress,
+    isBlocked,
+  } = useUserFollowActions({
     targetUserId,
     profile,
     followState,
     setFollowState,
     setFollowersCount,
+    setFollowingCount,
   });
 
   useEffect(() => {
@@ -105,55 +119,100 @@ export default function UserProfile({ navigation, route }: UserProfileProps) {
           />
 
           {!isOwner ? (
-            <Button
-              title={followButtonLabel}
-              variant={followState === "none" ? "primary" : "secondary"}
-              size="sm"
-              className="mb-4"
-              disabled={followLoading || followState === "blocked"}
-              loading={followLoading}
-              onPress={handleFollowPress}
-            />
-          ) : null}
-
-          <ProfileTabPicker
-            value={activeTab}
-            onChange={setActiveTab}
-            showProgressTab={showProgressTab}
-          />
-
-          {activeTab === "posts" ? (
-            isPrivateAndLocked ? (
-              <ProfileLockedState
-                title="Private account"
-                message="Follow this account to view their posts and progress."
+            isBlocked ? (
+              <Button
+                title={blockButtonLabel}
+                variant="secondary"
+                size="sm"
+                className="mb-4"
+                disabled={blockLoading}
+                loading={blockLoading}
+                onPress={handleBlockPress}
               />
             ) : (
-              <ProfilePostsSection
-                posts={posts}
-                loading={postsLoading}
-                error={postsError}
-                emptyText="No posts to show yet."
-                authorDisplayName={profile.displayName}
-                authorPhotoUrl={profilePhotoUrl}
-                hasMore={hasMorePosts}
-                loadingMore={loadingMorePosts}
-                onLoadMore={handleLoadMorePosts}
-              />
+              <>
+                <Button
+                  title={followButtonLabel}
+                  variant={followState === "none" ? "primary" : "secondary"}
+                  size="sm"
+                  className="mb-2"
+                  disabled={followLoading || blockLoading}
+                  loading={followLoading}
+                  onPress={handleFollowPress}
+                />
+                <Button
+                  title={blockButtonLabel}
+                  variant="ghost"
+                  size="sm"
+                  className="mb-4 self-start"
+                  textClassName="text-rose-300"
+                  disabled={followLoading || blockLoading}
+                  loading={blockLoading}
+                  onPress={handleBlockPress}
+                />
+              </>
             )
-          ) : showProgressTab ? (
-            <ProfileProgressSection
-              refreshError={progressError}
-              progressModel={progressModel}
+          ) : null}
+
+          {isBlocked ? (
+            <ProfileLockedState
+              title="User blocked"
+              message="You blocked this user. Unblock them to view their posts and progress again."
             />
           ) : (
-            <ProfileLockedState
-              title="Progress hidden"
-              message="This user has disabled public progress visibility."
-            />
+            <>
+              <ProfileTabPicker
+                value={activeTab}
+                onChange={setActiveTab}
+                showProgressTab={showProgressTab}
+              />
+
+              {activeTab === "posts" ? (
+                isPrivateAndLocked ? (
+                  <ProfileLockedState
+                    title="Private account"
+                    message="Follow this account to view their posts and progress."
+                  />
+                ) : (
+                  <ProfilePostsSection
+                    posts={posts}
+                    loading={postsLoading}
+                    error={postsError}
+                    emptyText="No posts to show yet."
+                    authorDisplayName={profile.displayName}
+                    authorPhotoUrl={profilePhotoUrl}
+                    hasMore={hasMorePosts}
+                    loadingMore={loadingMorePosts}
+                    onLoadMore={handleLoadMorePosts}
+                  />
+                )
+              ) : showProgressTab ? (
+                <ProfileProgressSection
+                  refreshError={progressError}
+                  progressModel={progressModel}
+                />
+              ) : (
+                <ProfileLockedState
+                  title="Progress hidden"
+                  message="This user has disabled public progress visibility."
+                />
+              )}
+            </>
           )}
         </Animated.View>
       </ScrollView>
+      <ConfirmationSheet
+        visible={Boolean(confirmation)}
+        title={confirmation?.title ?? ""}
+        message={confirmation?.message ?? ""}
+        confirmLabel={confirmation?.confirmLabel ?? "Confirm"}
+        confirmTone={confirmation?.confirmTone ?? "default"}
+        loading={followLoading || blockLoading}
+        onCancel={dismissConfirmation}
+        onConfirm={() => {
+          void confirmAction();
+        }}
+      />
     </AppScreen>
   );
 }

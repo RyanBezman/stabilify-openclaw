@@ -151,6 +151,11 @@ export default function Profile({ navigation, user }: ProfileScreenProps) {
     navigation.navigate("ProfileSettings");
   }, [navigation]);
 
+  const openCloseFriends = useCallback(() => {
+    setProfileMenuVisible(false);
+    navigation.navigate("CloseFriends");
+  }, [navigation]);
+
   const openUpgradePlan = useCallback(() => {
     setProfileMenuVisible(false);
     navigation.navigate("BillingPlans");
@@ -336,6 +341,7 @@ export default function Profile({ navigation, user }: ProfileScreenProps) {
         pendingFollowRequestsCount={pendingFollowRequestsCount}
         signingOut={signingOut}
         onClose={closeProfileMenu}
+        onOpenCloseFriends={openCloseFriends}
         onOpenSettings={openProfileSettings}
         onOpenFollowRequests={openFollowRequests}
         onOpenUpgradePlan={openUpgradePlan}

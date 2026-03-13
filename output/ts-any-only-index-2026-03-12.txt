@@ -1,0 +1,4 @@
+supabase/functions/coach-chat/index.ts:1939:    `Use ${summaryWeightUnit} units for any weight mentions.`,
+supabase/functions/coach-chat/index.ts:3662:        : "No draft plan exists. Do not reference any prior draft details unless the user explicitly asks about history.",
+lib/features/log-gym-session/useLogGymSession.test.ts:170:      expect.any(Array),
+lib/features/coaches/models/checkinFlow.ts:65:    subtitle: "Weight, waist, and any visible changes.",
