@@ -22,20 +22,23 @@ Single index for product policy, implementation contracts, QA runbooks, and anal
 5. `docs/implementation/agent-legibility-harness.md`
 6. `docs/product/product-foundation.md`
 7. `docs/product/accountability-and-social.md`
-8. `docs/product/pro-coaching-and-safety.md`
-9. `docs/product/roadmap-and-governance.md`
-10. `docs/product/open-questions.md`
-11. `docs/implementation/screen-architecture.md`
-12. `docs/implementation/app-surface-strategy.md`
-13. `docs/implementation/coach-system-plan.md`
-14. `docs/implementation/social-blocking.md`
-15. `docs/implementation/close-friends-management.md`
-16. `docs/implementation/adr-0001-policy-priority-split.md`
-17. `docs/qa/coach-ui-manual-qa-checklist.md`
-18. `docs/qa/social-blocking-checklist.md`
-19. `docs/qa/close-friends-management-checklist.md`
-20. `docs/analytics/event-registry.md` (when analytics is affected)
-21. `docs/analytics/tracking-changelog.md` (when analytics is affected)
+8. `docs/product/account-lifecycle.md`
+9. `docs/product/pro-coaching-and-safety.md`
+10. `docs/product/roadmap-and-governance.md`
+11. `docs/product/open-questions.md`
+12. `docs/implementation/screen-architecture.md`
+13. `docs/implementation/app-surface-strategy.md`
+14. `docs/implementation/account-lifecycle.md`
+15. `docs/implementation/coach-system-plan.md`
+16. `docs/implementation/social-blocking.md`
+17. `docs/implementation/close-friends-management.md`
+18. `docs/implementation/adr-0001-policy-priority-split.md`
+19. `docs/qa/account-lifecycle-checklist.md`
+20. `docs/qa/coach-ui-manual-qa-checklist.md`
+21. `docs/qa/social-blocking-checklist.md`
+22. `docs/qa/close-friends-management-checklist.md`
+23. `docs/analytics/event-registry.md` (when analytics is affected)
+24. `docs/analytics/tracking-changelog.md` (when analytics is affected)
 
 ## Canonical Product Files
 
@@ -43,6 +46,7 @@ Single index for product policy, implementation contracts, QA runbooks, and anal
 - `builder-context.md`
 - `product-foundation.md`
 - `accountability-and-social.md`
+- `account-lifecycle.md`
 - `pro-coaching-and-safety.md`
 - `roadmap-and-governance.md`
 - `open-questions.md`

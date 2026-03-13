@@ -5,7 +5,7 @@ import { renderTestHook } from "../../../../test/utils/renderHook";
 import {
   __resetRelationshipSyncEventsForTests,
   publishRelationshipSyncEvent,
-} from "../../shared/relationshipSyncEvents";
+} from "../../shared";
 
 const mocks = vi.hoisted(() => ({
   fetchActionableNotificationCount: vi.fn(),

@@ -2368,13 +2368,16 @@ Deno.serve(async (req) => {
   const { data: profile, error: profileErr } = await supabaseUser
     .from("profiles")
     .select(
-      "active_coach_gender, active_coach_personality, membership_tier, timezone, preferred_unit"
+      "active_coach_gender, active_coach_personality, membership_tier, timezone, preferred_unit, account_status"
     )
     .eq("id", userId)
     .maybeSingle();
 
   if (profileErr) return serverError(profileErr.message);
   if (!profile) return badRequest("Profile not found. Complete onboarding first.");
+  if (profile.account_status === "pending_deletion") {
+    return forbidden("Account is pending deletion.", "ACCOUNT_PENDING_DELETION");
+  }
   if (profile.membership_tier !== "pro") {
     return forbidden("Coach access requires Pro.", "TIER_REQUIRES_PRO");
   }

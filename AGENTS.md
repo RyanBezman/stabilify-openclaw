@@ -13,6 +13,7 @@
 | Social support model | Private-first, close-friends support, minimal payload defaults | `docs/product/accountability-and-social.md` |
 | Support auto-post | Immediate auto-post when triggered, no cancel delay, close-friends audience | `docs/product/accountability-and-social.md` |
 | Support consent | Auto support can be enabled by default, but explicit consent is required before first automated post | `docs/product/accountability-and-social.md` |
+| Account lifecycle | One user-facing delete action; immediate hide + 30-day restore + final purge | `docs/product/account-lifecycle.md` |
 | Pro coaching model | One unified persona voice across workout + nutrition with specialist internals | `docs/product/pro-coaching-and-safety.md` |
 | Pro safety boundary | Wellness-only guidance, no diagnosis/treatment claims | `docs/product/pro-coaching-and-safety.md` |
 | Roadmap control | Use `Now / Next / Later`; pull-forward allowed only with explicit policy updates | `docs/product/roadmap-and-governance.md` |

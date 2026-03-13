@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Platform,
@@ -13,6 +14,7 @@ import HelperText from "../components/ui/HelperText";
 import OptionPill from "../components/ui/OptionPill";
 import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
+import ConfirmationSheet from "../components/ui/ConfirmationSheet";
 import ProfileAvatar from "../components/profile/ProfileAvatar";
 import {
   useProfileSettingsScreen,
@@ -38,6 +40,7 @@ type SettingsLinkRowProps = {
   value?: string;
   onPress: () => void;
   isLast?: boolean;
+  tone?: "default" | "danger";
 };
 
 function SettingsToggleRow({
@@ -71,7 +74,9 @@ function SettingsLinkRow({
   value,
   onPress,
   isLast = false,
+  tone = "default",
 }: SettingsLinkRowProps) {
+  const titleClassName = tone === "danger" ? "text-[16px] text-rose-200" : "text-[16px] text-white";
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -79,7 +84,7 @@ function SettingsLinkRow({
       className={`flex-row items-center px-5 py-4 ${isLast ? "" : "border-b border-neutral-900"}`}
     >
       <View className="mr-4 flex-1">
-        <Text className="text-[16px] text-white">{title}</Text>
+        <Text className={titleClassName}>{title}</Text>
         {description ? <HelperText className="mt-1">{description}</HelperText> : null}
       </View>
       {value ? <Text className="mr-3 text-[16px] text-neutral-400">{value}</Text> : null}
@@ -132,6 +137,7 @@ function SettingsEditableFieldRow({
 
 export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
   const insets = useSafeAreaInsets();
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const {
     loading,
     saving,
@@ -168,10 +174,12 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
     openPhotoActions,
     photoLoading,
     photoUrl,
+    requestingAccountDeletion,
     sendingDelayedTestNotification,
     sendingTestNotification,
     setShowAdvancedPrivacy,
     showAdvancedPrivacy,
+    handleRequestAccountDeletion,
   } = useProfileSettingsScreen(navigation);
 
   const renderEditableFieldRow = (
@@ -434,6 +442,19 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
                 />
               </View>
 
+              <Text className="px-5 pb-2 pt-8 text-xs font-semibold uppercase tracking-[1.8px] text-neutral-500">
+                Danger zone
+              </Text>
+              <View className="border-y border-neutral-900 bg-black">
+                <SettingsLinkRow
+                  title="Delete account"
+                  description="Hide your account now. You can restore it for 30 days by signing back in."
+                  onPress={() => setShowDeleteConfirmation(true)}
+                  tone="danger"
+                  isLast
+                />
+              </View>
+
               {__DEV__ ? (
                 <Card className="mx-5 mb-6 mt-8 p-5">
                   <Text className="text-sm font-semibold text-white">Developer tools</Text>
@@ -479,6 +500,23 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
           </View>
         </ScrollView>
       </View>
+      <ConfirmationSheet
+        visible={showDeleteConfirmation}
+        title="Delete your account?"
+        message="This hides your profile immediately. If you sign back in within 30 days, you can restore it. After 30 days, your accountability history, coach chats, and uploads are permanently deleted unless a legal hold is required."
+        confirmLabel="Delete account"
+        confirmTone="destructive"
+        loading={requestingAccountDeletion}
+        onCancel={() => setShowDeleteConfirmation(false)}
+        onConfirm={() => {
+          void (async () => {
+            const didScheduleDeletion = await handleRequestAccountDeletion();
+            if (didScheduleDeletion) {
+              setShowDeleteConfirmation(false);
+            }
+          })();
+        }}
+      />
     </AppScreen>
   );
 }

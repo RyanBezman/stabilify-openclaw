@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   useProfileSettings: vi.fn(),
   useProfileSettingsNotifications: vi.fn(),
   useProfileSettingsPhoto: vi.fn(),
+  requestCurrentUserAccountDeletion: vi.fn(),
+  signOutCurrentUser: vi.fn(),
 }));
 
 vi.mock("react-native", async () => {
@@ -35,6 +37,14 @@ vi.mock("./useProfileSettingsNotifications", () => ({
 
 vi.mock("./useProfileSettingsPhoto", () => ({
   useProfileSettingsPhoto: mocks.useProfileSettingsPhoto,
+}));
+
+vi.mock("../account-lifecycle", () => ({
+  requestCurrentUserAccountDeletion: mocks.requestCurrentUserAccountDeletion,
+}));
+
+vi.mock("../auth", () => ({
+  signOutCurrentUser: mocks.signOutCurrentUser,
 }));
 
 import { useProfileSettingsScreen } from "./useProfileSettingsScreen";
@@ -153,6 +163,8 @@ describe("useProfileSettingsScreen", () => {
     mocks.useProfileSettings.mockReset();
     mocks.useProfileSettingsNotifications.mockReset();
     mocks.useProfileSettingsPhoto.mockReset();
+    mocks.requestCurrentUserAccountDeletion.mockReset();
+    mocks.signOutCurrentUser.mockReset();
 
     mocks.useProfileSettings.mockReturnValue(buildProfileSettingsState());
     mocks.useProfileSettingsNotifications.mockReturnValue({
@@ -168,6 +180,16 @@ describe("useProfileSettingsScreen", () => {
       openPhotoActions: vi.fn(),
       photoLoading: false,
       photoUrl: null,
+    });
+    mocks.requestCurrentUserAccountDeletion.mockResolvedValue({
+      data: {
+        status: "pending_deletion",
+        deletionRequestedAt: "2026-03-13T12:00:00.000Z",
+        scheduledPurgeAt: "2026-04-12T12:00:00.000Z",
+      },
+    });
+    mocks.signOutCurrentUser.mockResolvedValue({
+      data: { ok: true },
     });
   });
 
@@ -231,5 +253,55 @@ describe("useProfileSettingsScreen", () => {
     expect(navigation.navigate).toHaveBeenCalledWith("ProfileSettingsTextEdit", {
       fieldKey: "timezone",
     });
+  });
+
+  it("requests account deletion and signs out locally", async () => {
+    const hook = renderTestHook(() => useProfileSettingsScreen(buildNavigation()));
+
+    let didScheduleDeletion = false;
+    await act(async () => {
+      didScheduleDeletion = await hook.result.current.handleRequestAccountDeletion();
+    });
+
+    expect(didScheduleDeletion).toBe(true);
+    expect(mocks.requestCurrentUserAccountDeletion).toHaveBeenCalledTimes(1);
+    expect(mocks.signOutCurrentUser).toHaveBeenCalledWith({ scope: "local" });
+    expect(mocks.alert).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a deletion error without signing out", async () => {
+    mocks.requestCurrentUserAccountDeletion.mockResolvedValue({
+      error: "RPC failed.",
+    });
+
+    const hook = renderTestHook(() => useProfileSettingsScreen(buildNavigation()));
+
+    let didScheduleDeletion = true;
+    await act(async () => {
+      didScheduleDeletion = await hook.result.current.handleRequestAccountDeletion();
+    });
+
+    expect(didScheduleDeletion).toBe(false);
+    expect(mocks.signOutCurrentUser).not.toHaveBeenCalled();
+    expect(mocks.alert).toHaveBeenCalledWith("Couldn't delete your account", "RPC failed.");
+  });
+
+  it("warns when account deletion succeeds but local sign out fails", async () => {
+    mocks.signOutCurrentUser.mockResolvedValue({
+      error: "sign out failed",
+    });
+
+    const hook = renderTestHook(() => useProfileSettingsScreen(buildNavigation()));
+
+    let didScheduleDeletion = true;
+    await act(async () => {
+      didScheduleDeletion = await hook.result.current.handleRequestAccountDeletion();
+    });
+
+    expect(didScheduleDeletion).toBe(false);
+    expect(mocks.alert).toHaveBeenCalledWith(
+      "Account scheduled for deletion",
+      "Your account is hidden now, but this device could not sign out cleanly. Close and reopen the app, then sign back in within 30 days if you want to restore it.",
+    );
   });
 });

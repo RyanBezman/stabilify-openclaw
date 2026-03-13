@@ -1,6 +1,6 @@
 # Profile Settings QA Checklist
 
-Last updated: 2026-03-10
+Last updated: 2026-03-13
 
 ## Goal
 
@@ -29,6 +29,7 @@ Validate the Profile Settings flow with drill-in text editing.
 - iPhone numeric steps entry should expose a keyboard dismissal control.
 - Helper text remains sparse and should only appear where it materially helps the user.
 - Safety controls should include a drill-in destination for blocked-account management.
+- Safety controls should include a danger-zone delete-account action.
 
 ## Analytics
 
@@ -56,3 +57,4 @@ Validate the Profile Settings flow with drill-in text editing.
 18. After the screen has loaded once, switch to another tab and back. Confirm the existing rows, avatar, and section content stay mounted during refresh instead of showing a full-screen blocking loader.
 19. With existing settings visible, trigger a refresh path (tab revisit or pull-to-refresh if available) and confirm in-flight updates do not clear the current snapshot before the refreshed values land.
 20. Confirm a `Blocked accounts` row appears in Profile Settings and opens the blocked-accounts management screen.
+21. Confirm a `Delete account` row appears in Profile Settings and opens a destructive confirmation flow instead of silently deleting the account.

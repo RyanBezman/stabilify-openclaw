@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Alert, Linking } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../../navigation/types";
+import { requestCurrentUserAccountDeletion } from "../account-lifecycle";
+import { signOutCurrentUser } from "../auth";
 import type { ProfileSettingsValues } from "./data";
 import type { EditableProfileSettingsFieldKey } from "./editableFields";
 import {
@@ -32,6 +34,7 @@ export function useProfileSettingsScreen(navigation: ProfileSettingsNavigation) 
     updateProfileValues,
   } = settings;
   const [showAdvancedPrivacy, setShowAdvancedPrivacy] = useState(false);
+  const [requestingAccountDeletion, setRequestingAccountDeletion] = useState(false);
 
   const refreshProfileSettingsSurface = useCallback(async () => {
     const result = await refresh({ blocking: false, preserveOnError: true });
@@ -211,6 +214,34 @@ export function useProfileSettingsScreen(navigation: ProfileSettingsNavigation) 
     [navigation],
   );
 
+  const handleRequestAccountDeletion = useCallback(async (): Promise<boolean> => {
+    if (requestingAccountDeletion) {
+      return false;
+    }
+
+    setRequestingAccountDeletion(true);
+    try {
+      const deletionResult = await requestCurrentUserAccountDeletion();
+      if (deletionResult.error) {
+        Alert.alert("Couldn't delete your account", deletionResult.error);
+        return false;
+      }
+
+      const signOutResult = await signOutCurrentUser({ scope: "local" });
+      if (signOutResult.error) {
+        Alert.alert(
+          "Account scheduled for deletion",
+          "Your account is hidden now, but this device could not sign out cleanly. Close and reopen the app, then sign back in within 30 days if you want to restore it.",
+        );
+        return false;
+      }
+
+      return true;
+    } finally {
+      setRequestingAccountDeletion(false);
+    }
+  }, [requestingAccountDeletion]);
+
   return {
     ...settings,
     editableFieldRows,
@@ -232,9 +263,11 @@ export function useProfileSettingsScreen(navigation: ProfileSettingsNavigation) 
     openPhotoActions,
     photoLoading,
     photoUrl,
+    requestingAccountDeletion,
     sendingDelayedTestNotification,
     sendingTestNotification,
     setShowAdvancedPrivacy,
     showAdvancedPrivacy,
+    handleRequestAccountDeletion,
   };
 }

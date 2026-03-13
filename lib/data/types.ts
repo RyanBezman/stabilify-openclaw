@@ -18,6 +18,7 @@ export type GymSessionValidationRequestStatus =
 export type GymSessionValidationDecision = "accept" | "decline";
 export type AccountVisibility = "private" | "public";
 export type ProgressVisibility = "private" | "public";
+export type AccountLifecycleStatus = "active" | "pending_deletion";
 export type ShareVisibility = "private" | "close_friends" | "followers" | "public";
 export type SupportTriggerReason =
   | "miss_trajectory_3_days"

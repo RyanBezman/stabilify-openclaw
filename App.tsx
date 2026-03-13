@@ -1,5 +1,5 @@
 import "./global.css";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import {
   NavigationContainer,
@@ -31,12 +31,17 @@ import FollowRequests from "./screens/FollowRequests";
 import CloseFriends from "./screens/CloseFriends";
 import BlockedAccounts from "./screens/BlockedAccounts";
 import GymValidationRequestDetail from "./screens/GymValidationRequestDetail";
+import AccountDeletionRecovery from "./screens/AccountDeletionRecovery";
 import { supabase } from "./lib/supabase";
 import type { RootStackParamList } from "./lib/navigation/types";
 import { CoachProvider } from "./lib/features/coaches";
 import { syncCoachAccessGateAuthUser } from "./lib/features/coaches/hooks/useCoachAccessGate";
 import { registerForegroundNotificationHandler } from "./lib/features/shared/foregroundNotifications";
 import { appNavigationTheme, appSceneStyle, appSurfaceStyle } from "./lib/navigation/theme";
+import {
+  fetchCurrentAccountLifecycleState,
+  type AccountLifecycleState,
+} from "./lib/features/account-lifecycle";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -56,6 +61,51 @@ if (__DEV__) {
 export default function App() {
   const [sessionChecked, setSessionChecked] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [accountLifecycle, setAccountLifecycle] = useState<AccountLifecycleState>({
+    status: "active",
+    deletionRequestedAt: null,
+    scheduledPurgeAt: null,
+    legalHoldAt: null,
+  });
+  const [accountLifecycleChecked, setAccountLifecycleChecked] = useState(false);
+  const accountLifecycleRequestIdRef = useRef(0);
+
+  const refreshAccountLifecycle = useCallback(async (targetUser?: User | null) => {
+    const nextUser = targetUser ?? user;
+    const requestId = accountLifecycleRequestIdRef.current + 1;
+    accountLifecycleRequestIdRef.current = requestId;
+
+    if (!nextUser?.id) {
+      setAccountLifecycle({
+        status: "active",
+        deletionRequestedAt: null,
+        scheduledPurgeAt: null,
+        legalHoldAt: null,
+      });
+      setAccountLifecycleChecked(true);
+      return;
+    }
+
+    setAccountLifecycleChecked(false);
+    const result = await fetchCurrentAccountLifecycleState(nextUser.id);
+    if (requestId !== accountLifecycleRequestIdRef.current) {
+      return;
+    }
+
+    if (result.error || !result.data) {
+      setAccountLifecycle({
+        status: "active",
+        deletionRequestedAt: null,
+        scheduledPurgeAt: null,
+        legalHoldAt: null,
+      });
+      setAccountLifecycleChecked(true);
+      return;
+    }
+
+    setAccountLifecycle(result.data);
+    setAccountLifecycleChecked(true);
+  }, [user]);
 
   useEffect(() => {
     let active = true;
@@ -70,7 +120,7 @@ export default function App() {
             await supabase.auth.signOut({ scope: "local" });
           }
           if (active) {
-            syncCoachAccessGateAuthUser(null);
+            setAccountLifecycleChecked(true);
             setUser(null);
             setSessionChecked(true);
           }
@@ -78,12 +128,12 @@ export default function App() {
         }
 
         if (!active) return;
-        syncCoachAccessGateAuthUser(data.session?.user?.id ?? null);
+        setAccountLifecycleChecked(!data.session?.user);
         setUser(data.session?.user ?? null);
         setSessionChecked(true);
       } catch {
         if (active) {
-          syncCoachAccessGateAuthUser(null);
+          setAccountLifecycleChecked(true);
           setUser(null);
           setSessionChecked(true);
         }
@@ -94,7 +144,7 @@ export default function App() {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        syncCoachAccessGateAuthUser(session?.user?.id ?? null);
+        setAccountLifecycleChecked(!session?.user);
         setUser(session?.user ?? null);
         if (navigationRef.isReady()) {
           navigationRef.reset({
@@ -111,14 +161,27 @@ export default function App() {
     };
   }, []);
 
-  if (!sessionChecked) {
+  useEffect(() => {
+    void refreshAccountLifecycle(user);
+  }, [refreshAccountLifecycle, user]);
+
+  const coachAuthUserId =
+    user?.id && accountLifecycleChecked && accountLifecycle.status === "active"
+      ? user.id
+      : null;
+
+  useEffect(() => {
+    syncCoachAccessGateAuthUser(coachAuthUserId);
+  }, [coachAuthUserId]);
+
+  if (!sessionChecked || (user && !accountLifecycleChecked)) {
     return null;
   }
 
   return (
     <GestureHandlerRootView style={appSurfaceStyle}>
       <SafeAreaProvider style={appSurfaceStyle}>
-        <CoachProvider key={user?.id ?? "guest"} authUserId={user?.id ?? null}>
+        <CoachProvider key={user?.id ?? "guest"} authUserId={coachAuthUserId}>
           <NavigationContainer ref={navigationRef} theme={appNavigationTheme}>
             <Stack.Navigator
               screenOptions={{
@@ -155,7 +218,17 @@ export default function App() {
               <Stack.Screen name="CoachProfile" component={CoachProfile} />
               <Stack.Screen name="CoachCheckins" component={CoachCheckins} />
               <Stack.Screen name="Authed">
-                {() => <AuthedTabs user={user} />}
+                {() =>
+                  accountLifecycle.status === "pending_deletion" ? (
+                    <AccountDeletionRecovery
+                      scheduledPurgeAt={accountLifecycle.scheduledPurgeAt}
+                      onRestored={async () => {
+                        await refreshAccountLifecycle(user);
+                      }}
+                    />
+                  ) : (
+                    <AuthedTabs user={user} />
+                  )}
               </Stack.Screen>
             </Stack.Navigator>
           </NavigationContainer>

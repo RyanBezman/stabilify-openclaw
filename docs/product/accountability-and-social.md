@@ -20,6 +20,12 @@ Define free-tier accountability behavior, gym proof states, and support escalati
   - weekly average trend.
 - Keep range adherence and cadence adherence as separate signals.
 - Social defaults are private-first.
+- Manual post audience selection:
+  - the post composer must expose a per-post audience picker,
+  - the default composer selection should follow `post_share_visibility` when available,
+  - public accounts may choose `public`, `followers`, `close_friends`, or `private`,
+  - private accounts may choose `followers`, `close_friends`, or `private`,
+  - selecting `close_friends` must publish the post with `visibility = close_friends`.
 - Blocking policy:
   - users can block and unblock another user from that user's profile,
   - blocking immediately removes any direct follow or close-friend relationship in either direction,
@@ -173,6 +179,10 @@ Status mapping:
   - show `Unblock user` and a locked-state message after the viewer blocks that user.
 - Profile menu includes a `Close Friends` destination for managing the owner's close-friend list.
 - Profile Settings includes a `Blocked accounts` destination for reviewing and unblocking blocked users.
+- Create-post composer behavior:
+  - keeps the text composer active while the keyboard is open,
+  - shows a tappable audience row above composer actions,
+  - opens audience selection in a bottom sheet layered over the composer instead of navigating away.
 - Close Friends screen behavior:
   - lists the owner's current close friends,
   - supports opening a listed user's profile,

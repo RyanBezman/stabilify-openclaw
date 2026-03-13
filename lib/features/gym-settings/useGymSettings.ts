@@ -12,8 +12,10 @@ import {
 } from "./data";
 import { DEFAULT_GYM_RADIUS_METERS } from "./types";
 import type { GymOption } from "./types";
-import { isSessionRequired } from "../shared";
-import { requestForegroundLocationPermissionWithPrimer } from "../shared/locationPermission";
+import {
+  isSessionRequired,
+  requestForegroundLocationPermissionWithPrimer,
+} from "../shared";
 
 export function useGymSettings() {
   const [loading, setLoading] = useState(true);

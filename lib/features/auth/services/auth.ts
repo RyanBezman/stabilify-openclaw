@@ -31,8 +31,14 @@ export async function fetchCurrentUserId(): Promise<Result<{ userId: string | nu
   return ok({ userId: result.data?.user?.id ?? null });
 }
 
-export async function signOutCurrentUser(): Promise<Result<{ ok: true }>> {
-  const { error } = await supabase.auth.signOut();
+type SignOutScope = "global" | "local" | "others";
+
+export async function signOutCurrentUser(
+  options?: { scope?: SignOutScope },
+): Promise<Result<{ ok: true }>> {
+  const { error } = await supabase.auth.signOut(
+    options?.scope ? { scope: options.scope } : undefined,
+  );
   if (error) {
     return fail(error);
   }

@@ -7,7 +7,7 @@ import {
   saveGymSession,
 } from "../../data/gymSessions";
 import type { GymSessionStatus, GymSessionStatusReason } from "../../data/types";
-import { requestForegroundLocationPermissionWithPrimer } from "../shared/locationPermission";
+import { requestForegroundLocationPermissionWithPrimer } from "../shared";
 
 type SaveSessionResult = {
   saved: boolean;

@@ -1,4 +1,8 @@
 import { getProfilePhotoSignedUrl } from "../../profile";
+import {
+  resolveDefaultPostVisibility,
+  normalizePostAudienceAccountVisibility,
+} from "../../../data/postVisibility";
 import { supabase } from "../../../supabase";
 import {
   DEFAULT_AUDIENCE_HINT,
@@ -20,7 +24,7 @@ export async function resolveCurrentAuthorContext(): Promise<AuthorContext | nul
 
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
-    .select("display_name, avatar_path, account_visibility")
+    .select("display_name, avatar_path, account_visibility, post_share_visibility")
     .eq("id", userData.user.id)
     .maybeSingle();
 
@@ -35,11 +39,19 @@ export async function resolveCurrentAuthorContext(): Promise<AuthorContext | nul
     photoUrl = signedUrlResult.data?.signedUrl ?? null;
   }
 
+  const accountVisibility = normalizePostAudienceAccountVisibility(profileData?.account_visibility);
+  const defaultPostVisibility = resolveDefaultPostVisibility({
+    accountVisibility: profileData?.account_visibility,
+    postShareVisibility: profileData?.post_share_visibility ?? null,
+  });
+
   return {
     userId: userData.user.id,
     displayName,
     avatarPath,
     photoUrl,
+    accountVisibility,
+    defaultPostVisibility,
     defaultAudienceHint: profileError
       ? DEFAULT_AUDIENCE_HINT
       : resolveDefaultAudienceHint(profileData?.account_visibility),

@@ -32,6 +32,7 @@ export type { PushRegistrationOutcome };
 export { deriveSurfaceLoadState } from "./surfaceLoadState";
 export type { SurfaceLoadState } from "./surfaceLoadState";
 export {
+  __resetRelationshipSyncEventsForTests,
   publishRelationshipSyncEvent,
   subscribeRelationshipSyncEvents,
 } from "./relationshipSyncEvents";
@@ -39,6 +40,10 @@ export type {
   RelationshipFollowState,
   RelationshipSyncEvent,
 } from "./relationshipSyncEvents";
+export async function requestForegroundLocationPermissionWithPrimer() {
+  const locationPermission = await import("./locationPermission");
+  return locationPermission.requestForegroundLocationPermissionWithPrimer();
+}
 export type {
   AsyncWorkflowEvent,
   AsyncWorkflowState,

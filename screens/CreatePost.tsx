@@ -1,50 +1,76 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Text,
   TextInput,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import PostComposerActionBar from "../components/posts/PostComposerActionBar";
+import PostAudienceSheet from "../components/posts/PostAudienceSheet";
 import PostComposerHeader from "../components/posts/PostComposerHeader";
 import PostComposerPhotosGrid from "../components/posts/PostComposerPhotosGrid";
-import Input from "../components/ui/Input";
+import ProfileAvatar from "../components/profile/ProfileAvatar";
 import {
   createCurrentUserPhotoPost,
   createCurrentUserTextPost,
   POST_BODY_MAX_CHARS,
 } from "../lib/data/posts";
+import {
+  inferPostVisibilityFromAudienceHint,
+  normalizePostAudienceAccountVisibility,
+} from "../lib/data/postVisibility";
+import type { AccountVisibility, ShareVisibility } from "../lib/data/types";
 import type { RootStackParamList } from "../lib/navigation/types";
 import AppScreen from "../components/ui/AppScreen";
+import {
+  DEFAULT_AUDIENCE_HINT,
+  resolveCurrentAuthorContext,
+  type AuthorContext,
+} from "../lib/features/feed";
 
 const MAX_POST_PHOTOS = 4;
 
 type CreatePostProps = NativeStackScreenProps<RootStackParamList, "CreatePost">;
 
-export default function CreatePost({ navigation }: CreatePostProps) {
+export default function CreatePost({ navigation, route }: CreatePostProps) {
   const insets = useSafeAreaInsets();
   const allowNavigationRef = useRef(false);
   const inputRef = useRef<TextInput | null>(null);
+  const keyboardLockPausedRef = useRef(false);
+  const audienceSelectionDirtyRef = useRef(false);
 
   const [newPostBody, setNewPostBody] = useState("");
   const [newPostPhotoAssets, setNewPostPhotoAssets] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [savingPost, setSavingPost] = useState(false);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(true);
+  const [authorContext, setAuthorContext] = useState<AuthorContext | null>(null);
+  const [audienceSheetVisible, setAudienceSheetVisible] = useState(false);
+  const [selectedVisibility, setSelectedVisibility] = useState<ShareVisibility>(() =>
+    inferPostVisibilityFromAudienceHint(route.params?.defaultAudienceHint ?? DEFAULT_AUDIENCE_HINT),
+  );
 
   const pendingPhotoUris = useMemo(
     () => newPostPhotoAssets.map((asset) => asset.uri).filter((uri) => Boolean(uri)),
     [newPostPhotoAssets],
   );
   const trimmedBody = newPostBody.trim();
+  const postCharacterCount = newPostBody.length;
   const hasPendingPhotos = pendingPhotoUris.length > 0;
   const canPost = Boolean(trimmedBody || hasPendingPhotos);
   const isDirty = Boolean(trimmedBody || hasPendingPhotos);
+  const defaultAudienceHint = route.params?.defaultAudienceHint ?? DEFAULT_AUDIENCE_HINT;
+  const authorDisplayName = authorContext?.displayName ?? "You";
+  const accountVisibility: AccountVisibility =
+    authorContext?.accountVisibility ??
+    normalizePostAudienceAccountVisibility(
+      defaultAudienceHint.toLowerCase().includes("everyone") ? "public" : "private",
+    );
 
   const confirmDiscardIfDirty = useCallback(
     (onDiscard: () => void) => {
@@ -56,8 +82,16 @@ export default function CreatePost({ navigation }: CreatePostProps) {
         return;
       }
 
+      keyboardLockPausedRef.current = true;
       Alert.alert("Discard post?", "You have unsent changes.", [
-        { text: "Keep editing", style: "cancel" },
+        {
+          text: "Keep editing",
+          style: "cancel",
+          onPress: () => {
+            keyboardLockPausedRef.current = false;
+            requestAnimationFrame(() => inputRef.current?.focus());
+          },
+        },
         {
           text: "Discard",
           style: "destructive",
@@ -68,21 +102,61 @@ export default function CreatePost({ navigation }: CreatePostProps) {
     [isDirty, savingPost],
   );
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  const focusComposer = useCallback(() => {
+    setKeyboardVisible(true);
+    requestAnimationFrame(() => {
       inputRef.current?.focus();
-    }, 120);
-    return () => clearTimeout(timer);
+    });
   }, []);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      focusComposer();
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [focusComposer]);
+
+  useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardVisible(false));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardVisible(false);
+      if (keyboardLockPausedRef.current || allowNavigationRef.current || savingPost) {
+        return;
+      }
+      focusComposer();
+    });
     return () => {
       showSub.remove();
       hideSub.remove();
     };
+  }, [focusComposer, savingPost]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAuthorContext = async () => {
+      const result = await resolveCurrentAuthorContext();
+      if (!active) {
+        return;
+      }
+      setAuthorContext(result);
+    };
+
+    void loadAuthorContext();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  useEffect(() => {
+    if (audienceSelectionDirtyRef.current) {
+      return;
+    }
+
+    const fallbackVisibility = inferPostVisibilityFromAudienceHint(defaultAudienceHint);
+    setSelectedVisibility(authorContext?.defaultPostVisibility ?? fallbackVisibility);
+  }, [authorContext?.defaultPostVisibility, defaultAudienceHint]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (event) => {
@@ -106,6 +180,7 @@ export default function CreatePost({ navigation }: CreatePostProps) {
 
   const handleCancel = useCallback(() => {
     confirmDiscardIfDirty(() => {
+      keyboardLockPausedRef.current = true;
       allowNavigationRef.current = true;
       navigation.goBack();
     });
@@ -117,9 +192,14 @@ export default function CreatePost({ navigation }: CreatePostProps) {
       return;
     }
 
+    keyboardLockPausedRef.current = true;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== "granted") {
+      keyboardLockPausedRef.current = false;
       Alert.alert("Photos permission needed", "Allow photo library access to create photo posts.");
+      setTimeout(() => {
+        focusComposer();
+      }, 120);
       return;
     }
 
@@ -133,8 +213,9 @@ export default function CreatePost({ navigation }: CreatePostProps) {
     });
 
     if (result.canceled || !result.assets?.length) {
+      keyboardLockPausedRef.current = false;
       setTimeout(() => {
-        inputRef.current?.focus();
+        focusComposer();
       }, 120);
       return;
     }
@@ -151,19 +232,32 @@ export default function CreatePost({ navigation }: CreatePostProps) {
       return merged;
     });
 
+    keyboardLockPausedRef.current = false;
     setTimeout(() => {
-      inputRef.current?.focus();
+      focusComposer();
     }, 120);
-  }, [newPostPhotoAssets.length]);
+  }, [focusComposer, newPostPhotoAssets.length]);
 
   const handleRemovePhoto = useCallback((index: number) => {
     setNewPostPhotoAssets((prev) => prev.filter((_, assetIndex) => assetIndex !== index));
   }, []);
 
+  const handleSelectVisibility = useCallback(
+    (visibility: ShareVisibility) => {
+      keyboardLockPausedRef.current = false;
+      audienceSelectionDirtyRef.current = true;
+      setSelectedVisibility(visibility);
+      setAudienceSheetVisible(false);
+      focusComposer();
+    },
+    [focusComposer],
+  );
+
   const handleSubmitPost = useCallback(async () => {
     if (savingPost || !canPost) {
       return;
     }
+    keyboardLockPausedRef.current = true;
 
     const body = newPostBody.trim();
     const selectedPhotos = newPostPhotoAssets
@@ -183,13 +277,17 @@ export default function CreatePost({ navigation }: CreatePostProps) {
       ? await createCurrentUserPhotoPost({
           photos: selectedPhotos,
           caption: body,
-          closeFriendsOnly: false,
+          visibility: selectedVisibility,
         })
-      : await createCurrentUserTextPost(body, { closeFriendsOnly: false });
+      : await createCurrentUserTextPost(body, { visibility: selectedVisibility });
 
     if (result.error || !result.data?.post) {
+      keyboardLockPausedRef.current = false;
       setSavingPost(false);
       Alert.alert("Couldn't save post", result.error ?? "Please try again.");
+      setTimeout(() => {
+        focusComposer();
+      }, 120);
       return;
     }
 
@@ -200,7 +298,15 @@ export default function CreatePost({ navigation }: CreatePostProps) {
         createdPost: result.data.post,
       },
     });
-  }, [canPost, navigation, newPostBody, newPostPhotoAssets, savingPost]);
+  }, [
+    canPost,
+    focusComposer,
+    navigation,
+    newPostBody,
+    newPostPhotoAssets,
+    savingPost,
+    selectedVisibility,
+  ]);
 
   return (
     <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={760}>
@@ -218,43 +324,82 @@ export default function CreatePost({ navigation }: CreatePostProps) {
 
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 116 }}
-          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 116 }}
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="none"
           showsVerticalScrollIndicator={false}
         >
-          <Input
-            ref={inputRef}
-            value={newPostBody}
-            onChangeText={setNewPostBody}
-            placeholder="What do you want to share?"
-            multiline
-            numberOfLines={5}
-            maxLength={POST_BODY_MAX_CHARS}
-            className="min-h-[140px]"
-            accessibilityLabel="Post content"
-            autoFocus
-          />
-          <Text className="mt-2 text-right text-xs text-neutral-500">
-            {trimmedBody.length}/{POST_BODY_MAX_CHARS}
-          </Text>
+          <View className="flex-row items-start">
+            <ProfileAvatar
+              displayName={authorDisplayName}
+              photoUrl={authorContext?.photoUrl ?? null}
+              size={44}
+              className="mt-1"
+            />
 
-          <PostComposerPhotosGrid
-            uris={pendingPhotoUris}
-            maxPhotos={MAX_POST_PHOTOS}
-            onRemovePhoto={handleRemovePhoto}
-            onClearAll={() => setNewPostPhotoAssets([])}
-          />
+            <View className="ml-3 min-w-0 flex-1">
+              <TextInput
+                ref={inputRef}
+                value={newPostBody}
+                onChangeText={setNewPostBody}
+                placeholder="What kept your streak alive today?"
+                placeholderTextColor="#525252"
+                multiline
+                numberOfLines={8}
+                maxLength={POST_BODY_MAX_CHARS}
+                accessibilityLabel="Post content"
+                autoFocus
+                textAlignVertical="top"
+                className="text-white"
+                onBlur={() => {
+                  if (keyboardLockPausedRef.current || allowNavigationRef.current || savingPost) {
+                    return;
+                  }
+                  focusComposer();
+                }}
+                style={{
+                  minHeight: 280,
+                  fontSize: 20,
+                  lineHeight: 28,
+                  includeFontPadding: false,
+                }}
+              />
+
+              <PostComposerPhotosGrid
+                uris={pendingPhotoUris}
+                onRemovePhoto={handleRemovePhoto}
+              />
+            </View>
+          </View>
         </ScrollView>
 
         <PostComposerActionBar
           saving={savingPost}
-          canPost={canPost}
           photoCount={pendingPhotoUris.length}
           canAddPhotos={pendingPhotoUris.length < MAX_POST_PHOTOS}
           onAddPhotos={() => void handleAddPhotos()}
+          onOpenAudiencePicker={() => {
+            keyboardLockPausedRef.current = true;
+            setAudienceSheetVisible(true);
+          }}
           keyboardVisible={keyboardVisible}
+          overlayVisible={audienceSheetVisible}
           insets={insets}
-          onSubmit={() => void handleSubmitPost()}
+          selectedVisibility={selectedVisibility}
+          characterCount={postCharacterCount}
+          characterLimit={POST_BODY_MAX_CHARS}
+        />
+
+        <PostAudienceSheet
+          visible={audienceSheetVisible}
+          accountVisibility={accountVisibility}
+          selectedVisibility={selectedVisibility}
+          onSelectVisibility={handleSelectVisibility}
+          onClose={() => {
+            keyboardLockPausedRef.current = false;
+            setAudienceSheetVisible(false);
+            focusComposer();
+          }}
         />
       </KeyboardAvoidingView>
     </AppScreen>

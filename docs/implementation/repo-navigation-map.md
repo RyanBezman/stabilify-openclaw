@@ -1,6 +1,6 @@
 # Repo Navigation Map
 
-Last updated: 2026-03-10
+Last updated: 2026-03-13
 
 ## Goal
 
@@ -35,7 +35,14 @@ Make first-pass navigation predictable for product work, bug fixing, and future 
   - Feature API: `lib/features/profile-settings/index.ts`
   - Main hooks/models: `useProfileSettings.ts`, `useProfileSettingsScreen.ts`, `editableFields.ts`
   - Shared data sources: `lib/features/profile-settings/data.ts`, `lib/data/supportAutomation.ts`, `lib/data/appleHealth.ts`
-  - Edit here for: immediate-save settings, consent flows, push registration behavior, photo/debug actions, text-field previews
+  - Edit here for: immediate-save settings, consent flows, push registration behavior, photo/debug actions, text-field previews, account deletion request UX
+
+- Account lifecycle:
+  - Root gate: `App.tsx`
+  - Recovery route surface: `screens/AccountDeletionRecovery.tsx`
+  - Feature API: `lib/features/account-lifecycle/index.ts`
+  - Main data contract: `lib/features/account-lifecycle/data.ts`
+  - Edit here for: pending-deletion auth gating, recovery-window restore flow, delete-request data wiring
 
 - Coaches:
   - Routes: `screens/CoachDashboard.tsx`, `screens/CoachWorkspace.tsx`, `screens/CoachOnboardingFlow.tsx`, compatibility route `screens/CoachChat.tsx`
@@ -73,6 +80,7 @@ Make first-pass navigation predictable for product work, bug fixing, and future 
 - `supabase/functions/coach-chat/*` owns unified coach planning/chat inference and coach-specific guardrails.
 - `supabase/functions/coach-voice/index.ts` owns coach voice generation.
 - `supabase/functions/support-nudge-push-dispatch/index.ts` owns queued support-nudge push delivery retries and inactive-device handling.
+- `supabase/functions/account-deletion/index.ts` owns due-account purge execution and storage cleanup.
 
 ## UX States
 

@@ -1,5 +1,50 @@
 # Product Policy Change Log
 
+## 2026-03-13 - Post composer audience picker
+
+### Added
+
+- Manual post audience policy:
+  - the create-post composer now exposes a bottom-sheet audience picker for each post.
+  - authors can switch a post to `Close friends` directly in the composer.
+
+### Changed
+
+- Post composer visibility behavior:
+  - composer defaults now follow the user's stored post-sharing preference when available instead of collapsing everything to one implicit visibility path.
+  - the composer keeps audience selection inline instead of forcing users to leave the flow for privacy changes.
+
+### Removed
+
+- The gap where the composer suggested audience context but could not explicitly switch the post audience before publishing.
+
+### Notes
+
+- This rollout keeps the composer minimal and keyboard-first while making post visibility explicit.
+
+## 2026-03-13 - Account deletion lifecycle added
+
+### Added
+
+- Account lifecycle policy:
+  - Profile Settings now exposes a single user-facing `Delete account` action.
+  - deletion requests hide the account immediately and start a `30 day` recovery window.
+  - pending-deletion sign-ins now land on a dedicated recovery state with explicit restore.
+
+### Changed
+
+- Retention policy:
+  - final purge now permanently deletes accountability history, social content, coach chats/plans/artifacts, and uploaded media after the recovery deadline.
+  - AI coach chat follows the same deletion window by default unless an internal legal hold is applied for a concrete incident.
+
+### Removed
+
+- The implicit assumption that account deletion would either be immediate hard-delete or an indefinite disabled state.
+
+### Notes
+
+- This rollout adds a scheduled purge worker and keeps legal-hold handling internal-only.
+
 ## 2026-03-12 - Relationship state refresh consistency on social surfaces
 
 ### Added

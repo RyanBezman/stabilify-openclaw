@@ -156,10 +156,13 @@ Deno.serve(async (req) => {
   const userId = userData.user.id;
   const { data: profile, error: profileErr } = await supabaseUser
     .from("profiles")
-    .select("membership_tier")
+    .select("membership_tier, account_status")
     .eq("id", userId)
-    .maybeSingle<{ membership_tier?: string | null }>();
+    .maybeSingle<{ membership_tier?: string | null; account_status?: string | null }>();
   if (profileErr) return serverError(profileErr.message);
+  if (profile?.account_status === "pending_deletion") {
+    return forbidden("Account is pending deletion.", "ACCOUNT_PENDING_DELETION");
+  }
   if (!profile || profile.membership_tier !== "pro") {
     return forbidden("Coach voice requires Pro.", "TIER_REQUIRES_PRO");
   }
@@ -259,4 +262,3 @@ Deno.serve(async (req) => {
     voice,
   });
 });
-

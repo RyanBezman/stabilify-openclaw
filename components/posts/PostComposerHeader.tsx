@@ -13,37 +13,43 @@ export default function PostComposerHeader({
   onCancel,
   onSubmit,
 }: PostComposerHeaderProps) {
+  const postDisabled = saving || !canPost;
+
   return (
-    <View className="flex-row items-center justify-between border-b border-neutral-900 px-4 py-3">
-      <TouchableOpacity
-        onPress={onCancel}
-        disabled={saving}
-        accessibilityRole="button"
-        accessibilityLabel="Cancel creating post"
-        className="rounded-full px-2 py-1"
-      >
-        <Text className={`text-sm font-semibold ${saving ? "text-neutral-600" : "text-neutral-300"}`}>
-          Cancel
-        </Text>
-      </TouchableOpacity>
-
-      <Text className="text-base font-semibold text-white">Create post</Text>
-
-      <TouchableOpacity
-        onPress={onSubmit}
-        disabled={saving || !canPost}
-        accessibilityRole="button"
-        accessibilityLabel="Post"
-        className="rounded-full px-2 py-1"
-      >
-        <Text
-          className={`text-sm font-semibold ${
-            saving || !canPost ? "text-neutral-600" : "text-violet-300"
-          }`}
+    <View className="px-5 pb-2 pt-3">
+      <View className="flex-row items-center justify-between">
+        <TouchableOpacity
+          onPress={onCancel}
+          disabled={saving}
+          accessibilityRole="button"
+          accessibilityLabel="Cancel creating post"
+          className="py-2 pr-3"
+          activeOpacity={0.75}
         >
-          {saving ? "Saving" : "Post"}
-        </Text>
-      </TouchableOpacity>
+          <Text className={`text-[17px] ${saving ? "text-neutral-600" : "text-white"}`}>
+            Cancel
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={onSubmit}
+          disabled={postDisabled}
+          accessibilityRole="button"
+          accessibilityLabel="Post"
+          className={`rounded-full px-5 py-2.5 ${
+            postDisabled ? "bg-violet-700/40" : "bg-violet-600"
+          }`}
+          activeOpacity={0.85}
+        >
+          <Text
+            className={`text-[16px] font-semibold ${
+              postDisabled ? "text-white/60" : "text-white"
+            }`}
+          >
+            {saving ? "Posting" : "Post"}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

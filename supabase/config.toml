@@ -21,3 +21,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/support-nudge-push-dispatch/deno.json"
 entrypoint = "./functions/support-nudge-push-dispatch/index.ts"
+
+[functions.account-deletion]
+enabled = true
+verify_jwt = false
+import_map = "./functions/account-deletion/deno.json"
+entrypoint = "./functions/account-deletion/index.ts"

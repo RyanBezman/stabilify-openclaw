@@ -2,6 +2,10 @@ import { supabase } from "../supabase";
 import type { PostRow, ShareVisibility } from "./types";
 import { isLikelyUri, mergePhotoMediaUrls, parseLegacyPhotoBody } from "./postPhotoPayload";
 import {
+  resolveDefaultPostVisibility,
+  sanitizeRequestedPostVisibility,
+} from "./postVisibility";
+import {
   fail,
   normalizeCursorPagination,
   ok,
@@ -29,6 +33,7 @@ type FetchVisiblePostsByAuthorInput = CursorPaginationInput & {
 };
 type CreateCurrentUserTextPostInput = {
   userId?: string;
+  visibility?: ShareVisibility;
   closeFriendsOnly?: boolean;
 };
 type PhotoUploadInput = {
@@ -41,6 +46,7 @@ type CreateCurrentUserPhotoPostInput = {
   photos: PhotoUploadInput[];
   caption?: string;
   userId?: string;
+  visibility?: ShareVisibility;
   closeFriendsOnly?: boolean;
 };
 type MappedPostRow = Omit<PostRow, "mediaUrls"> & {
@@ -191,11 +197,14 @@ async function hydrateMappedPosts(posts: MappedPostRow[]): Promise<PostRow[]> {
 
 async function resolveCurrentUserPostVisibility(
   userId: string,
-  closeFriendsOnly: boolean,
+  input?: {
+    visibility?: ShareVisibility;
+    closeFriendsOnly?: boolean;
+  },
 ): Promise<Result<{ visibility: ShareVisibility }>> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("account_visibility")
+    .select("account_visibility, post_share_visibility")
     .eq("id", userId)
     .maybeSingle();
 
@@ -203,15 +212,25 @@ async function resolveCurrentUserPostVisibility(
     return fail(error);
   }
 
-  const accountVisibility = data?.account_visibility;
-  if (closeFriendsOnly) {
-    return ok({ visibility: "close_friends" });
-  }
-  if (accountVisibility === "public" || accountVisibility === "followers") {
-    return ok({ visibility: "public" });
+  if (input?.visibility) {
+    return ok({
+      visibility: sanitizeRequestedPostVisibility({
+        accountVisibility: data?.account_visibility,
+        requestedVisibility: input.visibility,
+      }),
+    });
   }
 
-  return ok({ visibility: "followers" });
+  if (input?.closeFriendsOnly) {
+    return ok({ visibility: "close_friends" });
+  }
+
+  return ok({
+    visibility: resolveDefaultPostVisibility({
+      accountVisibility: data?.account_visibility,
+      postShareVisibility: data?.post_share_visibility ?? null,
+    }),
+  });
 }
 
 async function resolveUploadBody(photo: PhotoUploadInput): Promise<Result<{ body: Blob | Uint8Array }>> {
@@ -401,7 +420,7 @@ export async function createCurrentUserTextPost(
   const resolvedUserId = userResult.data.userId;
   const visibilityResult = await resolveCurrentUserPostVisibility(
     resolvedUserId,
-    input?.closeFriendsOnly ?? false,
+    input,
   );
   if (visibilityResult.error || !visibilityResult.data) {
     return fail(visibilityResult.error ?? "Couldn't resolve post visibility.");
@@ -453,7 +472,7 @@ export async function createCurrentUserPhotoPost(
   const resolvedUserId = userResult.data.userId;
   const visibilityResult = await resolveCurrentUserPostVisibility(
     resolvedUserId,
-    input.closeFriendsOnly ?? false,
+    input,
   );
   if (visibilityResult.error || !visibilityResult.data) {
     return fail(visibilityResult.error ?? "Couldn't resolve post visibility.");

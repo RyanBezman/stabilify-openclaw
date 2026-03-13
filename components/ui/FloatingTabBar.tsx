@@ -111,9 +111,9 @@ export default function FloatingTabBar(props: BottomTabBarProps) {
 
   useEffect(() => {
     animatedIndex.value = withSpring(props.state.index, {
-      damping: 18,
-      stiffness: 220,
-      mass: 0.9,
+      damping: 20,
+      stiffness: 315,
+      mass: 0.75,
     });
   }, [animatedIndex, props.state.index]);
 

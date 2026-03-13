@@ -1,6 +1,6 @@
 # App Surface Implementation Strategy (Home, Feed, Profile)
 
-Last updated: 2026-03-09
+Last updated: 2026-03-13
 
 ## Goal
 
@@ -46,6 +46,7 @@ Implementation responsibilities:
 - Render social momentum stream from accountability events.
 - Support lightweight social interaction model.
 - Support manual text/photo posting when enabled.
+- Support per-post audience selection in the composer without leaving the compose surface.
 
 Do not include:
 
@@ -120,6 +121,10 @@ Do not include:
 - `body text null`
 - `visibility text not null`
 - `created_at timestamptz not null default now()`
+- Composer write contract:
+  - explicit composer audience selection writes one of `public`, `followers`, `close_friends`, or `private` to `public.posts.visibility`,
+  - the default selection resolves from `public.profiles.post_share_visibility` when present,
+  - requesting `public` from a private account must degrade to `followers`.
 
 ### `public.post_media`
 
@@ -143,6 +148,10 @@ Do not include:
   - limited nested card usage on identity/settings surfaces,
   - inline text editing and row-based settings where the task is simple,
   - simple, calm headers and spacing that feel closer to a native social product than a dashboard.
+- The create-post surface should stay in the same minimal social family:
+  - open-canvas text composer,
+  - persistent keyboard-first interaction,
+  - bottom-sheet audience picker rather than a separate settings screen.
 - When in doubt, Feed and Profile should feel like adjacent surfaces from the same product, and Profile settings should look like an edit extension of Profile rather than a separate admin tool.
 
 ## Analytics
