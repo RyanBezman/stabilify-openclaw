@@ -82,6 +82,9 @@ Last updated: 2026-03-10
 ### Current app implementation notes
 - `CoachOnboardingFlow` is the required pre-workspace intake surface for Pro users missing `coach_user_profiles.profile_json` required fields.
 - Coach onboarding body profile includes explicit `sex` selection (`male | female | other`) plus defaulted height/weight values (`5'5"`, `170 lb`) that are valid without manual picker movement.
+- On iPhone, the coach onboarding height and weight wheel pickers emit light selection haptics as the value changes.
+- Coach onboarding height and weight wheels stay visually narrow and centered so the native selected lane reads like a spinner wheel instead of a full-width highlighted row.
+- Coach onboarding top chrome includes a dedicated close action that exits back to the Coaches surface. If the draft differs from the entry state, exiting requires a discard confirmation instead of repeated back taps.
 - Onboarding submission writes `coach_user_profiles`, sets unified persona selection, and triggers initial workout + nutrition plan generation via `coach-chat` (`plan_generate`).
 - Onboarding must persist `coach_user_profiles.profile_json` before saving the unified coach selection. A profile-write failure cannot leave the server pointing at a newly selected coach while the client still treats onboarding as failed.
 - Onboarding generation is commit-first for the saved coach/profile state: if one or both requested tracks fail to generate, onboarding still completes, returns explicit per-track generated state, and routes into `CoachOnboardingResults` with a warning instead of leaving client state behind server state.

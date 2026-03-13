@@ -2,12 +2,14 @@ import { useMemo } from "react";
 import { Text, View } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import type { CoachOnboardingDraft } from "../../../../lib/features/coaches";
+import { triggerSelectionHaptic } from "../../../../lib/utils/haptics";
 
 type Props = {
   draft: CoachOnboardingDraft;
   patchDraft: (updater: (draft: CoachOnboardingDraft) => CoachOnboardingDraft) => void;
 };
 
+const WEIGHT_PICKER_WIDTH = 176;
 const LB_PER_KG = 2.2046226218;
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const kgToLb = (kg: number | null) => (kg === null ? 170 : clamp(Math.round(kg * LB_PER_KG), 80, 450));
@@ -20,15 +22,21 @@ export default function StepWeight({ draft, patchDraft }: Props) {
     <View className="min-h-[360px] items-center justify-center gap-6 py-6">
       <Text className="text-xs font-semibold uppercase tracking-[1.5px] text-neutral-500">Weight</Text>
       <Text className="text-3xl font-semibold text-white">{selectedWeightLb} lb</Text>
-      <View className="w-full">
+      <View style={{ width: WEIGHT_PICKER_WIDTH }}>
         <Picker
           selectedValue={selectedWeightLb}
           dropdownIconColor="#a3a3a3"
           onValueChange={(value) => {
             const numeric = typeof value === "number" ? value : Number(value);
+            if (numeric === selectedWeightLb) {
+              return;
+            }
+
+            triggerSelectionHaptic();
             patchDraft((prev) => ({ ...prev, body: { ...prev.body, weightKg: lbToKg(numeric) } }));
           }}
           itemStyle={{ color: "#f5f5f5" }}
+          style={{ width: WEIGHT_PICKER_WIDTH }}
         >
           {Array.from({ length: 371 }, (_, idx) => idx + 80).map((lb) => (
             <Picker.Item key={lb} label={`${lb} lb`} value={lb} />

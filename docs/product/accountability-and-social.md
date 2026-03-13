@@ -169,7 +169,7 @@ Status mapping:
 - Keep support payload minimal and non-sensitive by default.
 - Default support message avoids exact weight/location/photo exposure.
 - User profile relationship actions:
-  - show `Block user` as a secondary destructive action on another user's profile,
+  - show `Block user` inside the other user's profile overflow actions,
   - show `Unblock user` and a locked-state message after the viewer blocks that user.
 - Profile menu includes a `Close Friends` destination for managing the owner's close-friend list.
 - Profile Settings includes a `Blocked accounts` destination for reviewing and unblocking blocked users.

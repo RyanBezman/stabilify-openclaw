@@ -21,6 +21,7 @@ Verify that the shared app shell paints edge-to-edge behind safe areas and that 
 - Content remains inset away from unsafe regions while the background still fills the full device frame.
 - Form-heavy and detail-heavy screens stay centered with readable line lengths on tablets and landscape phones instead of stretching edge-to-edge.
 - The floating tab bar keeps the existing icon spacing and color system without clipping into the home-indicator safe area.
+- The floating tab bar active pill slides cleanly between tabs without overshooting, clipping, or crowding adjacent tab labels.
 
 ## Analytics
 
@@ -43,6 +44,8 @@ Expected:
 Expected:
 - Tabs remain evenly distributed across the bar with no icon crowding or overlap.
 - Active tab icons and labels keep the existing violet/neutral colors with no crowding or overlap.
+- The active highlight pill animates horizontally to the newly selected tab and stays aligned under the selected icon/label pair.
+- The selected tab content lifts slightly during the transition without causing text jitter or clipped icon edges.
 - The floating bar stays fully above the home indicator and does not clip at the bar edges.
 
 4. Open the keyboard on at least one auth screen and one tab screen.

@@ -18,11 +18,12 @@ Verify user blocking and unblocking across profile actions and Supabase-enforced
 
 1. Sign in as `blocker`.
 2. Open `target`'s profile.
-3. Confirm the screen shows `Follow` (or `Following` / `Requested`) and `Block user`.
-4. Tap `Block user` and confirm the destructive confirmation sheet.
-5. Confirm the screen switches to `User blocked` with an `Unblock user` CTA.
-6. If `blocker` had been following `target`, confirm the visible follower count decreases by one.
-7. If `target` had been following `blocker`, confirm the visible following count also updates on the same profile without leaving the screen.
+3. Confirm the screen shows `Follow` (or `Following` / `Requested`) and a profile actions overflow button.
+4. Open the overflow menu and confirm it includes `Block user`.
+5. Tap `Block user` and confirm the destructive confirmation sheet.
+6. Confirm the screen switches to `User blocked` with an `Unblock user` CTA.
+7. If `blocker` had been following `target`, confirm the visible follower count decreases by one.
+8. If `target` had been following `blocker`, confirm the visible following count also updates on the same profile without leaving the screen.
 
 ## Relationship Cleanup
 

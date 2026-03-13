@@ -876,7 +876,10 @@ export default function CoachWorkspaceScreen({
 
       const status = await fetchCoachOnboardingStatus(userId);
       if (mounted && !status.error && !status.data?.complete) {
-        navigation.replace("CoachOnboardingFlow", { specialization });
+        navigation.replace("CoachOnboardingFlow", {
+          specialization,
+          returnTo: "coaches",
+        });
         return;
       }
 

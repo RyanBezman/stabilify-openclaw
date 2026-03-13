@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Easing,
   ScrollView,
@@ -58,8 +59,13 @@ const LOADING_TIPS = [
   "Final quality checks before opening your workspace.",
 ] as const;
 
+function serializeDraft(draft: ReturnType<typeof createInitialCoachOnboardingDraft>) {
+  return JSON.stringify(draft);
+}
+
 export default function CoachOnboardingFlow({ navigation, route }: Props) {
   const { setActiveCoach } = useCoach();
+  const allowNavigationRef = useRef(false);
   const {
     currentStep,
     draft,
@@ -81,6 +87,9 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
     setDraft,
   } = useCoachOnboarding();
   const prefillAppliedRef = useRef(false);
+  const [entryDraftJson, setEntryDraftJson] = useState(() =>
+    serializeDraft(createInitialCoachOnboardingDraft()),
+  );
   const [prefillLoading, setPrefillLoading] = useState(
     Boolean(
       route.params?.prefillFromCurrentProfile ||
@@ -115,6 +124,7 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
     );
 
     if (!hasPrefillRequest) {
+      setEntryDraftJson(serializeDraft(createInitialCoachOnboardingDraft()));
       setPrefillLoading(false);
       return;
     }
@@ -165,8 +175,10 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
         fallbackDraft.persona = nextDraft.persona;
         fallbackDraft.planStart = nextDraft.planStart;
         setDraft(fallbackDraft);
+        setEntryDraftJson(serializeDraft(fallbackDraft));
       } else {
         setDraft(nextDraft);
+        setEntryDraftJson(serializeDraft(nextDraft));
       }
 
       if (route.params?.startAtStep) {
@@ -195,6 +207,68 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
     route.params?.startAtStep,
     setDraft,
   ]);
+
+  const isDirty = useMemo(
+    () => serializeDraft(draft) !== entryDraftJson,
+    [draft, entryDraftJson],
+  );
+
+  const exitOnboarding = useCallback(() => {
+    allowNavigationRef.current = true;
+
+    if (route.params?.returnTo === "today") {
+      navigation.navigate("Authed", {
+        screen: "Today",
+      });
+      return;
+    }
+
+    navigation.navigate("Authed", {
+      screen: "Coaches",
+      params: {
+        specialization: route.params?.specialization,
+      },
+    });
+  }, [navigation, route.params?.returnTo, route.params?.specialization]);
+
+  const confirmExitIfDirty = useCallback(
+    (onExit: () => void) => {
+      if (submitting) {
+        return;
+      }
+
+      if (!isDirty) {
+        onExit();
+        return;
+      }
+
+      Alert.alert("Leave setup?", "Your onboarding progress won't be saved.", [
+        { text: "Keep editing", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: onExit,
+        },
+      ]);
+    },
+    [isDirty, submitting],
+  );
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("beforeRemove", (event) => {
+      if (allowNavigationRef.current || submitting || !isDirty) {
+        return;
+      }
+
+      event.preventDefault();
+      confirmExitIfDirty(() => {
+        allowNavigationRef.current = true;
+        navigation.dispatch(event.data.action);
+      });
+    });
+
+    return unsubscribe;
+  }, [confirmExitIfDirty, isDirty, navigation, submitting]);
 
   useEffect(() => {
     fade.setValue(0);
@@ -326,6 +400,7 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
         : coachFromSelection("nutrition", draft.persona.gender, draft.persona.personality)
     );
     setSubmitDone();
+    allowNavigationRef.current = true;
     navigation.replace("CoachOnboardingResults", {
       planStart: draft.planStart,
       coachGender: draft.persona.gender,
@@ -334,12 +409,6 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
         res.data?.generatedTracks
         ?? buildGeneratedTracksFromPlanStart(draft.planStart),
       warning: res.data?.warning,
-    });
-  };
-
-  const exitOnboarding = () => {
-    navigation.navigate("Authed", {
-      screen: route.params?.returnTo === "coaches" ? "Coaches" : "Today",
     });
   };
 
@@ -396,7 +465,8 @@ export default function CoachOnboardingFlow({ navigation, route }: Props) {
         totalSteps={totalSteps}
         progressAnim={progressAnim}
         currentStepLabel={title}
-        onBack={() => (stepIndex === 0 ? exitOnboarding() : back())}
+        onBack={() => (stepIndex === 0 ? confirmExitIfDirty(exitOnboarding) : back())}
+        onClose={() => confirmExitIfDirty(exitOnboarding)}
       />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-40 pt-6" keyboardShouldPersistTaps="handled">

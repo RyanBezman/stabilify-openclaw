@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Animated, Text, TouchableOpacity, View } from "react-native";
 
 type CoachFlowTopBarProps = {
@@ -6,6 +7,7 @@ type CoachFlowTopBarProps = {
   progressAnim: Animated.Value;
   currentStepLabel: string;
   onBack: () => void;
+  onClose?: () => void;
   backLabel?: string;
 };
 
@@ -15,6 +17,7 @@ export default function CoachFlowTopBar({
   progressAnim,
   currentStepLabel,
   onBack,
+  onClose,
   backLabel = "Back",
 }: CoachFlowTopBarProps) {
   return (
@@ -31,7 +34,18 @@ export default function CoachFlowTopBar({
             {currentStepLabel}
           </Text>
         </View>
-        <View className="w-8" />
+        {onClose ? (
+          <TouchableOpacity
+            onPress={onClose}
+            className="h-10 w-10 items-center justify-center rounded-full"
+            accessibilityRole="button"
+            accessibilityLabel="Close onboarding"
+          >
+            <Ionicons name="close" size={20} color="#a3a3a3" />
+          </TouchableOpacity>
+        ) : (
+          <View className="w-10" />
+        )}
       </View>
       <View className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-neutral-900">
         <Animated.View

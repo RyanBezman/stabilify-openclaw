@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Animated, ScrollView, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { Animated, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../lib/navigation/types";
 import AuthHeader from "../components/auth/AuthHeader";
@@ -11,6 +12,7 @@ import ProfileTabPicker, { type ProfileContentTab } from "../components/profile/
 import ProfileLockedState from "../components/profile/ProfileLockedState";
 import Button from "../components/ui/Button";
 import ConfirmationSheet from "../components/ui/ConfirmationSheet";
+import ModalSheet from "../components/ui/ModalSheet";
 import { useUserFollowActions } from "../lib/features/profile";
 import { useUserProfileQuery } from "../lib/features/profile";
 import AppScreen from "../components/ui/AppScreen";
@@ -20,6 +22,7 @@ type UserProfileProps = NativeStackScreenProps<RootStackParamList, "UserProfile"
 export default function UserProfile({ navigation, route }: UserProfileProps) {
   const targetUserId = route.params.userId;
   const [activeTab, setActiveTab] = useState<ProfileContentTab>("posts");
+  const [actionMenuVisible, setActionMenuVisible] = useState(false);
 
   const {
     profile,
@@ -78,6 +81,28 @@ export default function UserProfile({ navigation, route }: UserProfileProps) {
     }
   }, [activeTab, showProgressTab]);
 
+  useEffect(() => {
+    if (isBlocked) {
+      setActionMenuVisible(false);
+    }
+  }, [isBlocked]);
+
+  const openActionMenu = useCallback(() => {
+    if (isOwner || !profile || isBlocked) {
+      return;
+    }
+    setActionMenuVisible(true);
+  }, [isBlocked, isOwner, profile]);
+
+  const closeActionMenu = useCallback(() => {
+    setActionMenuVisible(false);
+  }, []);
+
+  const handleBlockMenuPress = useCallback(() => {
+    setActionMenuVisible(false);
+    void handleBlockPress();
+  }, [handleBlockPress]);
+
   if (loading) {
     return (
       <AppScreen className="flex-1 bg-neutral-950" maxContentWidth={760}>
@@ -107,7 +132,23 @@ export default function UserProfile({ navigation, route }: UserProfileProps) {
         contentContainerClassName="px-5 pb-32 pt-6"
         showsVerticalScrollIndicator={false}
       >
-        <AuthHeader title={profile.displayName} onBack={navigation.goBack} />
+        <AuthHeader
+          title={profile.displayName}
+          onBack={navigation.goBack}
+          rightAction={
+            !isOwner && !isBlocked ? (
+              <TouchableOpacity
+                onPress={openActionMenu}
+                className="h-10 w-10 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900"
+                accessibilityRole="button"
+                accessibilityLabel="Open profile actions"
+                testID="user-profile-actions-button"
+              >
+                <Ionicons name="ellipsis-horizontal" size={18} color="#e5e5e5" />
+              </TouchableOpacity>
+            ) : null
+          }
+        />
 
         <Animated.View style={{ opacity: contentOpacity }}>
           <ProfileHero
@@ -135,20 +176,10 @@ export default function UserProfile({ navigation, route }: UserProfileProps) {
                   title={followButtonLabel}
                   variant={followState === "none" ? "primary" : "secondary"}
                   size="sm"
-                  className="mb-2"
+                  className="mb-4"
                   disabled={followLoading || blockLoading}
                   loading={followLoading}
                   onPress={handleFollowPress}
-                />
-                <Button
-                  title={blockButtonLabel}
-                  variant="ghost"
-                  size="sm"
-                  className="mb-4 self-start"
-                  textClassName="text-rose-300"
-                  disabled={followLoading || blockLoading}
-                  loading={blockLoading}
-                  onPress={handleBlockPress}
                 />
               </>
             )
@@ -213,6 +244,35 @@ export default function UserProfile({ navigation, route }: UserProfileProps) {
           void confirmAction();
         }}
       />
+      <ModalSheet visible={actionMenuVisible} onRequestClose={closeActionMenu} contentClassName="pb-2">
+        <View className="items-center pb-2 pt-1">
+          <View className="h-1.5 w-12 rounded-full bg-neutral-800" />
+        </View>
+        <Text className="mt-3 text-xl font-bold text-white">Profile actions</Text>
+        <Text className="mt-2 text-sm leading-6 text-neutral-400">
+          Manage how you interact with @{profile.username}.
+        </Text>
+        <View className="mt-6 overflow-hidden rounded-2xl border border-neutral-800">
+          <TouchableOpacity
+            accessibilityRole="button"
+            className="flex-row items-center justify-between bg-neutral-900 px-4 py-4"
+            disabled={followLoading || blockLoading}
+            onPress={handleBlockMenuPress}
+            testID="user-profile-block-menu-row"
+          >
+            <Text className="text-base font-semibold text-rose-300">{blockButtonLabel}</Text>
+            <Ionicons name="chevron-forward" size={16} color="#fda4af" />
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          accessibilityRole="button"
+          className="mt-3 items-center justify-center rounded-2xl border border-neutral-800 bg-neutral-900 px-4 py-3"
+          disabled={followLoading || blockLoading}
+          onPress={closeActionMenu}
+        >
+          <Text className="text-sm font-semibold text-neutral-200">Cancel</Text>
+        </TouchableOpacity>
+      </ModalSheet>
     </AppScreen>
   );
 }

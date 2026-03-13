@@ -375,10 +375,15 @@ export default function ProfileSettings({ navigation }: ProfileSettingsProps) {
                       description="Off keeps posts private by default."
                       value={postShareVisibility !== "private"}
                       onValueChange={handlePostShareToggle}
-                      isLast
                     />
                   </>
                 ) : null}
+                <SettingsLinkRow
+                  title="Blocked accounts"
+                  description="Review who you've blocked and unblock people when you're ready."
+                  onPress={() => navigation.navigate("BlockedAccounts")}
+                  isLast
+                />
               </View>
 
               <Text className="px-5 pb-2 pt-8 text-xs font-semibold uppercase tracking-[1.8px] text-neutral-500">

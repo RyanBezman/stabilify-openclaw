@@ -48,6 +48,7 @@ export default function AuthedTabs({ user }: AuthedTabsProps) {
                   if (parentNav) {
                     parentNav.navigate("CoachOnboardingFlow", {
                       specialization: "workout",
+                      returnTo: "coaches",
                     });
                     return;
                   }

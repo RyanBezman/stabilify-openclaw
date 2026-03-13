@@ -38,6 +38,7 @@ Last updated: 2026-03-11
 Expected:
 - Opening `CoachWorkspace` routes into `CoachOnboardingFlow` instead of plan/chat.
 - Progress bar + step count are visible.
+- Top bar shows `Back` on the left and a close `X` on the right.
 - Back/Continue controls work per step.
 
 2. Complete onboarding and submit `Build my plan`.
@@ -45,6 +46,9 @@ Expected:
 - Submission shows loading state (`Generating your plans...`).
 - Onboarding includes an explicit `Sex` step with options `Male`, `Female`, `Other`.
 - Height/weight defaults (`5'5"`, `170 lb`) can be accepted without triggering validation errors.
+- On iPhone, scrolling the onboarding height and weight wheels emits light haptic ticks as each value changes.
+- Height and weight wheels stay centered with a narrow selection lane; they should not look like a full-width highlighted bar.
+- Tapping the top-right close `X` exits back to `Coaches`. If any onboarding answers changed, a discard confirmation appears instead of exiting immediately.
 - Plan-start step shows one unified coach avatar (no split workout/nutrition avatars).
 - User is routed to `CoachOnboardingResults` after success.
 - Results screen shows both `Training` and `Nutrition` cards with generated/not-generated status and per-track CTAs.

@@ -42,7 +42,7 @@ Add a first-class user blocking flow that is enforced in both the client relatio
 ## UX States
 
 - `screens/UserProfile.tsx` shows:
-  - primary/secondary follow CTA plus destructive `Block user` action when not blocked,
+  - primary follow CTA plus top-right overflow actions containing `Block user` when not blocked,
   - `Unblock user` CTA and `User blocked` locked-state messaging when blocked by the viewer.
 - `screens/Feed.tsx` and profile-progress loaders must stop rendering the blocked user's posts/progress for the blocker while the block is active.
 - `screens/SearchUsers.tsx` refreshes on focus and re-runs username search so a newly blocked user disappears when returning from their profile.

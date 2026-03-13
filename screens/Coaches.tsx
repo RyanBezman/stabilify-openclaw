@@ -193,7 +193,10 @@ export default function Coaches({ navigation, route }: CoachesScreenProps) {
 
   useEffect(() => {
     if (onboardingGate === "needs_onboarding") {
-      navigation.replace("CoachOnboardingFlow", { specialization: "workout" });
+      navigation.replace("CoachOnboardingFlow", {
+        specialization: "workout",
+        returnTo: "coaches",
+      });
     }
   }, [navigation, onboardingGate]);
 
